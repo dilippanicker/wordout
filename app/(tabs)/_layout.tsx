@@ -1,70 +1,81 @@
-import { SymbolView } from 'expo-symbols';
-import { Link, Tabs } from 'expo-router';
-import { Platform, Pressable } from 'react-native';
-
-import Colors from '@/constants/Colors';
-import { useColorScheme } from '@/components/useColorScheme';
-import { useClientOnlyValue } from '@/components/useClientOnlyValue';
+import { Tabs } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { useSettingsStore } from '@/store/settingsStore';
+import { useGameStore } from '@/store/gameStore';
+import { useStatsStore } from '@/store/statsStore';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  const gameMode = useSettingsStore(s => s.gameMode);
+  const setGameMode = useSettingsStore(s => s.setGameMode);
+  const newGame = useGameStore(s => s.newGame);
+  const settingsBadge = useStatsStore(s => s.settingsBadge);
 
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme].tint,
-        // Disable the static render of the header on web
-        // to prevent a hydration error in React Navigation v6.
-        headerShown: useClientOnlyValue(false, true),
-      }}>
+    <Tabs screenOptions={{ tabBarActiveTintColor: '#6aaa64' }}>
+
+      {/* ── New Game action tab ─────────────────────────────────────────── */}
+      <Tabs.Screen
+        name="new-game"
+        options={{
+          title: 'New Game',
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="refresh-outline" size={size} color={color} />
+          ),
+        }}
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            e.preventDefault();
+            newGame();
+            navigation.navigate('index');
+          },
+        })}
+      />
+
+      {/* ── Game screen (Wordle ↔ Quordle toggle) ──────────────────────── */}
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Tab One',
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{
-                ios: 'chevron.left.forwardslash.chevron.right',
-                android: 'code',
-                web: 'code',
-              }}
-              tintColor={color}
-              size={28}
+          title: gameMode === 'wordle' ? 'Wordle' : 'Quordle',
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons
+              name={gameMode === 'wordle' ? 'grid-outline' : 'apps-outline'}
+              size={size}
+              color={color}
             />
           ),
-          headerRight: () => (
-            <Link href="/modal" asChild>
-              <Pressable style={{ marginRight: 15 }}>
-                {({ pressed }) => (
-                  <SymbolView
-                    name={{ ios: 'info.circle', android: 'info', web: 'info' }}
-                    size={25}
-                    tintColor={Colors[colorScheme].text}
-                    style={{ opacity: pressed ? 0.5 : 1 }}
-                  />
-                )}
-              </Pressable>
-            </Link>
-          ),
         }}
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            e.preventDefault();
+            // Toggle mode — gameStore subscription auto-starts a new game
+            setGameMode(gameMode === 'wordle' ? 'quordle' : 'wordle');
+            navigation.navigate('index');
+          },
+        })}
       />
+
+      {/* ── Settings ────────────────────────────────────────────────────── */}
       <Tabs.Screen
-        name="two"
+        name="settings"
         options={{
-          title: 'Tab Two',
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{
-                ios: 'chevron.left.forwardslash.chevron.right',
-                android: 'code',
-                web: 'code',
-              }}
-              tintColor={color}
-              size={28}
-            />
+          title: 'Settings',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="settings-outline" size={size} color={color} />
           ),
+          tabBarBadge: settingsBadge ? '' : undefined,
+          tabBarBadgeStyle: {
+            minWidth: 8,
+            height: 8,
+            borderRadius: 4,
+            backgroundColor: '#6aaa64',
+            fontSize: 0,
+            lineHeight: 8,
+          },
         }}
       />
+
     </Tabs>
   );
 }
