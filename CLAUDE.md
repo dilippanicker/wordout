@@ -100,3 +100,28 @@ Custom header (not React Navigation header) — two `StyleSheet.absoluteFill` la
 ## Known pre-existing TypeScript errors (not blocking)
 - `settings.tsx`: `colors.*` typed as `ColorValue` not `string` in some sub-components
 - `new-game.tsx`: route path type mismatch on `<Redirect href>`
+
+## Remaining Work (next session)
+
+### Bugs to fix
+- Stats reset confirmation modal not working (trash icon tappable but nothing happens)
+- Dark theme toggle not applying to app (setting persists but UI doesn't change)
+- Quordle: verify solved board freeze is working correctly
+
+### Polish
+- Board tiles still too small on 360×800 — gap above/below board
+- Settings page has large empty space at bottom
+- Help modal: verify Quordle section and New Game icon entry are present
+
+### Still to build
+- App icon + splash screen
+- Play Store listing prep (privacy policy page, screenshots)
+- Consider: EAS build setup for generating APK
+
+### Testing checklist before Play Store
+- [ ] Hard mode validation correct
+- [ ] Duplicate letter handling correct  
+- [ ] Stats persist across app restarts
+- [ ] Language switch starts new game
+- [ ] Share emoji output correct format
+- [ ] Both 412×915 (Pixel 7) and 360×800 layouts verified
