@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Background: dark rounded square -->
+  <rect width="1024" height="1024" rx="180" ry="180" fill="#121213"/>
+
+  <!-- 5 tiles: 160×160px, 10px gap, side padding 92px, vertically centred at y=432 -->
+
+  <!-- Tile 1: W — correct (green) -->
+  <rect x="92" y="432" width="160" height="160" rx="12" fill="#6aaa64"/>
+  <text x="172" y="512"
+        font-family="'Liberation Sans','Noto Sans',sans-serif"
+        font-weight="bold" font-size="88"
+        fill="white" text-anchor="middle" dominant-baseline="central">W</text>
+
+  <!-- Tile 2: O — present (yellow) -->
+  <rect x="262" y="432" width="160" height="160" rx="12" fill="#c9b458"/>
+  <text x="342" y="512"
+        font-family="'Liberation Sans','Noto Sans',sans-serif"
+        font-weight="bold" font-size="88"
+        fill="white" text-anchor="middle" dominant-baseline="central">O</text>
+
+  <!-- Tile 3: R — correct (green) -->
+  <rect x="432" y="432" width="160" height="160" rx="12" fill="#6aaa64"/>
+  <text x="512" y="512"
+        font-family="'Liberation Sans','Noto Sans',sans-serif"
+        font-weight="bold" font-size="88"
+        fill="white" text-anchor="middle" dominant-baseline="central">R</text>
+
+  <!-- Tile 4: D — correct (green) -->
+  <rect x="602" y="432" width="160" height="160" rx="12" fill="#6aaa64"/>
+  <text x="682" y="512"
+        font-family="'Liberation Sans','Noto Sans',sans-serif"
+        font-weight="bold" font-size="88"
+        fill="white" text-anchor="middle" dominant-baseline="central">D</text>
+
+  <!-- Tile 5: ✓ — correct (green) -->
+  <rect x="772" y="432" width="160" height="160" rx="12" fill="#6aaa64"/>
+  <!-- Checkmark centred in tile (tile centre: 852, 512) -->
+  <path d="M804,510 L830,542 L900,468"
+        stroke="white" stroke-width="17"
+        stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+</svg>
