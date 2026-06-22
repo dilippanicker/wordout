@@ -47,7 +47,7 @@ export default function SettingsScreen() {
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 12 }}>
 
         {/* ── Statistics ──────────────────────────────────────────────── */}
         <View style={styles.sectionHeaderRow}>
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 18,
+    marginTop: 26,
     marginBottom: 6,
     paddingHorizontal: 16,
   },
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#787c7e',
     letterSpacing: 0.8,
-    marginTop: 18,
+    marginTop: 26,
     marginBottom: 6,
     paddingHorizontal: 16,
   },
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingVertical: 10,
+    paddingVertical: 18,
     paddingHorizontal: 8,
   },
   statCell: {
@@ -288,9 +288,9 @@ const styles = StyleSheet.create({
   },
   // Distribution
   distContainer: {
-    paddingVertical: 8,
+    paddingVertical: 14,
     paddingHorizontal: 16,
-    gap: 4,
+    gap: 8,
   },
   distRow: {
     flexDirection: 'row',
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
   },
   segment: {
     flex: 1,
-    paddingVertical: 11,
+    paddingVertical: 14,
     alignItems: 'center',
     borderRightWidth: StyleSheet.hairlineWidth,
   },
@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 11,
+    paddingVertical: 16,
   },
   labelGroup: {
     flex: 1,

@@ -87,7 +87,7 @@ function buildShareText(
       ).join(''),
     )
     .join('\n');
-  return `Wordle ${count}/6${flag}\n\n${grid}`;
+  return `Wordout ${count}/6${flag}\n\n${grid}`;
 }
 
 function buildQuordleShareText(
@@ -110,7 +110,7 @@ function buildQuordleShareText(
       .join('\n');
     return `${LABELS[b]}\n${grid}`;
   });
-  return `Quordle ${count}/9\n\n${boards.join('\n\n')}`;
+  return `Quadout ${count}/9\n\n${boards.join('\n\n')}`;
 }
 
 async function copyToClipboard(text: string): Promise<boolean> {
@@ -151,7 +151,7 @@ export default function WordleScreen() {
   const KBD_H = 210;
   const boardAreaH = screenH - insets.top - insets.bottom - 44 - 44 - KBD_H;
   const boardAreaW = screenW - 16;
-  const wordleTileSize = Math.max(44, Math.min(68,
+  const wordleTileSize = Math.max(44, Math.min(74,
     Math.min(Math.floor(boardAreaH / 6) - 4, Math.floor(boardAreaW / 5) - 4),
   ));
 
@@ -243,7 +243,7 @@ export default function WordleScreen() {
         style={[styles.container, { backgroundColor: colors.background }]}
         edges={['top', 'bottom']}
       >
-        {renderHeader({ ...headerProps, title: 'Quordle' })}
+        {renderHeader({ ...headerProps, title: 'Quadout' })}
 
         <View style={styles.quordleArea}>
           <View style={styles.quordleRow}>
@@ -328,7 +328,7 @@ export default function WordleScreen() {
       style={[styles.container, { backgroundColor: colors.background }]}
       edges={['top', 'bottom']}
     >
-      {renderHeader({ ...headerProps, title: 'Wordle' })}
+      {renderHeader({ ...headerProps, title: 'Wordout' })}
 
       <View style={styles.boardArea}>
         <GameBoard guesses={guesses} currentGuess={currentGuess} tileSize={wordleTileSize} shakeKey={shakeKey} />

@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "wordle",
-    "slug": "wordle",
+    "name": "Wordout",
+    "slug": "wordout",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "wordle",
+    "scheme": "wordout",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true

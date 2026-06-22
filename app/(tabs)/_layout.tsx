@@ -38,7 +38,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: gameMode === 'wordle' ? 'Wordle' : 'Quordle',
+          title: gameMode === 'wordle' ? 'Wordout' : 'Quadout',
           headerShown: false,
           tabBarIcon: ({ color, size }) => (
             <Ionicons

@@ -116,9 +116,9 @@ export function HelpModal({ visible, onClose, hardMode }: HelpModalProps) {
             </Text>
 
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <Text style={styles.sectionLabel}>QUORDLE</Text>
+            <Text style={styles.sectionLabel}>QUADOUT</Text>
             <Text style={[styles.rule, { color: colors.text }]}>
-              In Quordle, solve <Text style={styles.bold}>4 words simultaneously</Text> with <Text style={styles.bold}>9 guesses.</Text> Every guess applies to all 4 boards.
+              In Quadout, solve <Text style={styles.bold}>4 words simultaneously</Text> with <Text style={styles.bold}>9 guesses.</Text> Every guess applies to all 4 boards.
             </Text>
 
             {hardMode && (
