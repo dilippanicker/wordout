@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "generated": "2026-06-22",
+  "word_length": 5,
+  "counts": {
+    "us": {
+      "answers": 1518,
+      "guesses": 9058
+    },
+    "gb": {
+      "answers": 1517,
+      "guesses": 9057
+    }
+  },
+  "rules": [
+    "5-letter words only",
+    "No proper nouns (person names, place names)",
+    "No plurals",
+    "No 3rd-person verb forms (walks, takes)",
+    "Minimum frequency threshold for answers",
+    "Manual blocklist for offensive/inappropriate words",
+    "Separate American/British English variants"
+  ]
+}
