@@ -18,9 +18,6 @@ import { useQuordleStore, QuordleGuess } from '@/store/quordleStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { TileStatus } from '@/components/Tile';
 
-// Tile size for Quordle's 2×2 grid with 9 rows each.
-const QUORDLE_TILE_SIZE = 22;
-
 // ── Key status helpers ──────────────────────────────────────────────────────
 
 const STATUS_PRIORITY: Record<string, number> = { correct: 3, present: 2, absent: 1 };
@@ -140,7 +137,7 @@ export default function WordleScreen() {
     hardMode, setHardMode,
     darkTheme, setDarkTheme,
     colorBlindMode,
-    gameMode,
+    gameMode, setGameMode,
   } = useSettingsStore();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -154,6 +151,9 @@ export default function WordleScreen() {
   const wordleTileSize = Math.max(44, Math.min(74,
     Math.min(Math.floor(boardAreaH / 6) - 4, Math.floor(boardAreaW / 5) - 4),
   ));
+  // Dynamic Quadout tile size: divide total vertical space by 18 tile rows (2 grids × 9 rows each).
+  // Yields ≥26px at the 800px minimum screen height.
+  const quordleTileSize = Math.max(26, Math.min(36, Math.floor((boardAreaH - 4) / 18)));
 
   const [showHelp, setShowHelp] = useState(false);
   const [copyConfirmed, setCopyConfirmed] = useState(false);
@@ -229,6 +229,25 @@ export default function WordleScreen() {
 
   // ── Quordle layout ──────────────────────────────────────────────────────
   if (isQuordle) {
+    if (screenH < 800) {
+      return (
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
+          {renderHeader({ ...headerProps, title: 'Quadout' })}
+          <View style={styles.tooSmall}>
+            <Text style={[styles.tooSmallHeading, { color: colors.text }]}>
+              Quadout works best on larger screens (800px height minimum).
+            </Text>
+            <Text style={[styles.tooSmallSub, { color: colors.text }]}>
+              Your device: {Math.round(screenH)}px
+            </Text>
+            <Pressable style={styles.tooSmallBtn} onPress={() => setGameMode('wordle')}>
+              <Text style={styles.tooSmallBtnText}>Play Wordout instead</Text>
+            </Pressable>
+          </View>
+        </SafeAreaView>
+      );
+    }
+
     const { guesses: qGuesses, currentGuess: qCurrent, solvedBoards, answers: qAnswers } = quordleStore;
     const qKeyStatuses = deriveQuordleKeyStatuses(qGuesses);
     const solvedCount = solvedBoards.filter(Boolean).length;
@@ -250,7 +269,7 @@ export default function WordleScreen() {
             <GameBoard
               guesses={toBoardGuesses(qGuesses, 0)}
               currentGuess={solvedBoards[0] ? '' : qCurrent}
-              tileSize={QUORDLE_TILE_SIZE}
+              tileSize={quordleTileSize}
               maxGuesses={9}
               solved={solvedBoards[0]}
               label="1"
@@ -259,7 +278,7 @@ export default function WordleScreen() {
             <GameBoard
               guesses={toBoardGuesses(qGuesses, 1)}
               currentGuess={solvedBoards[1] ? '' : qCurrent}
-              tileSize={QUORDLE_TILE_SIZE}
+              tileSize={quordleTileSize}
               maxGuesses={9}
               solved={solvedBoards[1]}
               label="2"
@@ -270,7 +289,7 @@ export default function WordleScreen() {
             <GameBoard
               guesses={toBoardGuesses(qGuesses, 2)}
               currentGuess={solvedBoards[2] ? '' : qCurrent}
-              tileSize={QUORDLE_TILE_SIZE}
+              tileSize={quordleTileSize}
               maxGuesses={9}
               solved={solvedBoards[2]}
               label="3"
@@ -279,7 +298,7 @@ export default function WordleScreen() {
             <GameBoard
               guesses={toBoardGuesses(qGuesses, 3)}
               currentGuess={solvedBoards[3] ? '' : qCurrent}
-              tileSize={QUORDLE_TILE_SIZE}
+              tileSize={quordleTileSize}
               maxGuesses={9}
               solved={solvedBoards[3]}
               label="4"
@@ -380,42 +399,40 @@ function renderHeader({
 }: HeaderProps) {
   return (
     <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-      <View style={styles.headerIconRow}>
-        <View style={styles.iconGroupLeft}>
-          <Pressable
-            hitSlop={12}
-            accessibilityLabel={language === 'en_us' ? 'American English — tap to switch' : 'British English — tap to switch'}
-            onPress={() => setLanguage(language === 'en_us' ? 'en_gb' : 'en_us')}
-          >
-            <Text style={styles.flagEmoji}>{language === 'en_us' ? '🇺🇸' : '🇬🇧'}</Text>
-          </Pressable>
-          <Pressable
-            hitSlop={12}
-            accessibilityLabel={hardMode ? 'Hard mode on — tap to disable' : 'Hard mode off — tap to enable'}
-            onPress={() => setHardMode(!hardMode)}
-          >
-            <Text style={styles.flagEmoji}>{hardMode ? '🔥' : '🐣'}</Text>
-          </Pressable>
-        </View>
-        <View style={styles.iconGroupRight}>
-          <Pressable
-            hitSlop={12}
-            accessibilityLabel={darkTheme ? 'Switch to light mode' : 'Switch to dark mode'}
-            onPress={() => setDarkTheme(!darkTheme)}
-          >
-            <Ionicons name={darkTheme ? 'sunny-outline' : 'moon-outline'} size={21} color="#878a8c" />
-          </Pressable>
-          <Pressable
-            hitSlop={12}
-            accessibilityLabel="How to play"
-            onPress={() => setShowHelp(true)}
-          >
-            <Ionicons name="help-circle-outline" size={22} color="#878a8c" />
-          </Pressable>
-        </View>
+      <View style={styles.iconGroupLeft}>
+        <Pressable
+          hitSlop={12}
+          accessibilityLabel={language === 'en_us' ? 'American English — tap to switch' : 'British English — tap to switch'}
+          onPress={() => setLanguage(language === 'en_us' ? 'en_gb' : 'en_us')}
+        >
+          <Text style={styles.flagEmoji}>{language === 'en_us' ? '🇺🇸' : '🇬🇧'}</Text>
+        </Pressable>
+        <Pressable
+          hitSlop={12}
+          accessibilityLabel={hardMode ? 'Hard mode on — tap to disable' : 'Hard mode off — tap to enable'}
+          onPress={() => setHardMode(!hardMode)}
+        >
+          <Text style={styles.flagEmoji}>{hardMode ? '🔥' : '🐣'}</Text>
+        </Pressable>
       </View>
-      <View style={styles.headerTitleWrapper} pointerEvents="none">
+      <View style={styles.headerTitleWrapper}>
         <Text style={[styles.headerTitle, { color: colors.text }]}>{title}</Text>
+      </View>
+      <View style={styles.iconGroupRight}>
+        <Pressable
+          hitSlop={12}
+          accessibilityLabel={darkTheme ? 'Switch to light mode' : 'Switch to dark mode'}
+          onPress={() => setDarkTheme(!darkTheme)}
+        >
+          <Ionicons name={darkTheme ? 'sunny-outline' : 'moon-outline'} size={21} color="#878a8c" />
+        </Pressable>
+        <Pressable
+          hitSlop={12}
+          accessibilityLabel="How to play"
+          onPress={() => setShowHelp(true)}
+        >
+          <Ionicons name="help-circle-outline" size={22} color="#878a8c" />
+        </Pressable>
       </View>
     </View>
   );
@@ -431,33 +448,61 @@ const styles = StyleSheet.create({
   header: {
     height: 44,
     borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  headerIconRow: {
-    ...StyleSheet.absoluteFill,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 12,
   },
   iconGroupLeft: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
   },
   iconGroupRight: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'flex-end',
     gap: 10,
   },
   headerTitleWrapper: {
-    ...StyleSheet.absoluteFill,
+    flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 17,
     fontWeight: '700',
     letterSpacing: 0.3,
+  },
+  // Quadout screen-too-small fallback
+  tooSmall: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    gap: 12,
+  },
+  tooSmallHeading: {
+    fontSize: 17,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  tooSmallSub: {
+    fontSize: 14,
+    textAlign: 'center',
+    opacity: 0.7,
+  },
+  tooSmallBtn: {
+    marginTop: 8,
+    backgroundColor: '#6aaa64',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  tooSmallBtnText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '600',
   },
   flagEmoji: {
     fontSize: 21,

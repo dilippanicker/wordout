@@ -64,7 +64,8 @@ const wordleTileSize = Math.max(44, Math.min(74,
 ```
 
 ### Quadout tile size
-Fixed `QUORDLE_TILE_SIZE = 22` (22px fits 2×2 grid with 9 rows on 360px-wide screens).
+Dynamic: `Math.max(26, Math.min(36, Math.floor((boardAreaH - 4) / 18)))`.
+Divides total vertical space by 18 tile rows (2 grids × 9 rows). Yields 26px at the 800px minimum screen, up to 36px on large screens. `boardAreaH` is shared with the Wordout calculation.
 
 ### Quadout key statuses
 Best result per letter across all 4 boards: `STATUS_PRIORITY = { correct:3, present:2, absent:1 }`.
@@ -88,7 +89,10 @@ Capture-phase keydown listener: `window.addEventListener('keydown', handler, { c
 - Uses `navigator.clipboard.writeText()` (expo-clipboard not installed)
 
 ### Header layout
-Custom header (not React Navigation header) — two `StyleSheet.absoluteFill` layers: icon row (`space-between`) + title wrapper (`center`). `pointerEvents="none"` on title so icons remain tappable.
+Custom header (not React Navigation header) — 3-section flex row: `iconGroupLeft` (flex:1, icons left), `headerTitleWrapper` (flex:1, centered title), `iconGroupRight` (flex:1, icons right). Each section is `flex:1` so the title always occupies the middle third regardless of icon count. Height 44px, paddingHorizontal 12.
+
+### Quadout minimum screen height
+If `isQuordle && screenH < 800`, renders a fallback view instead of the game: heading "Quadout works best on larger screens (800px height minimum).", sub-text showing the device height, and a "Play Wordout instead" button that calls `setGameMode('wordle')`.
 
 ---
 
@@ -103,6 +107,12 @@ Custom header (not React Navigation header) — two `StyleSheet.absoluteFill` la
 - `settings.tsx`: `colors.*` typed as `ColorValue` not `string` in some sub-components
 - `new-game.tsx`: route path type mismatch on `<Redirect href>`
 
+## GitHub repo
+- URL: https://github.com/dilippanicker/wordout
+- Description, homepage, and topics set via `gh repo edit`
+- README.md, LICENSE (MIT 2026 Dilip Panicker), `.github/ISSUE_TEMPLATE/` all present
+- Issue templates: `word-list-issue.md`, `bug-report.md`
+
 ## Remaining Work (next session)
 
 ### Still to build
@@ -116,6 +126,9 @@ Custom header (not React Navigation header) — two `StyleSheet.absoluteFill` la
 - Help modal has QUADOUT section + all 5 ICONS entries including New Game
 - Board tile cap raised 68→74px: tiles grow on 390+ wide screens; 360px is width-limited at 64px (fundamental constraint)
 - Settings vertical spacing increased: gap on 360×800 reduced from ~183px to ~40px
+- Header title no longer clips on narrow screens (3-section flex row layout)
+- Quadout blocked on small screens (<800px) with fallback + "Play Wordout instead" button; tile size dynamic (26–36px)
+- App renamed Wordle→Wordout, Quordle→Quadout throughout UI; AsyncStorage keys unchanged
 
 ### Testing checklist before Play Store
 - [ ] Hard mode validation correct
