@@ -1,12 +1,14 @@
-import { useCallback } from 'react';
-import { View, Text, Switch, Pressable, StyleSheet, ScrollView } from 'react-native';
+import { useCallback, useState } from 'react';
+import { View, Text, Switch, Pressable, StyleSheet, ScrollView, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect, useTheme } from 'expo-router';
+import { useFocusEffect, useTheme, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useSettingsStore, Language } from '@/store/settingsStore';
 import { useStatsStore } from '@/store/statsStore';
 
 export default function SettingsScreen() {
   const { dark, colors } = useTheme();
+  const router = useRouter();
   const {
     language, setLanguage,
     hardMode, setHardMode,
@@ -14,7 +16,7 @@ export default function SettingsScreen() {
     colorBlindMode, setColorBlindMode,
   } = useSettingsStore();
 
-  const { totalGames, wins, currentStreak, maxStreak, guessCounts, clearSettingsBadge } = useStatsStore();
+  const { totalGames, wins, currentStreak, maxStreak, guessCounts, clearSettingsBadge, resetStats } = useStatsStore();
 
   // Clear the badge dot whenever this screen comes into view.
   useFocusEffect(
@@ -26,13 +28,34 @@ export default function SettingsScreen() {
   const containerBg = dark ? colors.background : '#f6f7f8';
   const winPct = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
   const maxCount = Math.max(...Object.values(guessCounts), 1);
+  const [confirmVisible, setConfirmVisible] = useState(false);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: containerBg }]} edges={['bottom']}>
+      {/* Settings navigation header */}
+      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+        <Pressable
+          style={styles.headerBack}
+          onPress={() => router.navigate('/(tabs)/' as never)}
+          hitSlop={12}
+          accessibilityLabel="Back to game"
+        >
+          <Ionicons name="chevron-back" size={24} color="#6aaa64" />
+        </Pressable>
+        <View style={styles.headerTitleWrapper} pointerEvents="none">
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Settings</Text>
+        </View>
+      </View>
+
       <ScrollView showsVerticalScrollIndicator={false}>
 
         {/* ── Statistics ──────────────────────────────────────────────── */}
-        <Text style={styles.sectionHeader}>STATISTICS</Text>
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionHeaderText}>STATISTICS</Text>
+          <Pressable onPress={() => setConfirmVisible(true)} hitSlop={12} accessibilityLabel="Reset statistics">
+            <Ionicons name="trash-outline" size={15} color="#787c7e" />
+          </Pressable>
+        </View>
         <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.statsRow}>
             <StatCell label="Games" value={totalGames} colors={colors} />
@@ -72,8 +95,26 @@ export default function SettingsScreen() {
           <SwitchRow label="Color Blind Mode" description="High-contrast orange and blue" value={colorBlindMode} onChange={setColorBlindMode} last />
         </View>
 
-        <View style={{ height: 32 }} />
       </ScrollView>
+
+      {/* Reset stats confirmation modal */}
+      <Modal visible={confirmVisible} transparent animationType="fade" onRequestClose={() => setConfirmVisible(false)}>
+        <Pressable style={styles.confirmBackdrop} onPress={() => setConfirmVisible(false)}>
+          <View style={[styles.confirmSheet, { backgroundColor: colors.card }]}>
+            <Text style={[styles.confirmTitle, { color: colors.text }]}>Reset all stats?</Text>
+            <Text style={styles.confirmMessage}>This cannot be undone.</Text>
+            <View style={styles.confirmButtons}>
+              <Pressable style={styles.confirmBtn} onPress={() => setConfirmVisible(false)}>
+                <Text style={[styles.confirmBtnText, { color: colors.text }]}>Cancel</Text>
+              </Pressable>
+              <View style={[styles.confirmDivider, { backgroundColor: colors.border }]} />
+              <Pressable style={styles.confirmBtn} onPress={() => { resetStats(); setConfirmVisible(false); }}>
+                <Text style={[styles.confirmBtnText, styles.confirmDestructive]}>Reset</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -95,14 +136,16 @@ function DistBar({ num, count, maxCount, colors }: {
   maxCount: number;
   colors: { text: string };
 }) {
-  const pct = maxCount === 0 ? 3 : Math.max(3, Math.round((count / maxCount) * 100));
+  // Use flex proportions instead of % widths — more reliable in RN flex containers.
+  const pct = count === 0 ? 10 : Math.round((count / maxCount) * 100);
   return (
     <View style={styles.distRow}>
       <Text style={[styles.distNum, { color: colors.text }]}>{num}</Text>
       <View style={styles.distTrack}>
-        <View style={[styles.distBar, { width: `${pct}%` }]}>
+        <View style={[styles.distBar, { flex: pct }]}>
           <Text style={styles.distCount}>{count}</Text>
         </View>
+        {pct < 100 && <View style={{ flex: 100 - pct }} />}
       </View>
     </View>
   );
@@ -171,13 +214,51 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  header: {
+    height: 44,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  headerBack: {
+    position: 'absolute',
+    left: 8,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  headerTitleWrapper: {
+    ...StyleSheet.absoluteFill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  // Row variant (Statistics) — icon sits on the right.
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 18,
+    marginBottom: 6,
+    paddingHorizontal: 16,
+  },
+  sectionHeaderText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#787c7e',
+    letterSpacing: 0.8,
+  },
+  // Plain text variant for all other section labels.
   sectionHeader: {
     fontSize: 12,
     fontWeight: '600',
     color: '#787c7e',
     letterSpacing: 0.8,
-    marginTop: 28,
-    marginBottom: 8,
+    marginTop: 18,
+    marginBottom: 6,
     paddingHorizontal: 16,
   },
   section: {
@@ -188,7 +269,7 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingVertical: 16,
+    paddingVertical: 10,
     paddingHorizontal: 8,
   },
   statCell: {
@@ -196,47 +277,47 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statValue: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: '700',
   },
   statLabel: {
     fontSize: 11,
     color: '#787c7e',
-    marginTop: 2,
+    marginTop: 1,
     textAlign: 'center',
   },
   // Distribution
   distContainer: {
-    paddingVertical: 12,
+    paddingVertical: 8,
     paddingHorizontal: 16,
-    gap: 6,
+    gap: 4,
   },
   distRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 22,
+    height: 18,
   },
   distNum: {
     width: 16,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     marginRight: 6,
   },
   distTrack: {
     flex: 1,
+    flexDirection: 'row',
   },
   distBar: {
     backgroundColor: '#6aaa64',
-    height: 20,
+    height: 16,
     borderRadius: 2,
     alignItems: 'flex-end',
     justifyContent: 'center',
-    paddingRight: 6,
-    minWidth: 20,
+    paddingRight: 5,
   },
   distCount: {
     color: '#fff',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
   },
   // Language picker
@@ -245,7 +326,7 @@ const styles = StyleSheet.create({
   },
   segment: {
     flex: 1,
-    paddingVertical: 14,
+    paddingVertical: 11,
     alignItems: 'center',
     borderRightWidth: StyleSheet.hairlineWidth,
   },
@@ -262,7 +343,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 11,
   },
   labelGroup: {
     flex: 1,
@@ -275,5 +356,53 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#787c7e',
     marginTop: 2,
+  },
+  // Reset confirmation modal
+  confirmBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  confirmSheet: {
+    width: 260,
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  confirmTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    textAlign: 'center',
+    paddingTop: 20,
+    paddingHorizontal: 16,
+    paddingBottom: 6,
+  },
+  confirmMessage: {
+    fontSize: 13,
+    color: '#787c7e',
+    textAlign: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  confirmButtons: {
+    flexDirection: 'row',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#d3d6da',
+  },
+  confirmBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  confirmDivider: {
+    width: StyleSheet.hairlineWidth,
+  },
+  confirmBtnText: {
+    fontSize: 17,
+    fontWeight: '400',
+  },
+  confirmDestructive: {
+    color: '#ff3b30',
+    fontWeight: '600',
   },
 });

@@ -49,6 +49,10 @@ type IconRowDef = { renderIcon: () => React.ReactNode; text: string };
 
 const ICON_ROWS: IconRowDef[] = [
   {
+    renderIcon: () => <Ionicons name="refresh-outline" size={18} color="#878a8c" />,
+    text: 'Start a new game at any time, abandoning the current game',
+  },
+  {
     renderIcon: () => <Text style={styles.flagPair}>🇺🇸 🇬🇧</Text>,
     text: 'Switch between American and British English word lists',
   },
@@ -76,7 +80,7 @@ export function HelpModal({ visible, onClose, hardMode }: HelpModalProps) {
       <Pressable style={styles.backdrop} onPress={onClose}>
         <Pressable style={[styles.sheet, { backgroundColor: colors.card }]} onPress={() => {}}>
           <View style={[styles.header, { borderColor: colors.border }]}>
-            <Text style={[styles.title, { color: colors.text }]}>HOW TO PLAY</Text>
+            <Text style={[styles.title, { color: colors.text }]}>How to play</Text>
             <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={12}>
               <Text style={styles.closeIcon}>✕</Text>
             </Pressable>
@@ -109,6 +113,12 @@ export function HelpModal({ visible, onClose, hardMode }: HelpModalProps) {
 
             <Text style={[styles.colorBlindNote, { color: colors.text }]}>
               Enable <Text style={styles.bold}>Color Blind Mode</Text> in Settings to replace green and yellow with high-contrast orange and blue.
+            </Text>
+
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <Text style={styles.sectionLabel}>QUORDLE</Text>
+            <Text style={[styles.rule, { color: colors.text }]}>
+              In Quordle, solve <Text style={styles.bold}>4 words simultaneously</Text> with <Text style={styles.bold}>9 guesses.</Text> Every guess applies to all 4 boards.
             </Text>
 
             {hardMode && (

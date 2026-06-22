@@ -63,16 +63,16 @@ const styles = StyleSheet.create({
   keyboard: {
     width: '100%',
     paddingHorizontal: 4,
-    paddingBottom: 4,
+    paddingBottom: 6,
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
   },
   key: {
     minWidth: 32,
-    height: 56,
+    height: 60,
     alignItems: 'center',
     justifyContent: 'center',
     marginHorizontal: 2.5,

@@ -2,6 +2,7 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useGameStore } from '@/store/gameStore';
+import { useQuordleStore } from '@/store/quordleStore';
 import { useStatsStore } from '@/store/statsStore';
 
 export default function TabLayout() {
@@ -27,6 +28,7 @@ export default function TabLayout() {
           tabPress: (e) => {
             e.preventDefault();
             newGame();
+            useQuordleStore.getState().newGame();
             navigation.navigate('index');
           },
         })}
@@ -49,8 +51,13 @@ export default function TabLayout() {
         listeners={({ navigation }) => ({
           tabPress: (e) => {
             e.preventDefault();
-            // Toggle mode — gameStore subscription auto-starts a new game
-            setGameMode(gameMode === 'wordle' ? 'quordle' : 'wordle');
+            // Only toggle mode when already on the game screen.
+            // Coming from Settings should return to the game without resetting.
+            const state = navigation.getState();
+            const currentTab = state.routes[state.index]?.name;
+            if (currentTab === 'index') {
+              setGameMode(gameMode === 'wordle' ? 'quordle' : 'wordle');
+            }
             navigation.navigate('index');
           },
         })}
@@ -61,6 +68,7 @@ export default function TabLayout() {
         name="settings"
         options={{
           title: 'Settings',
+          headerShown: false,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="settings-outline" size={size} color={color} />
           ),

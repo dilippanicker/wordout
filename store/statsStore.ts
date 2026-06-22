@@ -13,6 +13,7 @@ interface StatsState {
   settingsBadge: boolean;
   recordResult: (won: boolean, guessCount: number) => void;
   clearSettingsBadge: () => void;
+  resetStats: () => void;
 }
 
 const EMPTY_COUNTS: GuessCounts = { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0, '6': 0 };
@@ -44,6 +45,11 @@ export const useStatsStore = create<StatsState>()(
         }),
 
       clearSettingsBadge: () => set({ settingsBadge: false }),
+
+      resetStats: () => set({
+        totalGames: 0, wins: 0, currentStreak: 0, maxStreak: 0,
+        guessCounts: { ...EMPTY_COUNTS }, settingsBadge: false,
+      }),
     }),
     {
       name: 'wordle-stats',

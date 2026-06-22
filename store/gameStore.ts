@@ -167,9 +167,9 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 }));
 
-// Restart when language or game mode changes.
+// Only reset on language change — mode switching preserves game state.
 useSettingsStore.subscribe((curr, prev) => {
-  if (curr.language !== prev.language || curr.gameMode !== prev.gameMode) {
+  if (curr.language !== prev.language) {
     useGameStore.getState().newGame();
   }
 });
