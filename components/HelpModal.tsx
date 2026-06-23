@@ -70,6 +70,68 @@ const ICON_ROWS: IconRowDef[] = [
   },
 ];
 
+// Small indicator shape helpers used in the BOARD INDICATORS section.
+function IndicatorSquare() {
+  return (
+    <View style={indStyles.square}>
+      <Ionicons name="play" size={9} color="#878a8c" />
+    </View>
+  );
+}
+
+function IndicatorCircle({
+  borderColor,
+  backgroundColor = 'transparent',
+  children,
+}: {
+  borderColor: string;
+  backgroundColor?: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <View style={[indStyles.circle, { borderColor, backgroundColor }]}>
+      {children}
+    </View>
+  );
+}
+
+type BoardIndRowDef = { renderIndicator: () => React.ReactNode; text: string };
+
+const BOARD_IND_ROWS: BoardIndRowDef[] = [
+  {
+    renderIndicator: () => <IndicatorSquare />,
+    text: 'Current board you are playing',
+  },
+  {
+    renderIndicator: () => <IndicatorCircle borderColor="#878a8c" />,
+    text: 'No guesses yet, or all results were grey',
+  },
+  {
+    renderIndicator: () => (
+      <IndicatorCircle borderColor="#6aaa64">
+        <Text style={indStyles.greenNum}>3</Text>
+      </IndicatorCircle>
+    ),
+    text: 'Green number = letters in the correct position (greens only, no yellows)',
+  },
+  {
+    renderIndicator: () => (
+      <IndicatorCircle borderColor="#c9b458" backgroundColor="#c9b458">
+        <Text style={indStyles.greenNum}>2</Text>
+      </IndicatorCircle>
+    ),
+    text: 'Yellow fill = board also has misplaced letters (present but wrong position)',
+  },
+  {
+    renderIndicator: () => (
+      <IndicatorCircle borderColor="#6aaa64" backgroundColor="#6aaa64">
+        <Text style={indStyles.checkText}>✓</Text>
+      </IndicatorCircle>
+    ),
+    text: 'Board solved',
+  },
+];
+
 const TILE_SIZE = 46;
 
 export function HelpModal({ visible, onClose, hardMode }: HelpModalProps) {
@@ -116,10 +178,26 @@ export function HelpModal({ visible, onClose, hardMode }: HelpModalProps) {
             </Text>
 
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <Text style={styles.sectionLabel}>QUADOUT</Text>
+            <Text style={styles.sectionLabel}>MULTI-BOARD MODE</Text>
             <Text style={[styles.rule, { color: colors.text }]}>
-              In Quadout, solve <Text style={styles.bold}>4 words simultaneously</Text> with <Text style={styles.bold}>9 guesses.</Text> Every guess applies to all 4 boards.
+              Solve <Text style={styles.bold}>2–8 words simultaneously.</Text> Every guess applies to all boards at once. Choose a board count in Settings.
             </Text>
+            <Text style={[styles.rule, { color: colors.text }]}>
+              You get <Text style={styles.bold}>5 + board count guesses</Text> (e.g. 9 for Quadout, 13 for 8-out).
+            </Text>
+
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <Text style={styles.sectionLabel}>BOARD INDICATORS</Text>
+            <Text style={[styles.rule, { color: colors.text }]}>
+              The row of circles above the board shows the progress of each board at a glance.
+            </Text>
+
+            {BOARD_IND_ROWS.map(({ renderIndicator, text }, i) => (
+              <View key={i} style={styles.iconRow}>
+                <View style={styles.iconCell}>{renderIndicator()}</View>
+                <Text style={[styles.iconDesc, { color: colors.text }]}>{text}</Text>
+              </View>
+            ))}
 
             {hardMode && (
               <>
@@ -148,6 +226,38 @@ export function HelpModal({ visible, onClose, hardMode }: HelpModalProps) {
     </Modal>
   );
 }
+
+// Styles for the small indicator shapes inside the help modal.
+const indStyles = StyleSheet.create({
+  square: {
+    width: 20,
+    height: 20,
+    borderWidth: 2,
+    borderColor: '#878a8c',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  circle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  greenNum: {
+    color: '#6aaa64',
+    fontSize: 11,
+    fontWeight: '800',
+    lineHeight: 14,
+  },
+  checkText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '800',
+    lineHeight: 13,
+  },
+});
 
 const styles = StyleSheet.create({
   backdrop: {
@@ -223,7 +333,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     opacity: 0.7,
   },
-  // Icons section
   iconRow: {
     flexDirection: 'row',
     alignItems: 'center',
