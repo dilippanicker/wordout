@@ -194,8 +194,8 @@ export default function WordleScreen() {
   const keyHeight = Math.min(60, Math.floor(totalH * 0.08));
   const KBD_H = kbdHeight(keyHeight);
 
-  // Width available to tiles (16px padding each side).
-  const availableWidth = screenW - 32;
+  // Width available to tiles (8px padding each side — tight but not edge-to-edge).
+  const availableWidth = screenW - 16;
 
   // Tile size is computed from measured layout height once onLayout fires.
   // wordleAvailH is the static estimate used for the first render before measurement.
