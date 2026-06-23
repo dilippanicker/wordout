@@ -72,6 +72,19 @@ function boardCorrectCount(qGuesses: QuordleGuess[], boardIndex: number): number
   return found.size;
 }
 
+// True if this board has at least one present-but-wrong-position (yellow) result.
+function boardHasYellow(qGuesses: QuordleGuess[], boardIndex: number): boolean {
+  for (const g of qGuesses) {
+    const results = g.boardResults[boardIndex];
+    if (results) {
+      for (const r of results) {
+        if (r === 'present') return true;
+      }
+    }
+  }
+  return false;
+}
+
 // ── Share / emoji grid ──────────────────────────────────────────────────────
 
 function buildShareText(
@@ -287,28 +300,35 @@ export default function WordleScreen() {
         {boardCount > 1 && (
           <View style={styles.dotRow}>
             {solvedBoards.map((solved, i) => {
-              const correctCount = boardCorrectCount(qGuesses, i);
               const isActive = activeBoard === i;
+              const greenCount = solved ? 0 : boardCorrectCount(qGuesses, i);
+              const hasYellow  = solved ? false : boardHasYellow(qGuesses, i);
+              const hasAnyInfo = greenCount > 0 || hasYellow;
               return (
                 <Pressable
                   key={i}
                   {...(noFocus as any)}
                   hitSlop={6}
                   onPress={() => scrollTo(i)}
-                  accessibilityLabel={`Board ${i + 1}${solved ? ' — solved' : correctCount > 0 ? `, ${correctCount} correct` : ''}`}
+                  accessibilityLabel={
+                    solved ? `Board ${i + 1} — solved`
+                    : isActive ? `Board ${i + 1} — current`
+                    : `Board ${i + 1}${greenCount > 0 ? `, ${greenCount} correct` : ''}`
+                  }
                 >
-                  {/* Outer ring — always 30×30, border shows only for active board */}
-                  <View style={[styles.indicatorRing, isActive && styles.indicatorRingActive]}>
+                  <View style={styles.indicatorWrap}>
                     {solved ? (
                       <View style={[styles.indicatorCircle, styles.indicatorSolved]}>
-                        <Text style={styles.indicatorText}>✓</Text>
+                        <Text style={styles.indicatorCheckText}>✓</Text>
                       </View>
-                    ) : correctCount > 0 ? (
-                      <View style={[styles.indicatorCircle, styles.indicatorPartial]}>
-                        <Text style={styles.indicatorText}>{correctCount}</Text>
-                      </View>
-                    ) : (
+                    ) : isActive ? (
+                      <Ionicons name="play" size={16} color="#878a8c" />
+                    ) : !hasAnyInfo ? (
                       <View style={[styles.indicatorCircle, styles.indicatorEmpty]} />
+                    ) : (
+                      <View style={[styles.indicatorCircle, hasYellow && styles.indicatorYellowBg]}>
+                        {greenCount > 0 && <Text style={styles.indicatorGreenNum}>{greenCount}</Text>}
+                      </View>
                     )}
                   </View>
                 </Pressable>
@@ -527,20 +547,14 @@ const styles = StyleSheet.create({
     height: 36,
     gap: 6,
   },
-  // Outer ring wrapper: fixed 30×30, ring border transparent until active.
-  indicatorRing: {
+  // Fixed-size hit target for each board indicator.
+  indicatorWrap: {
     width: 30,
     height: 30,
-    borderRadius: 15,
-    borderWidth: 1.5,
-    borderColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  indicatorRingActive: {
-    borderColor: '#878a8c',
-  },
-  // Inner circle: 24×24 in all states.
+  // 24×24 circle used by all circle states.
   indicatorCircle: {
     width: 24,
     height: 24,
@@ -548,19 +562,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  // States
   indicatorEmpty: {
     borderWidth: 2,
     borderColor: '#878a8c',
-    backgroundColor: 'transparent',
   },
-  indicatorPartial: {
+  indicatorYellowBg: {
     backgroundColor: '#c9b458',
   },
   indicatorSolved: {
     backgroundColor: '#6aaa64',
   },
-  indicatorText: {
+  // White ✓ on green background.
+  indicatorCheckText: {
     color: '#fff',
+    fontSize: 12,
+    fontWeight: '800',
+    lineHeight: 15,
+  },
+  // Green count number — shown on yellow bg or transparent.
+  indicatorGreenNum: {
+    color: '#6aaa64',
     fontSize: 12,
     fontWeight: '800',
     lineHeight: 15,
