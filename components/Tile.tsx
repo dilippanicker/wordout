@@ -7,6 +7,8 @@ interface TileProps {
   letter?: string;
   status?: TileStatus;
   size?: number;
+  tileWidth?: number;
+  tileHeight?: number;
   style?: ViewStyle;
 }
 
@@ -29,7 +31,7 @@ function tileColors(status: TileStatus, dark: boolean, colorBlind: boolean) {
   }
 }
 
-export function Tile({ letter = '', status = 'empty', size = 60, style }: TileProps) {
+export function Tile({ letter = '', status = 'empty', size = 60, tileWidth, tileHeight, style }: TileProps) {
   const darkTheme = useSettingsStore(s => s.darkTheme);
   const colorBlindMode = useSettingsStore(s => s.colorBlindMode);
 
@@ -39,9 +41,12 @@ export function Tile({ letter = '', status = 'empty', size = 60, style }: TilePr
       ? (darkTheme ? '#ffffff' : '#1a1a1b')
       : '#ffffff';
 
+  const w = tileWidth ?? size;
+  const h = tileHeight ?? size;
+
   return (
-    <View style={[styles.tile, colorStyle, { width: size, height: size }, style]}>
-      <Text style={[styles.letter, { fontSize: size * 0.45, color: letterColor }]}>
+    <View style={[styles.tile, colorStyle, { width: w, height: h }, style]}>
+      <Text style={[styles.letter, { fontSize: Math.min(w, h) * 0.45, color: letterColor }]}>
         {letter.toUpperCase()}
       </Text>
     </View>

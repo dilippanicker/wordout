@@ -239,6 +239,13 @@ export function HelpModal({ visible, onClose, hardMode }: HelpModalProps) {
             >
               <Text style={styles.feedbackLink}>Submit on GitHub →</Text>
             </Pressable>
+            <Text style={[styles.feedbackPrompt, { marginTop: 16 }]}>Wordout is free and open source.</Text>
+            <Pressable
+              onPress={() => Linking.openURL('https://github.com/dilippanicker/wordout')}
+              hitSlop={8}
+            >
+              <Text style={styles.feedbackLink}>View source on GitHub →</Text>
+            </Pressable>
           </ScrollView>
 
         </View>

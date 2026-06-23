@@ -313,7 +313,7 @@ export default function WordleScreen() {
     ));
 
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
         {renderHeader({ ...headerProps, title: boardCountName(boardCount) })}
 
         {/* Board progress indicators — hidden when only 1 board */}
@@ -400,6 +400,7 @@ export default function WordleScreen() {
                   tileSize={qFallbackTile}
                   maxGuesses={maxGuesses}
                   solved={isSolved}
+                  gameOver={gameStatus === 'lost' && !isSolved}
                   shakeKey={shakeKey}
                 />
               </View>
@@ -444,12 +445,12 @@ export default function WordleScreen() {
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
-      edges={['top', 'bottom']}
+      edges={['top']}
     >
       {renderHeader({ ...headerProps, title: 'Wordout' })}
 
       <View style={styles.boardArea} onLayout={e => setWordleAreaH(e.nativeEvent.layout.height)}>
-        <GameBoard guesses={guesses} currentGuess={currentGuess} tileSize={wordleTileSize} shakeKey={shakeKey} />
+        <GameBoard guesses={guesses} currentGuess={currentGuess} tileSize={wordleTileSize} shakeKey={shakeKey} gameOver={gameStatus === 'lost'} />
       </View>
 
       <View style={styles.messageArea}>

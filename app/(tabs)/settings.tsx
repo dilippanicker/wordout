@@ -17,6 +17,7 @@ export default function SettingsScreen() {
     hardMode, setHardMode,
     darkTheme, setDarkTheme,
     colorBlindMode, setColorBlindMode,
+    enterOnRight, setEnterOnRight,
     gameMode, setGameMode,
     boardCount, setBoardCount,
   } = useSettingsStore();
@@ -133,7 +134,8 @@ export default function SettingsScreen() {
         <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <SwitchRow label="Hard Mode" description="Must use revealed hints" value={hardMode} onChange={setHardMode} />
           <SwitchRow label="Dark Theme" value={darkTheme} onChange={setDarkTheme} />
-          <SwitchRow label="Color Blind Mode" description="High-contrast orange and blue" value={colorBlindMode} onChange={setColorBlindMode} last />
+          <SwitchRow label="Color Blind Mode" description="High-contrast orange and blue" value={colorBlindMode} onChange={setColorBlindMode} />
+          <SwitchRow label="Enter Key on Right" description="Move ⌫ left, ENTER right" value={enterOnRight} onChange={setEnterOnRight} last />
         </View>
 
         {/* ── Version ───────────────────────────────────────────────── */}

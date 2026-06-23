@@ -4,10 +4,15 @@ import { useSettingsStore } from '@/store/settingsStore';
 
 const noFocus = { tabIndex: -1, onMouseDown: (e: any) => e.preventDefault() };
 
-const ROWS = [
+const ROWS_ENTER_LEFT = [
   ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
   ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
   ['ENTER', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '⌫'],
+];
+const ROWS_ENTER_RIGHT = [
+  ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
+  ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
+  ['⌫', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', 'ENTER'],
 ];
 
 const ROW_GAP = 8;
@@ -40,6 +45,8 @@ export function kbdHeight(keyHeight: number): number {
 export function Keyboard({ onKey, keyStatuses = {}, keyHeight = 60 }: KeyboardProps) {
   const darkTheme = useSettingsStore(s => s.darkTheme);
   const colorBlindMode = useSettingsStore(s => s.colorBlindMode);
+  const enterOnRight = useSettingsStore(s => s.enterOnRight);
+  const ROWS = enterOnRight ? ROWS_ENTER_RIGHT : ROWS_ENTER_LEFT;
 
   return (
     <View style={[styles.keyboard, { height: kbdHeight(keyHeight) }]}>

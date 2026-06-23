@@ -20,12 +20,14 @@ interface SettingsState {
   hardMode: boolean;
   darkTheme: boolean;
   colorBlindMode: boolean;
+  enterOnRight: boolean;
   gameMode: GameMode;
   boardCount: BoardCount;
   setLanguage: (lang: Language) => void;
   setHardMode: (on: boolean) => void;
   setDarkTheme: (on: boolean) => void;
   setColorBlindMode: (on: boolean) => void;
+  setEnterOnRight: (on: boolean) => void;
   setGameMode: (mode: GameMode) => void;
   setBoardCount: (n: BoardCount) => void;
 }
@@ -37,12 +39,14 @@ export const useSettingsStore = create<SettingsState>()(
       hardMode: false,
       darkTheme: false,
       colorBlindMode: false,
+      enterOnRight: false,
       gameMode: 'wordle',
       boardCount: 4,
       setLanguage: (language) => set({ language }),
       setHardMode: (hardMode) => set({ hardMode }),
       setDarkTheme: (darkTheme) => set({ darkTheme }),
       setColorBlindMode: (colorBlindMode) => set({ colorBlindMode }),
+      setEnterOnRight: (enterOnRight) => set({ enterOnRight }),
       setGameMode: (gameMode) => set({ gameMode }),
       setBoardCount: (boardCount) => set({ boardCount }),
     }),

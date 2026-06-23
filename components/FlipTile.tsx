@@ -15,12 +15,14 @@ interface FlipTileProps {
   status: TileStatus;
   delay?: number;
   size?: number;
+  tileWidth?: number;
+  tileHeight?: number;
 }
 
 // Each half of the flip (front collapse + back open)
 const HALF_DURATION = 150;
 
-export function FlipTile({ letter, status, delay = 0, size = 60 }: FlipTileProps) {
+export function FlipTile({ letter, status, delay = 0, size = 60, tileWidth, tileHeight }: FlipTileProps) {
   const progress = useSharedValue(0);
 
   useEffect(() => {
@@ -48,14 +50,17 @@ export function FlipTile({ letter, status, delay = 0, size = 60 }: FlipTileProps
     };
   });
 
+  const w = tileWidth ?? size;
+  const h = tileHeight ?? size;
+
   return (
-    // Match Tile's layout footprint exactly: drawn area is `size × size`, margin: 2 outside
-    <View style={{ width: size, height: size, margin: 2 }}>
+    // Match Tile's layout footprint exactly: drawn area is `w × h`, margin: 2 outside
+    <View style={{ width: w, height: h, margin: 2 }}>
       <Animated.View style={[StyleSheet.absoluteFill, frontStyle]}>
-        <Tile letter={letter} status="filled" size={size} style={noMargin} />
+        <Tile letter={letter} status="filled" tileWidth={w} tileHeight={h} style={noMargin} />
       </Animated.View>
       <Animated.View style={[StyleSheet.absoluteFill, backStyle]}>
-        <Tile letter={letter} status={status} size={size} style={noMargin} />
+        <Tile letter={letter} status={status} tileWidth={w} tileHeight={h} style={noMargin} />
       </Animated.View>
     </View>
   );
