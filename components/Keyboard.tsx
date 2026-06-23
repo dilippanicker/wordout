@@ -10,9 +10,13 @@ const ROWS = [
   ['ENTER', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '⌫'],
 ];
 
+const ROW_GAP = 8;
+const KBD_PADDING = 6;
+
 interface KeyboardProps {
   onKey?: (key: string) => void;
   keyStatuses?: Partial<Record<string, TileStatus>>;
+  keyHeight?: number;
 }
 
 function keyBg(status: TileStatus | undefined, dark: boolean, colorBlind: boolean): string {
@@ -21,7 +25,7 @@ function keyBg(status: TileStatus | undefined, dark: boolean, colorBlind: boolea
   }
   if (status === 'correct') return colorBlind ? '#f5793a' : '#6aaa64';
   if (status === 'present') return colorBlind ? '#4a90d9' : '#c9b458';
-  return dark ? '#3a3a3c' : '#787c7e'; // absent — slightly darker in dark mode
+  return dark ? '#3a3a3c' : '#787c7e';
 }
 
 function keyTextColor(status: TileStatus | undefined, dark: boolean): string {
@@ -29,12 +33,16 @@ function keyTextColor(status: TileStatus | undefined, dark: boolean): string {
   return dark ? '#ffffff' : '#1a1a1b';
 }
 
-export function Keyboard({ onKey, keyStatuses = {} }: KeyboardProps) {
+export function kbdHeight(keyHeight: number): number {
+  return 3 * keyHeight + 3 * ROW_GAP + KBD_PADDING;
+}
+
+export function Keyboard({ onKey, keyStatuses = {}, keyHeight = 60 }: KeyboardProps) {
   const darkTheme = useSettingsStore(s => s.darkTheme);
   const colorBlindMode = useSettingsStore(s => s.colorBlindMode);
 
   return (
-    <View style={styles.keyboard}>
+    <View style={[styles.keyboard, { height: kbdHeight(keyHeight) }]}>
       {ROWS.map((row, i) => (
         <View key={i} style={styles.row}>
           {row.map((key) => {
@@ -66,24 +74,22 @@ const styles = StyleSheet.create({
   keyboard: {
     width: '100%',
     paddingHorizontal: 4,
-    paddingBottom: 6,
+    paddingBottom: KBD_PADDING,
   },
   row: {
+    flex: 1,
     flexDirection: 'row',
-    justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: ROW_GAP,
   },
   key: {
-    minWidth: 32,
-    height: 60,
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     marginHorizontal: 2.5,
     borderRadius: 4,
-    paddingHorizontal: 4,
   },
   wideKey: {
-    minWidth: 52,
+    flex: 1.5,
   },
   keyText: {
     fontSize: 13,

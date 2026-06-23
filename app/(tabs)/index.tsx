@@ -12,7 +12,7 @@ import { useFocusEffect, useTheme } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
 import { GameBoard } from '@/components/GameBoard';
-import { Keyboard } from '@/components/Keyboard';
+import { Keyboard, kbdHeight } from '@/components/Keyboard';
 import { HelpModal } from '@/components/HelpModal';
 import { useGameStore, GuessResult, LetterResult } from '@/store/gameStore';
 import { useQuordleStore, QuordleGuess } from '@/store/quordleStore';
@@ -181,24 +181,30 @@ export default function WordleScreen() {
   const insets = useSafeAreaInsets();
   const { height: screenH, width: screenW } = useWindowDimensions();
 
-  // Fixed heights consumed outside the board scroll area.
-  // KBD: 3×60px rows + 2×8px rowGap + 6px paddingBottom = 210px
-  const KBD_H = 210;
-  const HEADER_H = 50;  // game header (measured on device)
-  const DOTS_H = 36;    // board indicator row (or spacer)
-  const MSG_H = 36;     // message / result area
-  const TAB_H = 50;     // tab bar
+  // Layout constants — only HEADER_H is fixed; everything else is derived.
+  const HEADER_H = 50;
+  const MSG_H = 44;    // messageArea height (matches styles.messageArea)
+  const DOTS_H = 36;   // multi-board indicator row
+  const TAB_H = 50;    // tab bar
 
-  const boardAreaW = screenW - 16;
+  // Available height for board + keyboard combined (excluding header, message, tab, safe area).
+  const totalH = screenH - insets.top - insets.bottom - HEADER_H - MSG_H - TAB_H;
+
+  // Responsive keyboard: key height is 8% of totalH, capped at 60px.
+  const keyHeight = Math.min(60, Math.floor(totalH * 0.08));
+  const KBD_H = kbdHeight(keyHeight);
+
+  // Width available to tiles (16px padding each side).
+  const availableWidth = screenW - 32;
 
   // Tile size is computed from measured layout height once onLayout fires.
-  // Initial value uses the static formula as a reasonable first-render estimate.
-  const wordleAvailH = screenH - insets.top - insets.bottom - HEADER_H - MSG_H - KBD_H - TAB_H;
+  // wordleAvailH is the static estimate used for the first render before measurement.
+  const wordleAvailH = totalH - KBD_H;
   const [wordleAreaH, setWordleAreaH] = useState(0);
 
   const wordleMeasuredH = wordleAreaH > 0 ? wordleAreaH : wordleAvailH;
   const wordleTileSize = Math.max(44, Math.min(80,
-    Math.min(Math.floor(wordleMeasuredH / 6) - 4, Math.floor(boardAreaW / 5) - 4),
+    Math.min(Math.floor(wordleMeasuredH / 6) - 4, Math.floor(availableWidth / 5) - 4),
   ));
 
   const [showHelp, setShowHelp] = useState(false);
@@ -294,10 +300,17 @@ export default function WordleScreen() {
 
   // ── Multi-board swipeable layout ────────────────────────────────────────
   if (isQuordle) {
-    const { guesses: qGuesses, currentGuess: qCurrent, solvedBoards, answers: qAnswers, boardCount, maxGuesses } = quordleStore;
+    const { guesses: qGuesses, currentGuess: qCurrent, solvedBoards, boardCount, maxGuesses } = quordleStore;
     const qKeyStatuses = deriveQuordleKeyStatuses(qGuesses);
     const solvedCount = solvedBoards.filter(Boolean).length;
     const qResultText = gameStatus === 'won' ? 'Solved! 🎉' : 'Game over';
+
+    // Static estimate used as GameBoard's first-render fallback before it measures itself.
+    const qAvailH = totalH - KBD_H - DOTS_H;
+    const qFallbackTile = Math.max(20, Math.min(
+      Math.floor(availableWidth / 5) - 4,
+      Math.floor(qAvailH / maxGuesses) - 4,
+    ));
 
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
@@ -384,6 +397,7 @@ export default function WordleScreen() {
                   boardResults={visibleGuesses.map(g => g.boardResults[i])}
                   currentGuess={isSolved ? '' : qCurrent}
                   flexMode
+                  tileSize={qFallbackTile}
                   maxGuesses={maxGuesses}
                   solved={isSolved}
                   shakeKey={shakeKey}
@@ -415,7 +429,7 @@ export default function WordleScreen() {
           </Animated.View>
         </View>
 
-        <Keyboard onKey={handleKey} keyStatuses={qKeyStatuses} />
+        <Keyboard onKey={handleKey} keyStatuses={qKeyStatuses} keyHeight={keyHeight} />
         <HelpModal visible={showHelp} onClose={() => setShowHelp(false)} hardMode={hardMode} />
       </SafeAreaView>
     );
@@ -458,7 +472,7 @@ export default function WordleScreen() {
         </Animated.View>
       </View>
 
-      <Keyboard onKey={handleKey} keyStatuses={keyStatuses} />
+      <Keyboard onKey={handleKey} keyStatuses={keyStatuses} keyHeight={keyHeight} />
       <HelpModal visible={showHelp} onClose={() => setShowHelp(false)} hardMode={hardMode} />
     </SafeAreaView>
   );
@@ -535,7 +549,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   header: {
-    height: 44,
+    height: 50,
     borderBottomWidth: StyleSheet.hairlineWidth,
     flexDirection: 'row',
     alignItems: 'center',
