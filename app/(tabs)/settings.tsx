@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { View, Text, Switch, Pressable, StyleSheet, ScrollView, Modal } from 'react-native';
+import Constants from 'expo-constants';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useTheme, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -134,6 +135,11 @@ export default function SettingsScreen() {
           <SwitchRow label="Dark Theme" value={darkTheme} onChange={setDarkTheme} />
           <SwitchRow label="Color Blind Mode" description="High-contrast orange and blue" value={colorBlindMode} onChange={setColorBlindMode} last />
         </View>
+
+        {/* ── Version ───────────────────────────────────────────────── */}
+        <Text style={styles.versionText}>
+          Wordout v{Constants.expoConfig?.version ?? '—'} (build {Constants.expoConfig?.android?.versionCode ?? '—'})
+        </Text>
 
       </ScrollView>
 
@@ -478,5 +484,12 @@ const styles = StyleSheet.create({
   confirmDestructive: {
     color: '#ff3b30',
     fontWeight: '600',
+  },
+  versionText: {
+    fontSize: 12,
+    color: '#878a8c',
+    textAlign: 'center',
+    marginTop: 24,
+    marginBottom: 8,
   },
 });
