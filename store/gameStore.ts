@@ -149,7 +149,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     });
 
     if (won || lost) {
-      useStatsStore.getState().recordResult(won, newGuesses.length);
+      useStatsStore.getState().recordResult(won, newGuesses.length, 'wordle');
     }
   },
 

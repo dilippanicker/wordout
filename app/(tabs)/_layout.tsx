@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import { Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useSettingsStore } from '@/store/settingsStore';
+import { useSettingsStore, boardCountName } from '@/store/settingsStore';
 import { useGameStore } from '@/store/gameStore';
 import { useQuordleStore } from '@/store/quordleStore';
 import { useStatsStore } from '@/store/statsStore';
@@ -19,6 +19,7 @@ function NoFocusTabButton(props: any) {
 
 export default function TabLayout() {
   const gameMode = useSettingsStore(s => s.gameMode);
+  const boardCount = useSettingsStore(s => s.boardCount);
   const setGameMode = useSettingsStore(s => s.setGameMode);
   const newGame = useGameStore(s => s.newGame);
   const settingsBadge = useStatsStore(s => s.settingsBadge);
@@ -51,7 +52,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: gameMode === 'wordle' ? 'Wordout' : 'Quadout',
+          title: gameMode === 'wordle' ? 'Wordout' : boardCountName(boardCount),
           headerShown: false,
           tabBarButton: NoFocusTabButton,
           tabBarIcon: ({ color, size }) => (

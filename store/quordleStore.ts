@@ -20,17 +20,18 @@ export type LetterResult = 'correct' | 'present' | 'absent';
 
 export interface QuordleGuess {
   word: string;
-  // One LetterResult[] per board, index 0-3
-  boardResults: [LetterResult[], LetterResult[], LetterResult[], LetterResult[]];
+  boardResults: LetterResult[][];
 }
 
 export type GameStatus = 'playing' | 'won' | 'lost';
 
 interface QuordleState {
-  answers: [string, string, string, string];
+  answers: string[];
+  boardCount: number;
+  maxGuesses: number;
   guesses: QuordleGuess[];
   currentGuess: string;
-  solvedBoards: [boolean, boolean, boolean, boolean];
+  solvedBoards: boolean[];
   gameStatus: GameStatus;
   toast: string | null;
   addLetter: (letter: string) => void;
@@ -40,15 +41,14 @@ interface QuordleState {
   newGame: () => void;
 }
 
-function pickFourAnswers(language: Language): [string, string, string, string] {
+function pickAnswers(n: number, language: Language): string[] {
   const list = ANSWERS[language];
-  // Fisher-Yates partial shuffle for first 4 — avoids duplicate answers
   const arr = [...list];
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < n; i++) {
     const j = i + Math.floor(Math.random() * (arr.length - i));
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
-  return [arr[0], arr[1], arr[2], arr[3]] as [string, string, string, string];
+  return arr.slice(0, n);
 }
 
 function evaluateGuess(guess: string, answer: string): LetterResult[] {
@@ -92,95 +92,84 @@ function checkHardModeConstraints(
   return null;
 }
 
-function initialState(language: Language) {
+function initialState(language: Language, boardCount: number) {
+  const maxGuesses = Math.min(13, 5 + boardCount);
   return {
-    answers: pickFourAnswers(language),
+    answers: pickAnswers(boardCount, language),
+    boardCount,
+    maxGuesses,
     guesses: [] as QuordleGuess[],
     currentGuess: '',
-    solvedBoards: [false, false, false, false] as [boolean, boolean, boolean, boolean],
+    solvedBoards: Array(boardCount).fill(false) as boolean[],
     gameStatus: 'playing' as GameStatus,
     toast: null as string | null,
   };
 }
 
-export const useQuordleStore = create<QuordleState>((set, get) => ({
-  ...initialState(useSettingsStore.getState().language),
+export const useQuordleStore = create<QuordleState>((set, get) => {
+  const settings = useSettingsStore.getState();
+  return {
+    ...initialState(settings.language, settings.boardCount),
 
-  addLetter: (letter) => {
-    const { currentGuess, gameStatus } = get();
-    if (gameStatus !== 'playing' || currentGuess.length >= 5) return;
-    set({ currentGuess: currentGuess + letter });
-  },
+    addLetter: (letter) => {
+      const { currentGuess, gameStatus } = get();
+      if (gameStatus !== 'playing' || currentGuess.length >= 5) return;
+      set({ currentGuess: currentGuess + letter });
+    },
 
-  removeLetter: () => {
-    const { currentGuess } = get();
-    if (currentGuess.length === 0) return;
-    set({ currentGuess: currentGuess.slice(0, -1) });
-  },
+    removeLetter: () => {
+      const { currentGuess } = get();
+      if (currentGuess.length === 0) return;
+      set({ currentGuess: currentGuess.slice(0, -1) });
+    },
 
-  submitGuess: () => {
-    const { currentGuess, answers, guesses, gameStatus, solvedBoards } = get();
-    if (gameStatus !== 'playing') return;
+    submitGuess: () => {
+      const { currentGuess, answers, guesses, gameStatus, solvedBoards, boardCount, maxGuesses } = get();
+      if (gameStatus !== 'playing') return;
 
-    if (currentGuess.length < 5) {
-      set({ toast: 'Too short' });
-      return;
-    }
+      if (currentGuess.length < 5) { set({ toast: 'Too short' }); return; }
 
-    const { language, hardMode } = useSettingsStore.getState();
+      const { language, hardMode } = useSettingsStore.getState();
 
-    if (!VALID_WORDS[language].has(currentGuess)) {
-      set({ toast: 'Not in word list' });
-      return;
-    }
+      if (!VALID_WORDS[language].has(currentGuess)) {
+        set({ toast: 'Not in word list' }); return;
+      }
 
-    // Hard mode: the guess must satisfy constraints from every unsolved board.
-    if (hardMode) {
-      for (let b = 0; b < 4; b++) {
-        if (solvedBoards[b]) continue;
-        const boardHistory = guesses.map(g => ({ word: g.word, results: g.boardResults[b] }));
-        const violation = checkHardModeConstraints(boardHistory, currentGuess);
-        if (violation) {
-          set({ toast: `Board ${b + 1}: ${violation}` });
-          return;
+      if (hardMode) {
+        for (let b = 0; b < boardCount; b++) {
+          if (solvedBoards[b]) continue;
+          const boardHistory = guesses.map(g => ({ word: g.word, results: g.boardResults[b] }));
+          const violation = checkHardModeConstraints(boardHistory, currentGuess);
+          if (violation) { set({ toast: `Board ${b + 1}: ${violation}` }); return; }
         }
       }
-    }
 
-    // Evaluate against all 4 boards.
-    const boardResults: [LetterResult[], LetterResult[], LetterResult[], LetterResult[]] = [
-      evaluateGuess(currentGuess, answers[0]),
-      evaluateGuess(currentGuess, answers[1]),
-      evaluateGuess(currentGuess, answers[2]),
-      evaluateGuess(currentGuess, answers[3]),
-    ];
+      const boardResults = answers.map(a => evaluateGuess(currentGuess, a));
+      const newGuesses = [...guesses, { word: currentGuess, boardResults }];
+      const newSolved = solvedBoards.map((was, b) => was || currentGuess === answers[b]);
+      const allSolved = newSolved.every(Boolean);
+      const outOfGuesses = newGuesses.length >= maxGuesses;
+      const newStatus: GameStatus = allSolved ? 'won' : outOfGuesses ? 'lost' : 'playing';
 
-    const newGuesses = [...guesses, { word: currentGuess, boardResults }];
+      set({ guesses: newGuesses, currentGuess: '', solvedBoards: newSolved, gameStatus: newStatus });
 
-    // Mark newly solved boards.
-    const newSolved = solvedBoards.map(
-      (was, b) => was || currentGuess === answers[b],
-    ) as [boolean, boolean, boolean, boolean];
+      if (newStatus !== 'playing') {
+        useStatsStore.getState().recordResult(newStatus === 'won', newGuesses.length, String(boardCount));
+      }
+    },
 
-    const allSolved = newSolved.every(Boolean);
-    const outOfGuesses = newGuesses.length >= 9;
-    const newStatus: GameStatus = allSolved ? 'won' : outOfGuesses ? 'lost' : 'playing';
+    clearToast: () => set({ toast: null }),
 
-    set({ guesses: newGuesses, currentGuess: '', solvedBoards: newSolved, gameStatus: newStatus });
+    newGame: () => {
+      const { language, boardCount } = useSettingsStore.getState();
+      set(initialState(language, boardCount));
+    },
+  };
+});
 
-    if (newStatus !== 'playing') {
-      useStatsStore.getState().recordResult(newStatus === 'won', newGuesses.length);
-    }
-  },
-
-  clearToast: () => set({ toast: null }),
-
-  newGame: () => set(initialState(useSettingsStore.getState().language)),
-}));
-
-// Only reset on language change — mode switching preserves game state.
+// Reset on language OR board count change.
 useSettingsStore.subscribe((curr, prev) => {
-  if (curr.language !== prev.language) {
+  if (curr.language !== prev.language || curr.boardCount !== prev.boardCount) {
     useQuordleStore.getState().newGame();
   }
 });

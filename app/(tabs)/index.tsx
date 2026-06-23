@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, ColorValue, useWindowDimensions } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { View, Text, Pressable, ScrollView, StyleSheet, ColorValue, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
@@ -15,7 +15,7 @@ import { Keyboard } from '@/components/Keyboard';
 import { HelpModal } from '@/components/HelpModal';
 import { useGameStore, GuessResult, LetterResult } from '@/store/gameStore';
 import { useQuordleStore, QuordleGuess } from '@/store/quordleStore';
-import { useSettingsStore } from '@/store/settingsStore';
+import { useSettingsStore, boardCountName } from '@/store/settingsStore';
 import { TileStatus } from '@/components/Tile';
 
 // Prevents buttons from stealing keyboard focus on web.
@@ -41,13 +41,13 @@ function deriveKeyStatuses(guesses: GuessResult[]): Record<string, TileStatus> {
   return map;
 }
 
-// Best result per letter across all 4 Quordle boards.
+// Best result per letter across all boards (board count is read from boardResults length).
 function deriveQuordleKeyStatuses(guesses: QuordleGuess[]): Record<string, TileStatus> {
   const map: Record<string, TileStatus> = {};
   for (const guess of guesses) {
     for (let i = 0; i < 5; i++) {
       const letter = guess.word[i];
-      for (let b = 0; b < 4; b++) {
+      for (let b = 0; b < guess.boardResults.length; b++) {
         const result = guess.boardResults[b][i] as TileStatus;
         if (!map[letter] || STATUS_PRIORITY[result] > STATUS_PRIORITY[map[letter]]) {
           map[letter] = result;
@@ -96,23 +96,32 @@ function buildQuordleShareText(
   guesses: QuordleGuess[],
   gameStatus: 'won' | 'lost',
   colorBlind: boolean,
+  boardCount: number,
 ): string {
   const CORRECT = colorBlind ? '🟧' : '🟩';
   const PRESENT = colorBlind ? '🟦' : '🟨';
   const ABSENT = '⬛';
   const count = gameStatus === 'won' ? String(guesses.length) : 'X';
-  const LABELS = ['1️⃣', '2️⃣', '3️⃣', '4️⃣'];
-  const boards = [0, 1, 2, 3].map(b => {
+  const maxGuesses = Math.min(13, 5 + boardCount);
+  const name = boardCountName(boardCount);
+
+  if (boardCount === 1) {
+    const grid = guesses.map(({ boardResults }) =>
+      boardResults[0].map(r => r === 'correct' ? CORRECT : r === 'present' ? PRESENT : ABSENT).join('')
+    ).join('\n');
+    return `${name} ${count}/${maxGuesses}\n\n${grid}`;
+  }
+
+  const LABELS = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣'];
+  const boards = Array.from({ length: boardCount }, (_, b) => {
     const grid = guesses
-      .map(g =>
-        g.boardResults[b]
-          .map(r => (r === 'correct' ? CORRECT : r === 'present' ? PRESENT : ABSENT))
-          .join(''),
-      )
+      .map(g => g.boardResults[b].map(r =>
+        r === 'correct' ? CORRECT : r === 'present' ? PRESENT : ABSENT,
+      ).join(''))
       .join('\n');
     return `${LABELS[b]}\n${grid}`;
   });
-  return `Quadout ${count}/9\n\n${boards.join('\n\n')}`;
+  return `${name} ${count}/${maxGuesses}\n\n${boards.join('\n\n')}`;
 }
 
 async function copyToClipboard(text: string): Promise<boolean> {
@@ -156,14 +165,26 @@ export default function WordleScreen() {
   const wordleTileSize = Math.max(44, Math.min(74,
     Math.min(Math.floor(boardAreaH / 6) - 4, Math.floor(boardAreaW / 5) - 4),
   ));
-  // Dynamic Quadout tile size: divide total vertical space by 18 tile rows (2 grids × 9 rows each).
-  // Yields ≥26px at the 800px minimum screen height.
-  const quordleTileSize = Math.max(26, Math.min(36, Math.floor((boardAreaH - 4) / 18)));
 
   const [showHelp, setShowHelp] = useState(false);
   const [copyConfirmed, setCopyConfirmed] = useState(false);
+  const [activeBoard, setActiveBoard] = useState(0);
+  const scrollRef = useRef<ScrollView>(null);
 
   const isQuordle = gameMode === 'quordle';
+
+  function scrollTo(index: number) {
+    scrollRef.current?.scrollTo({ x: index * screenW, animated: true });
+    setActiveBoard(index);
+  }
+
+  // Reset scroll position when a new multi-board game starts.
+  useEffect(() => {
+    if (isQuordle && quordleStore.guesses.length === 0) {
+      setActiveBoard(0);
+      scrollRef.current?.scrollTo({ x: 0, animated: false });
+    }
+  }, [isQuordle, quordleStore.guesses.length]);
 
   // Route actions and state to the appropriate store.
   const addLetter    = isQuordle ? quordleStore.addLetter    : wordleStore.addLetter;
@@ -226,7 +247,7 @@ export default function WordleScreen() {
   async function handleShare() {
     if (gameStatus === 'playing') return;
     const text = isQuordle
-      ? buildQuordleShareText(quordleStore.guesses, gameStatus as 'won' | 'lost', colorBlindMode)
+      ? buildQuordleShareText(quordleStore.guesses, gameStatus as 'won' | 'lost', colorBlindMode, quordleStore.boardCount)
       : buildShareText(wordleStore.guesses, gameStatus as 'won' | 'lost', colorBlindMode, hardMode);
     const ok = await copyToClipboard(text);
     if (ok) {
@@ -237,85 +258,83 @@ export default function WordleScreen() {
 
   const headerProps = { language, setLanguage, hardMode, setHardMode, darkTheme, setDarkTheme, colors, setShowHelp };
 
-  // ── Quordle layout ──────────────────────────────────────────────────────
+  // ── Multi-board swipeable layout ────────────────────────────────────────
   if (isQuordle) {
-    if (screenH < 800) {
-      return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
-          {renderHeader({ ...headerProps, title: 'Quadout' })}
-          <View style={styles.tooSmall}>
-            <Text style={[styles.tooSmallHeading, { color: colors.text }]}>
-              Quadout works best on larger screens (800px height minimum).
-            </Text>
-            <Text style={[styles.tooSmallSub, { color: colors.text }]}>
-              Your device: {Math.round(screenH)}px
-            </Text>
-            <Pressable {...(noFocus as any)} style={styles.tooSmallBtn} onPress={() => setGameMode('wordle')}>
-              <Text style={styles.tooSmallBtnText}>Play Wordout instead</Text>
-            </Pressable>
-          </View>
-        </SafeAreaView>
-      );
-    }
-
-    const { guesses: qGuesses, currentGuess: qCurrent, solvedBoards, answers: qAnswers } = quordleStore;
+    const { guesses: qGuesses, currentGuess: qCurrent, solvedBoards, answers: qAnswers, boardCount, maxGuesses } = quordleStore;
     const qKeyStatuses = deriveQuordleKeyStatuses(qGuesses);
     const solvedCount = solvedBoards.filter(Boolean).length;
 
-    const qResultText =
-      gameStatus === 'won'
-        ? 'Solved!'
-        : `The words were: ${qAnswers.join(' ')}`;
+    // Tile size: fits maxGuesses rows in the available height, full-width columns.
+    const DOTS_H = 36;
+    const qBoardAreaH = screenH - insets.top - insets.bottom - 44 - DOTS_H - 44 - KBD_H;
+    const qTileSize = Math.max(24, Math.min(74,
+      Math.min(
+        Math.floor((qBoardAreaH - 30) / maxGuesses) - 4,
+        Math.floor(boardAreaW / 5) - 4,
+      ),
+    ));
+
+    const qResultText = gameStatus === 'won'
+      ? 'Solved!'
+      : `The words were: ${qAnswers.join(' ')}`;
 
     return (
-      <SafeAreaView
-        style={[styles.container, { backgroundColor: colors.background }]}
-        edges={['top', 'bottom']}
-      >
-        {renderHeader({ ...headerProps, title: 'Quadout' })}
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
+        {renderHeader({ ...headerProps, title: boardCountName(boardCount) })}
 
-        <View style={styles.quordleArea}>
-          <View style={styles.quordleRow}>
-            <GameBoard
-              guesses={toBoardGuesses(qGuesses, 0)}
-              currentGuess={solvedBoards[0] ? '' : qCurrent}
-              tileSize={quordleTileSize}
-              maxGuesses={9}
-              solved={solvedBoards[0]}
-              label="1"
-              shakeKey={shakeKey}
-            />
-            <GameBoard
-              guesses={toBoardGuesses(qGuesses, 1)}
-              currentGuess={solvedBoards[1] ? '' : qCurrent}
-              tileSize={quordleTileSize}
-              maxGuesses={9}
-              solved={solvedBoards[1]}
-              label="2"
-              shakeKey={shakeKey}
-            />
+        {/* Dot navigation — hidden when only 1 board */}
+        {boardCount > 1 && (
+          <View style={styles.dotRow}>
+            {solvedBoards.map((solved, i) => (
+              <Pressable
+                key={i}
+                {...(noFocus as any)}
+                hitSlop={8}
+                onPress={() => scrollTo(i)}
+                accessibilityLabel={`Board ${i + 1}`}
+              >
+                {solved ? (
+                  <View style={[styles.dot, styles.dotSolved]}>
+                    <Text style={styles.dotCheck}>✓</Text>
+                  </View>
+                ) : (
+                  <View style={[styles.dot, activeBoard === i && styles.dotActive]} />
+                )}
+              </Pressable>
+            ))}
           </View>
-          <View style={styles.quordleRow}>
-            <GameBoard
-              guesses={toBoardGuesses(qGuesses, 2)}
-              currentGuess={solvedBoards[2] ? '' : qCurrent}
-              tileSize={quordleTileSize}
-              maxGuesses={9}
-              solved={solvedBoards[2]}
-              label="3"
-              shakeKey={shakeKey}
-            />
-            <GameBoard
-              guesses={toBoardGuesses(qGuesses, 3)}
-              currentGuess={solvedBoards[3] ? '' : qCurrent}
-              tileSize={quordleTileSize}
-              maxGuesses={9}
-              solved={solvedBoards[3]}
-              label="4"
-              shakeKey={shakeKey}
-            />
-          </View>
-        </View>
+        )}
+        {boardCount === 1 && <View style={{ height: DOTS_H }} />}
+
+        {/* Horizontally paged boards */}
+        <ScrollView
+          ref={scrollRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          style={styles.boardScroll}
+          onMomentumScrollEnd={(e) => {
+            const board = Math.round(e.nativeEvent.contentOffset.x / screenW);
+            setActiveBoard(board);
+          }}
+          scrollEventThrottle={16}
+        >
+          {Array.from({ length: boardCount }, (_, i) => (
+            <View key={i} style={[styles.boardPage, { width: screenW }]}>
+              <Text style={[styles.boardPageLabel, { color: colors.text }]}>
+                {boardCount > 1 ? `Board ${i + 1}/${boardCount}` : boardCountName(boardCount)}
+              </Text>
+              <GameBoard
+                guesses={toBoardGuesses(qGuesses, i)}
+                currentGuess={solvedBoards[i] ? '' : qCurrent}
+                tileSize={qTileSize}
+                maxGuesses={maxGuesses}
+                solved={solvedBoards[i]}
+                shakeKey={shakeKey}
+              />
+            </View>
+          ))}
+        </ScrollView>
 
         <View style={styles.messageArea}>
           {gameStatus !== 'playing' ? (
@@ -329,10 +348,9 @@ export default function WordleScreen() {
                 </Pressable>
               )}
             </View>
-          ) : solvedCount > 0 && solvedCount < 4 ? (
-            <Text style={styles.progressText}>{solvedCount}/4 solved</Text>
+          ) : solvedCount > 0 && solvedCount < boardCount ? (
+            <Text style={styles.progressText}>{solvedCount}/{boardCount} solved</Text>
           ) : null}
-          {/* Toast overlays result/progress via absolute positioning */}
           <Animated.View style={[styles.toastOverlay, toastStyle]} pointerEvents="none">
             <View style={styles.toastPill}>
               <Text style={styles.toastText}>{toast}</Text>
@@ -488,35 +506,54 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.3,
   },
-  // Quadout screen-too-small fallback
-  tooSmall: {
-    flex: 1,
+  // Multi-board swipeable layout
+  dotRow: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 32,
-    gap: 12,
+    height: 36,
+    gap: 10,
   },
-  tooSmallHeading: {
-    fontSize: 17,
-    fontWeight: '700',
-    textAlign: 'center',
+  dot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: '#878a8c',
   },
-  tooSmallSub: {
-    fontSize: 14,
-    textAlign: 'center',
-    opacity: 0.7,
+  dotActive: {
+    backgroundColor: '#878a8c',
   },
-  tooSmallBtn: {
-    marginTop: 8,
+  dotSolved: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     backgroundColor: '#6aaa64',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
+    borderColor: '#6aaa64',
+    borderWidth: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  tooSmallBtnText: {
-    color: '#ffffff',
-    fontSize: 15,
+  dotCheck: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '800',
+    lineHeight: 14,
+  },
+  boardScroll: {
+    flex: 1,
+  },
+  boardPage: {
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    paddingTop: 4,
+  },
+  boardPageLabel: {
+    fontSize: 13,
     fontWeight: '600',
+    letterSpacing: 0.3,
+    marginBottom: 6,
+    opacity: 0.6,
   },
   flagEmoji: {
     fontSize: 21,
@@ -526,16 +563,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  quordleArea: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-  },
-  quordleRow: {
-    flexDirection: 'row',
-    gap: 8,
   },
   messageArea: {
     height: 44,

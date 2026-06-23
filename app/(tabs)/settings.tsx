@@ -3,8 +3,8 @@ import { View, Text, Switch, Pressable, StyleSheet, ScrollView, Modal } from 're
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useTheme, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useSettingsStore, Language } from '@/store/settingsStore';
-import { useStatsStore } from '@/store/statsStore';
+import { useSettingsStore, Language, BOARD_COUNTS, BoardCount } from '@/store/settingsStore';
+import { useStatsStore, emptyBoardStats } from '@/store/statsStore';
 
 export default function SettingsScreen() {
   const { dark, colors } = useTheme();
@@ -14,11 +14,18 @@ export default function SettingsScreen() {
     hardMode, setHardMode,
     darkTheme, setDarkTheme,
     colorBlindMode, setColorBlindMode,
+    gameMode, setGameMode,
+    boardCount, setBoardCount,
   } = useSettingsStore();
 
-  const { totalGames, wins, currentStreak, maxStreak, guessCounts, clearSettingsBadge, resetStats } = useStatsStore();
+  const { byMode, clearSettingsBadge, resetStats } = useStatsStore();
 
-  // Clear the badge dot whenever this screen comes into view.
+  // Show stats for the currently active mode.
+  const modeKey = gameMode === 'wordle' ? 'wordle' : String(boardCount);
+  const activeStats = byMode[modeKey] ?? emptyBoardStats();
+  const { totalGames, wins, currentStreak, maxStreak, guessCounts } = activeStats;
+  const maxGuessesForMode = gameMode === 'wordle' ? 6 : Math.min(13, 5 + boardCount);
+
   useFocusEffect(
     useCallback(() => {
       clearSettingsBadge();
@@ -27,8 +34,14 @@ export default function SettingsScreen() {
 
   const containerBg = dark ? colors.background : '#f6f7f8';
   const winPct = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
-  const maxCount = Math.max(...Object.values(guessCounts), 1);
+  const maxCount = Math.max(...Object.values(guessCounts).map(Number), 1);
   const [confirmVisible, setConfirmVisible] = useState(false);
+
+  function handleBoardCountSelect(n: BoardCount) {
+    setBoardCount(n);
+    setGameMode('quordle');
+    // quordleStore subscribes to boardCount changes and resets automatically.
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: containerBg }]} edges={['bottom']}>
@@ -58,10 +71,10 @@ export default function SettingsScreen() {
         </View>
         <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.statsRow}>
-            <StatCell label="Games" value={totalGames} colors={colors} />
-            <StatCell label="Win %" value={winPct} colors={colors} />
-            <StatCell label="Streak" value={currentStreak} colors={colors} />
-            <StatCell label="Max" value={maxStreak} colors={colors} />
+            <StatCell label="Games" value={totalGames} textColor={colors.text as string} />
+            <StatCell label="Win %" value={winPct} textColor={colors.text as string} />
+            <StatCell label="Streak" value={currentStreak} textColor={colors.text as string} />
+            <StatCell label="Max" value={maxStreak} textColor={colors.text as string} />
           </View>
         </View>
 
@@ -69,13 +82,32 @@ export default function SettingsScreen() {
         <Text style={styles.sectionHeader}>GUESS DISTRIBUTION</Text>
         <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.distContainer}>
-            {(['1', '2', '3', '4', '5', '6'] as const).map((n) => (
-              <DistBar
+            {Array.from({ length: maxGuessesForMode }, (_, i) => {
+              const n = String(i + 1);
+              return (
+                <DistBar
+                  key={n}
+                  num={n}
+                  count={guessCounts[n] ?? 0}
+                  maxCount={maxCount}
+                  textColor={colors.text as string}
+                />
+              );
+            })}
+          </View>
+        </View>
+
+        {/* ── Game Mode ──────────────────────────────────────────────── */}
+        <Text style={styles.sectionHeader}>GAME MODE</Text>
+        <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={styles.picker}>
+            {BOARD_COUNTS.map((n, idx) => (
+              <ModeSegment
                 key={n}
-                num={n}
-                count={guessCounts[n]}
-                maxCount={maxCount}
-                colors={colors}
+                label={n === 1 ? 'Wordout' : n === 4 ? 'Quadout' : `${n}`}
+                active={gameMode === 'quordle' && boardCount === n}
+                onPress={() => handleBoardCountSelect(n)}
+                last={idx === BOARD_COUNTS.length - 1}
               />
             ))}
           </View>
@@ -121,26 +153,25 @@ export default function SettingsScreen() {
 
 // ── Sub-components ──────────────────────────────────────────────────────────
 
-function StatCell({ label, value, colors }: { label: string; value: number; colors: { text: string } }) {
+function StatCell({ label, value, textColor }: { label: string; value: number; textColor: string }) {
   return (
     <View style={styles.statCell}>
-      <Text style={[styles.statValue, { color: colors.text }]}>{value}</Text>
+      <Text style={[styles.statValue, { color: textColor }]}>{value}</Text>
       <Text style={styles.statLabel}>{label}</Text>
     </View>
   );
 }
 
-function DistBar({ num, count, maxCount, colors }: {
+function DistBar({ num, count, maxCount, textColor }: {
   num: string;
   count: number;
   maxCount: number;
-  colors: { text: string };
+  textColor: string;
 }) {
-  // Use flex proportions instead of % widths — more reliable in RN flex containers.
   const pct = count === 0 ? 10 : Math.round((count / maxCount) * 100);
   return (
     <View style={styles.distRow}>
-      <Text style={[styles.distNum, { color: colors.text }]}>{num}</Text>
+      <Text style={[styles.distNum, { color: textColor }]}>{num}</Text>
       <View style={styles.distTrack}>
         <View style={[styles.distBar, { flex: pct }]}>
           <Text style={styles.distCount}>{count}</Text>
@@ -148,6 +179,29 @@ function DistBar({ num, count, maxCount, colors }: {
         {pct < 100 && <View style={{ flex: 100 - pct }} />}
       </View>
     </View>
+  );
+}
+
+function ModeSegment({ label, active, onPress, last }: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+  last: boolean;
+}) {
+  const { colors } = useTheme();
+  return (
+    <Pressable
+      style={[
+        styles.modeSegment,
+        !last && styles.modeSegmentBorder,
+        { backgroundColor: active ? '#6aaa64' : colors.card, borderColor: colors.border },
+      ]}
+      onPress={onPress}
+    >
+      <Text style={[styles.modeSegmentText, { color: active ? '#fff' : '#787c7e' }]}>
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -236,7 +290,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.3,
   },
-  // Row variant (Statistics) — icon sits on the right.
   sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -251,7 +304,6 @@ const styles = StyleSheet.create({
     color: '#787c7e',
     letterSpacing: 0.8,
   },
-  // Plain text variant for all other section labels.
   sectionHeader: {
     fontSize: 12,
     fontWeight: '600',
@@ -319,6 +371,20 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 11,
     fontWeight: '700',
+  },
+  // Mode segment (compact 6-option row)
+  modeSegment: {
+    flex: 1,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modeSegmentBorder: {
+    borderRightWidth: StyleSheet.hairlineWidth,
+  },
+  modeSegmentText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   // Language picker
   picker: {
