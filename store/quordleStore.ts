@@ -167,9 +167,9 @@ export const useQuordleStore = create<QuordleState>((set, get) => {
   };
 });
 
-// Reset on language OR board count change.
+// Reset only on language change — board count changes are handled explicitly in settings.
 useSettingsStore.subscribe((curr, prev) => {
-  if (curr.language !== prev.language || curr.boardCount !== prev.boardCount) {
+  if (curr.language !== prev.language) {
     useQuordleStore.getState().newGame();
   }
 });

@@ -267,7 +267,7 @@ export default function WordleScreen() {
     // Tile size: fits maxGuesses rows in the available height, full-width columns.
     const DOTS_H = 36;
     const qBoardAreaH = screenH - insets.top - insets.bottom - 44 - DOTS_H - 44 - KBD_H;
-    const qTileSize = Math.max(24, Math.min(74,
+    const qTileSize = Math.max(20, Math.min(74,
       Math.min(
         Math.floor((qBoardAreaH - 30) / maxGuesses) - 4,
         Math.floor(boardAreaW / 5) - 4,

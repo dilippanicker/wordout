@@ -5,6 +5,8 @@ import { useFocusEffect, useTheme, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSettingsStore, Language, BOARD_COUNTS, BoardCount } from '@/store/settingsStore';
 import { useStatsStore, emptyBoardStats } from '@/store/statsStore';
+import { useGameStore } from '@/store/gameStore';
+import { useQuordleStore } from '@/store/quordleStore';
 
 export default function SettingsScreen() {
   const { dark, colors } = useTheme();
@@ -39,8 +41,14 @@ export default function SettingsScreen() {
 
   function handleBoardCountSelect(n: BoardCount) {
     setBoardCount(n);
-    setGameMode('quordle');
-    // quordleStore subscribes to boardCount changes and resets automatically.
+    if (n === 1) {
+      setGameMode('wordle');
+      useGameStore.getState().newGame();
+    } else {
+      setGameMode('quordle');
+      useQuordleStore.getState().newGame();
+    }
+    router.navigate('/(tabs)/' as never);
   }
 
   return (
@@ -105,7 +113,7 @@ export default function SettingsScreen() {
               <ModeSegment
                 key={n}
                 label={n === 1 ? 'Wordout' : n === 4 ? 'Quadout' : `${n}`}
-                active={gameMode === 'quordle' && boardCount === n}
+                active={(n === 1 && gameMode === 'wordle') || (n > 1 && gameMode === 'quordle' && boardCount === n)}
                 onPress={() => handleBoardCountSelect(n)}
                 last={idx === BOARD_COUNTS.length - 1}
               />
