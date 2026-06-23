@@ -139,12 +139,12 @@ export function HelpModal({ visible, onClose, hardMode }: HelpModalProps) {
   const { height: screenHeight } = useWindowDimensions();
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable
-          style={[styles.sheet, { backgroundColor: colors.card, maxHeight: screenHeight * 0.85 }]}
-          onPress={() => {}}
-        >
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      {/* Overlay — View (not Pressable) so it doesn't interfere with ScrollView height */}
+      <View style={styles.overlay}>
+        <View style={[styles.modalBox, { backgroundColor: colors.card, maxHeight: screenHeight * 0.85 }]}>
+
+          {/* Fixed header — outside ScrollView so it doesn't scroll away */}
           <View style={[styles.header, { borderColor: colors.border }]}>
             <Text style={[styles.title, { color: colors.text }]}>How to play</Text>
             <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={12}>
@@ -152,11 +152,13 @@ export function HelpModal({ visible, onClose, hardMode }: HelpModalProps) {
             </Pressable>
           </View>
 
+          {/* Scrollable content — flex:1 works because modalBox is a View with maxHeight */}
           <ScrollView
             style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={true}
             bounces={false}
-            contentContainerStyle={styles.scrollContent}
+            nestedScrollEnabled={true}
           >
             <Text style={[styles.rule, { color: colors.text }]}>
               Guess the word in <Text style={styles.bold}>6 tries.</Text>
@@ -237,8 +239,9 @@ export function HelpModal({ visible, onClose, hardMode }: HelpModalProps) {
               <Text style={styles.feedbackLink}>Submit on GitHub →</Text>
             </Pressable>
           </ScrollView>
-        </Pressable>
-      </Pressable>
+
+        </View>
+      </View>
     </Modal>
   );
 }
@@ -276,24 +279,16 @@ const indStyles = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
-  backdrop: {
+  overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.45)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  sheet: {
+  modalBox: {
     width: '90%',
     maxWidth: 380,
     borderRadius: 12,
-    paddingHorizontal: 24,
-    paddingBottom: 0,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 24,
   },
   header: {
     flexDirection: 'row',
@@ -301,8 +296,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingTop: 20,
     paddingBottom: 16,
+    paddingHorizontal: 24,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    marginBottom: 16,
   },
   title: {
     fontSize: 13,
@@ -311,11 +306,19 @@ const styles = StyleSheet.create({
   },
   closeBtn: {
     position: 'absolute',
-    right: 0,
+    right: 24,
   },
   closeIcon: {
     fontSize: 18,
     color: '#878a8c',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 32,
   },
   rule: {
     fontSize: 15,

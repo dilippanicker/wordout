@@ -195,7 +195,6 @@ export default function WordleScreen() {
   // Initial value uses the static formula as a reasonable first-render estimate.
   const wordleAvailH = screenH - insets.top - insets.bottom - HEADER_H - MSG_H - KBD_H - TAB_H;
   const [wordleAreaH, setWordleAreaH] = useState(0);
-  const [qBoardH, setQBoardH] = useState(0);
 
   const wordleMeasuredH = wordleAreaH > 0 ? wordleAreaH : wordleAvailH;
   const wordleTileSize = Math.max(44, Math.min(80,
@@ -298,17 +297,6 @@ export default function WordleScreen() {
     const { guesses: qGuesses, currentGuess: qCurrent, solvedBoards, answers: qAnswers, boardCount, maxGuesses } = quordleStore;
     const qKeyStatuses = deriveQuordleKeyStatuses(qGuesses);
     const solvedCount = solvedBoards.filter(Boolean).length;
-
-    // Use measured ScrollView height when available; static formula as initial estimate.
-    const qAvailH = screenH - insets.top - insets.bottom - HEADER_H - DOTS_H - MSG_H - KBD_H - TAB_H;
-    const qMeasuredH = qBoardH > 0 ? qBoardH - 8 : qAvailH; // -8 for boardPage paddingTop
-    const qTileSize = Math.max(20, Math.min(74,
-      Math.min(
-        Math.floor(qMeasuredH / maxGuesses) - 2,
-        Math.floor(boardAreaW / 5) - 4,
-      ),
-    ));
-
     const qResultText = gameStatus === 'won' ? 'Solved! 🎉' : 'Game over';
 
     return (
@@ -377,7 +365,6 @@ export default function WordleScreen() {
           pagingEnabled
           showsHorizontalScrollIndicator={false}
           style={styles.boardScroll}
-          onLayout={e => setQBoardH(e.nativeEvent.layout.height)}
           onMomentumScrollEnd={(e) => {
             const board = Math.round(e.nativeEvent.contentOffset.x / screenW);
             setActiveBoard(board);
@@ -396,7 +383,7 @@ export default function WordleScreen() {
                   words={visibleGuesses.map(g => g.word)}
                   boardResults={visibleGuesses.map(g => g.boardResults[i])}
                   currentGuess={isSolved ? '' : qCurrent}
-                  tileSize={qTileSize}
+                  flexMode
                   maxGuesses={maxGuesses}
                   solved={isSolved}
                   shakeKey={shakeKey}
@@ -624,9 +611,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   boardPage: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'flex-start',
     paddingTop: 8,
+    paddingBottom: 4,
   },
   flagEmoji: {
     fontSize: 21,

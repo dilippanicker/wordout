@@ -37,6 +37,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "da8c4ab9-2b9d-46d8-aa00-6d1ea4bd373b"
+      }
+    },
+    "owner": "dilippanicker"
   }
 }

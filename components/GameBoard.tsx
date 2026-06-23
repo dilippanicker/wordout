@@ -51,6 +51,9 @@ interface GameBoardProps {
   maxGuesses?: number;
   solved?: boolean;
   label?: string;
+  // When true the board stretches to fill its parent and measures itself
+  // to compute tile size — no need to pass tileSize from the parent.
+  flexMode?: boolean;
 }
 
 export function GameBoard({
@@ -63,7 +66,17 @@ export function GameBoard({
   maxGuesses = 6,
   solved = false,
   label,
+  flexMode = false,
 }: GameBoardProps) {
+  // In flex mode we measure the board container and compute tile size ourselves.
+  const [boardLayout, setBoardLayout] = useState({ width: 0, height: 0 });
+  const effectiveTileSize = (() => {
+    if (!flexMode || boardLayout.width === 0) return tileSize;
+    const cellW = Math.floor(boardLayout.width / COLS) - 4;
+    const cellH = Math.floor(boardLayout.height / maxGuesses) - 4;
+    return Math.max(16, Math.min(cellW, cellH));
+  })();
+
   // Normalise to a row count, independent of which API is used.
   const count = words != null ? words.length : (guesses?.length ?? 0);
 
@@ -90,17 +103,17 @@ export function GameBoard({
         const letter = word[col] ?? '';
         const status = (result[col] ?? 'absent') as TileStatus;
         if (row === animatingRow) {
-          return <FlipTile key={col} letter={letter} status={status} delay={col * STAGGER} size={tileSize} />;
+          return <FlipTile key={col} letter={letter} status={status} delay={col * STAGGER} size={effectiveTileSize} />;
         }
-        return <Tile key={col} letter={letter} status={status} size={tileSize} />;
+        return <Tile key={col} letter={letter} status={status} size={effectiveTileSize} />;
       }
 
       if (isActive) {
         const letter = currentGuess[col] ?? '';
-        return <Tile key={col} letter={letter} status={letter ? 'filled' : 'empty'} size={tileSize} />;
+        return <Tile key={col} letter={letter} status={letter ? 'filled' : 'empty'} size={effectiveTileSize} />;
       }
 
-      return <Tile key={col} size={tileSize} />;
+      return <Tile key={col} size={effectiveTileSize} />;
     });
 
     if (isActive) {
@@ -110,11 +123,14 @@ export function GameBoard({
   });
 
   return (
-    <View style={styles.wrapper}>
+    <View style={[styles.wrapper, flexMode && styles.wrapperFlex]}>
       {label ? (
         <Text style={[styles.label, solved && styles.labelSolved]}>{label}</Text>
       ) : null}
-      <View style={[styles.board, solved && styles.solvedBoard]}>
+      <View
+        style={[styles.board, flexMode && styles.boardFlex, solved && styles.solvedBoard]}
+        onLayout={flexMode ? e => setBoardLayout({ width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height }) : undefined}
+      >
         {rows}
       </View>
     </View>
@@ -124,6 +140,11 @@ export function GameBoard({
 const styles = StyleSheet.create({
   wrapper: {
     alignItems: 'flex-start',
+  },
+  wrapperFlex: {
+    flex: 1,
+    alignSelf: 'stretch',
+    alignItems: 'center',
   },
   label: {
     fontSize: 11,
@@ -141,6 +162,12 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'transparent',
     borderRadius: 4,
+  },
+  boardFlex: {
+    flex: 1,
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   solvedBoard: {
     borderColor: '#6aaa64',
