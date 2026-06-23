@@ -80,26 +80,32 @@
 ## Key implementation details
 
 ### Wordout tile sizing (dynamic)
+Single-board layout has no dot row, so DOTS_H is not subtracted.
 ```tsx
-const KBD_H = 210; // 3×60px keys + 2×8px gaps + 6px paddingBottom + 1 extra row margin
-const boardAreaH = screenH - insets.top - insets.bottom - 44 - 44 - KBD_H;
+const wordleAvailH = screenH - insets.top - insets.bottom - HEADER_H - MSG_H - KBD_H - TAB_H;
 const wordleTileSize = Math.max(44, Math.min(74,
-  Math.min(Math.floor(boardAreaH / 6) - 4, Math.floor((screenW - 16) / 5) - 4)
+  Math.min(Math.floor(wordleAvailH / 6) - 4, Math.floor((screenW - 16) / 5) - 4)
 ));
 ```
 
 ### Multi-board tile sizing
 ```tsx
-const DOTS_H = 36; // indicator row height
-const qBoardAreaH = screenH - insets.top - insets.bottom - 44 - DOTS_H - 44 - KBD_H;
+// Fixed heights consumed outside the board scroll area
+const KBD_H = 210;   // 3×60px rows + 2×8px rowGap + 6px paddingBottom
+const HEADER_H = 50; // game header (measured on device)
+const DOTS_H = 36;   // board indicator row
+const MSG_H = 36;    // message / result area
+const TAB_H = 50;    // tab bar (useWindowDimensions returns full screen height)
+
+const qAvailH = screenH - insets.top - insets.bottom - HEADER_H - DOTS_H - MSG_H - KBD_H - TAB_H;
 const qTileSize = Math.max(20, Math.min(74,
   Math.min(
-    Math.floor(qBoardAreaH / maxGuesses) - 4,  // height-limited
-    Math.floor(boardAreaW / 5) - 4,             // width-limited
+    Math.floor(qAvailH / maxGuesses) - 4,  // height-limited
+    Math.floor(boardAreaW / 5) - 4,        // width-limited
   )
 ));
 ```
-Each tile row is `tileSize + 4` px tall (2px margin on each side from Tile style). No minimum screen height restriction — tiles shrink to fit automatically.
+Each tile row is `tileSize + 4` px tall (2px margin each side from Tile style). `useWindowDimensions().height` returns full screen height — TAB_H must be subtracted explicitly because the tab bar is outside the SafeAreaView. Tiles shrink to 20px minimum on small screens or high board counts.
 
 ### Board progress indicators
 Shown above the swipeable boards (hidden for single-board modes). Each indicator is a 30×30 hit target wrapping a 24×24 shape, 2px stroke.

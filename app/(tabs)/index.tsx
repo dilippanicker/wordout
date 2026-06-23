@@ -173,14 +173,22 @@ export default function WordleScreen() {
   const insets = useSafeAreaInsets();
   const { height: screenH, width: screenW } = useWindowDimensions();
 
-  // Dynamic tile size: fills the flex-1 board area between header, message, and keyboard.
-  // Keyboard: 3 rows × 60px + 3 × 8px rowGap + 6px paddingBottom = 210px
+  // Fixed heights consumed outside the board scroll area.
+  // KBD: 3×60px rows + 2×8px rowGap + 6px paddingBottom = 210px
   const KBD_H = 210;
-  const boardAreaH = screenH - insets.top - insets.bottom - 44 - 44 - KBD_H;
+  const HEADER_H = 50;  // game header (measured on device)
+  const DOTS_H = 36;    // board indicator row (or spacer)
+  const MSG_H = 36;     // message / result area
+  const TAB_H = 50;     // tab bar
+
   const boardAreaW = screenW - 16;
+
+  // Single-board Wordout tile size — no dot row in this layout.
+  const wordleAvailH = screenH - insets.top - insets.bottom - HEADER_H - MSG_H - KBD_H - TAB_H;
   const wordleTileSize = Math.max(44, Math.min(74,
-    Math.min(Math.floor(boardAreaH / 6) - 4, Math.floor(boardAreaW / 5) - 4),
+    Math.min(Math.floor(wordleAvailH / 6) - 4, Math.floor(boardAreaW / 5) - 4),
   ));
+  console.log(`[tileSize:wordle] screenH: ${screenH}, availH: ${wordleAvailH}, numRows: 6, tileSize: ${wordleTileSize}`);
 
   const [showHelp, setShowHelp] = useState(false);
   const [copyConfirmed, setCopyConfirmed] = useState(false);
@@ -281,14 +289,14 @@ export default function WordleScreen() {
     const solvedCount = solvedBoards.filter(Boolean).length;
 
     // Tile size: fits maxGuesses rows in the available height, full-width columns.
-    const DOTS_H = 36;
-    const qBoardAreaH = screenH - insets.top - insets.bottom - 44 - DOTS_H - 44 - KBD_H;
+    const qAvailH = screenH - insets.top - insets.bottom - HEADER_H - DOTS_H - MSG_H - KBD_H - TAB_H;
     const qTileSize = Math.max(20, Math.min(74,
       Math.min(
-        Math.floor(qBoardAreaH / maxGuesses) - 4,
+        Math.floor(qAvailH / maxGuesses) - 4,
         Math.floor(boardAreaW / 5) - 4,
       ),
     ));
+    console.log(`[tileSize:quordle] screenH: ${screenH}, availH: ${qAvailH}, numRows: ${maxGuesses}, tileSize: ${qTileSize}`);
 
     const qResultText = gameStatus === 'won' ? 'Solved! 🎉' : 'Game over';
 

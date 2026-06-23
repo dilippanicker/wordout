@@ -4,12 +4,14 @@ A free, open-source word puzzle game for Android with no ads, no tracking, and a
 
 ## Features
 - **Wordout** — classic 5-letter word game, 6 guesses
-- **Quadout** — solve 4 words simultaneously, 9 guesses
+- **Multi-board mode** — solve 2, 3, 4, 6, or 8 words simultaneously; every guess applies to all boards at once
+  - 2-out (7 guesses), 3-out (8 guesses), Quadout (9 guesses), 6-out (11 guesses), 8-out (13 guesses)
+  - Swipe between boards; progress indicators show correct letters found per board
 - American English and British English word lists
 - Hard mode — revealed hints must be used in future guesses
 - Color blind mode — high contrast orange and blue
 - Dark theme
-- Stats tracking with guess distribution
+- Stats tracking with guess distribution (per game mode)
 - Share results as emoji grid
 - No ads, no accounts, no tracking
 
@@ -22,7 +24,7 @@ Unlike most Wordle clones, our word list is carefully curated:
 - ~1,500 answer words — over 4 years of daily play
 - ~9,000 valid guess words
 
-The word list pipeline is open source in `wordlist/` — see [wordlist/README.md](wordlist/README.md).
+The word list pipeline is open source in `wordlist/` — see the scripts in that directory.
 
 ## Tech Stack
 - React Native + Expo SDK 56
@@ -36,7 +38,6 @@ The word list pipeline is open source in `wordlist/` — see [wordlist/README.md
 ### Prerequisites
 - Node.js 18+
 - npm or yarn
-- Expo CLI (`npm install -g expo-cli`)
 
 ### Run locally
 ```bash
@@ -57,8 +58,7 @@ python3 curate.py
 
 ## Minimum Requirements
 - Android 8.0+
-- Screen: 360×640 minimum (Wordout)
-- Screen: 360×740 minimum (Quadout)
+- Screen: 360×640 minimum (tile size scales dynamically for all board counts)
 
 ## Contributing
 Word list improvements welcome — open an issue or PR if you spot a word that shouldn't be an answer, or a common word that's missing.
