@@ -58,6 +58,20 @@ function deriveQuordleKeyStatuses(guesses: QuordleGuess[]): Record<string, TileS
   return map;
 }
 
+// Count unique letter positions confirmed correct on a board so far (0–5).
+function boardCorrectCount(qGuesses: QuordleGuess[], boardIndex: number): number {
+  const found = new Set<number>();
+  for (const g of qGuesses) {
+    const results = g.boardResults[boardIndex];
+    if (results) {
+      for (let col = 0; col < results.length; col++) {
+        if (results[col] === 'correct') found.add(col);
+      }
+    }
+  }
+  return found.size;
+}
+
 // ── Share / emoji grid ──────────────────────────────────────────────────────
 
 function buildShareText(
@@ -269,26 +283,37 @@ export default function WordleScreen() {
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
         {renderHeader({ ...headerProps, title: boardCountName(boardCount) })}
 
-        {/* Dot navigation — hidden when only 1 board */}
+        {/* Board progress indicators — hidden when only 1 board */}
         {boardCount > 1 && (
           <View style={styles.dotRow}>
-            {solvedBoards.map((solved, i) => (
-              <Pressable
-                key={i}
-                {...(noFocus as any)}
-                hitSlop={8}
-                onPress={() => scrollTo(i)}
-                accessibilityLabel={`Board ${i + 1}`}
-              >
-                {solved ? (
-                  <View style={[styles.dot, styles.dotSolved]}>
-                    <Text style={styles.dotCheck}>✓</Text>
+            {solvedBoards.map((solved, i) => {
+              const correctCount = boardCorrectCount(qGuesses, i);
+              const isActive = activeBoard === i;
+              return (
+                <Pressable
+                  key={i}
+                  {...(noFocus as any)}
+                  hitSlop={6}
+                  onPress={() => scrollTo(i)}
+                  accessibilityLabel={`Board ${i + 1}${solved ? ' — solved' : correctCount > 0 ? `, ${correctCount} correct` : ''}`}
+                >
+                  {/* Outer ring — always 30×30, border shows only for active board */}
+                  <View style={[styles.indicatorRing, isActive && styles.indicatorRingActive]}>
+                    {solved ? (
+                      <View style={[styles.indicatorCircle, styles.indicatorSolved]}>
+                        <Text style={styles.indicatorText}>✓</Text>
+                      </View>
+                    ) : correctCount > 0 ? (
+                      <View style={[styles.indicatorCircle, styles.indicatorPartial]}>
+                        <Text style={styles.indicatorText}>{correctCount}</Text>
+                      </View>
+                    ) : (
+                      <View style={[styles.indicatorCircle, styles.indicatorEmpty]} />
+                    )}
                   </View>
-                ) : (
-                  <View style={[styles.dot, activeBoard === i && styles.dotActive]} />
-                )}
-              </Pressable>
-            ))}
+                </Pressable>
+              );
+            })}
           </View>
         )}
         {boardCount === 1 && <View style={{ height: DOTS_H }} />}
@@ -494,39 +519,51 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.3,
   },
-  // Multi-board swipeable layout
+  // Multi-board progress indicators
   dotRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     height: 36,
-    gap: 10,
+    gap: 6,
   },
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+  // Outer ring wrapper: fixed 30×30, ring border transparent until active.
+  indicatorRing: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     borderWidth: 1.5,
-    borderColor: '#878a8c',
-  },
-  dotActive: {
-    backgroundColor: '#878a8c',
-  },
-  dotSolved: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#6aaa64',
-    borderColor: '#6aaa64',
-    borderWidth: 0,
+    borderColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  dotCheck: {
+  indicatorRingActive: {
+    borderColor: '#878a8c',
+  },
+  // Inner circle: 24×24 in all states.
+  indicatorCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  indicatorEmpty: {
+    borderWidth: 2,
+    borderColor: '#878a8c',
+    backgroundColor: 'transparent',
+  },
+  indicatorPartial: {
+    backgroundColor: '#c9b458',
+  },
+  indicatorSolved: {
+    backgroundColor: '#6aaa64',
+  },
+  indicatorText: {
     color: '#fff',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '800',
-    lineHeight: 14,
+    lineHeight: 15,
   },
   boardScroll: {
     flex: 1,
