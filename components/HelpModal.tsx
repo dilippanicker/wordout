@@ -153,6 +153,7 @@ export function HelpModal({ visible, onClose, hardMode }: HelpModalProps) {
           </View>
 
           <ScrollView
+            style={styles.scrollView}
             showsVerticalScrollIndicator={true}
             bounces={false}
             contentContainerStyle={styles.scrollContent}
@@ -287,6 +288,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 24,
     paddingBottom: 0,
+  },
+  scrollView: {
+    flex: 1,
   },
   scrollContent: {
     paddingBottom: 24,

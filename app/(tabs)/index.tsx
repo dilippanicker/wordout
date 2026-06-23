@@ -191,12 +191,16 @@ export default function WordleScreen() {
 
   const boardAreaW = screenW - 16;
 
-  // Single-board Wordout tile size — no dot row in this layout.
+  // Tile size is computed from measured layout height once onLayout fires.
+  // Initial value uses the static formula as a reasonable first-render estimate.
   const wordleAvailH = screenH - insets.top - insets.bottom - HEADER_H - MSG_H - KBD_H - TAB_H;
+  const [wordleAreaH, setWordleAreaH] = useState(0);
+  const [qBoardH, setQBoardH] = useState(0);
+
+  const wordleMeasuredH = wordleAreaH > 0 ? wordleAreaH : wordleAvailH;
   const wordleTileSize = Math.max(44, Math.min(80,
-    Math.min(Math.floor(wordleAvailH / 6) - 4, Math.floor(boardAreaW / 5) - 4),
+    Math.min(Math.floor(wordleMeasuredH / 6) - 4, Math.floor(boardAreaW / 5) - 4),
   ));
-  console.log(`[tileSize:wordle] screenH: ${screenH}, availH: ${wordleAvailH}, numRows: 6, tileSize: ${wordleTileSize}`);
 
   const [showHelp, setShowHelp] = useState(false);
   const [copyConfirmed, setCopyConfirmed] = useState(false);
@@ -295,15 +299,15 @@ export default function WordleScreen() {
     const qKeyStatuses = deriveQuordleKeyStatuses(qGuesses);
     const solvedCount = solvedBoards.filter(Boolean).length;
 
-    // Tile size: fits maxGuesses rows in the available height, full-width columns.
+    // Use measured ScrollView height when available; static formula as initial estimate.
     const qAvailH = screenH - insets.top - insets.bottom - HEADER_H - DOTS_H - MSG_H - KBD_H - TAB_H;
+    const qMeasuredH = qBoardH > 0 ? qBoardH - 8 : qAvailH; // -8 for boardPage paddingTop
     const qTileSize = Math.max(20, Math.min(74,
       Math.min(
-        Math.floor(qAvailH / maxGuesses) - 6,
+        Math.floor(qMeasuredH / maxGuesses) - 2,
         Math.floor(boardAreaW / 5) - 4,
       ),
     ));
-    console.log(`[tileSize:quordle] screenH: ${screenH}, availH: ${qAvailH}, numRows: ${maxGuesses}, tileSize: ${qTileSize}`);
 
     const qResultText = gameStatus === 'won' ? 'Solved! 🎉' : 'Game over';
 
@@ -373,6 +377,7 @@ export default function WordleScreen() {
           pagingEnabled
           showsHorizontalScrollIndicator={false}
           style={styles.boardScroll}
+          onLayout={e => setQBoardH(e.nativeEvent.layout.height)}
           onMomentumScrollEnd={(e) => {
             const board = Math.round(e.nativeEvent.contentOffset.x / screenW);
             setActiveBoard(board);
@@ -442,7 +447,7 @@ export default function WordleScreen() {
     >
       {renderHeader({ ...headerProps, title: 'Wordout' })}
 
-      <View style={styles.boardArea}>
+      <View style={styles.boardArea} onLayout={e => setWordleAreaH(e.nativeEvent.layout.height)}>
         <GameBoard guesses={guesses} currentGuess={currentGuess} tileSize={wordleTileSize} shakeKey={shakeKey} />
       </View>
 
@@ -620,7 +625,7 @@ const styles = StyleSheet.create({
   },
   boardPage: {
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     paddingTop: 8,
   },
   flagEmoji: {
