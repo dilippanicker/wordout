@@ -304,26 +304,18 @@ export default function WordleScreen() {
               const greenCount = solved ? 0 : boardCorrectCount(qGuesses, i);
               const hasYellow  = solved ? false : boardHasYellow(qGuesses, i);
 
-              // Stroke: solved/greens→green, yellows→yellow, else→grey
+              // Square indicator for the current (non-solved) board.
+              const squareColor = darkTheme ? '#ffffff' : '#878a8c';
+
+              // Circle stroke/fill for every other state.
               const strokeColor = solved || (!hasYellow && greenCount > 0)
                 ? '#6aaa64'
                 : hasYellow ? '#c9b458' : '#878a8c';
-
-              // Fill: solved→green, yellows→card bg (light=white, dark=dark bg), else transparent
               const fillColor = solved
                 ? '#6aaa64'
                 : hasYellow
                 ? (darkTheme ? colors.background as string : '#ffffff')
                 : 'transparent';
-
-              // Content: ✓ > ▶ (current) > count > nothing
-              const inner = solved
-                ? <Text style={styles.indicatorCheckText}>✓</Text>
-                : isActive
-                ? <Ionicons name="play" size={11} color="#878a8c" />
-                : greenCount > 0
-                ? <Text style={styles.indicatorGreenNum}>{greenCount}</Text>
-                : null;
 
               return (
                 <Pressable
@@ -338,9 +330,19 @@ export default function WordleScreen() {
                   }
                 >
                   <View style={styles.indicatorWrap}>
-                    <View style={[styles.indicatorCircle, { borderColor: strokeColor, backgroundColor: fillColor }]}>
-                      {inner}
-                    </View>
+                    {isActive && !solved ? (
+                      <View style={[styles.indicatorSquare, { borderColor: squareColor }]}>
+                        <Ionicons name="play" size={10} color={squareColor} />
+                      </View>
+                    ) : (
+                      <View style={[styles.indicatorCircle, { borderColor: strokeColor, backgroundColor: fillColor }]}>
+                        {solved
+                          ? <Text style={styles.indicatorCheckText}>✓</Text>
+                          : greenCount > 0
+                          ? <Text style={styles.indicatorGreenNum}>{greenCount}</Text>
+                          : null}
+                      </View>
+                    )}
                   </View>
                 </Pressable>
               );
@@ -559,6 +561,14 @@ const styles = StyleSheet.create({
   indicatorWrap: {
     width: 30,
     height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // 24×24 square outline for the current (non-solved) board — borderColor set inline.
+  indicatorSquare: {
+    width: 24,
+    height: 24,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
