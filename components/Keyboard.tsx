@@ -2,6 +2,8 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { TileStatus } from './Tile';
 import { useSettingsStore } from '@/store/settingsStore';
 
+const noFocus = { tabIndex: -1, onMouseDown: (e: any) => e.preventDefault() };
+
 const ROWS = [
   ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
   ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
@@ -39,6 +41,7 @@ export function Keyboard({ onKey, keyStatuses = {} }: KeyboardProps) {
             const status = keyStatuses[key];
             return (
               <Pressable
+                {...(noFocus as any)}
                 key={key}
                 style={[
                   styles.key,

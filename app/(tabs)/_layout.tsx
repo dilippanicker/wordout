@@ -1,9 +1,21 @@
 import { Tabs } from 'expo-router';
+import { Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useGameStore } from '@/store/gameStore';
 import { useQuordleStore } from '@/store/quordleStore';
 import { useStatsStore } from '@/store/statsStore';
+
+// Wraps each tab bar button so mouse clicks don't steal keyboard focus.
+function NoFocusTabButton(props: any) {
+  return (
+    <Pressable
+      {...props}
+      tabIndex={-1}
+      onMouseDown={(e: any) => e.preventDefault()}
+    />
+  );
+}
 
 export default function TabLayout() {
   const gameMode = useSettingsStore(s => s.gameMode);
@@ -20,6 +32,7 @@ export default function TabLayout() {
         options={{
           title: 'New Game',
           headerShown: false,
+          tabBarButton: NoFocusTabButton,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="refresh-outline" size={size} color={color} />
           ),
@@ -40,6 +53,7 @@ export default function TabLayout() {
         options={{
           title: gameMode === 'wordle' ? 'Wordout' : 'Quadout',
           headerShown: false,
+          tabBarButton: NoFocusTabButton,
           tabBarIcon: ({ color, size }) => (
             <Ionicons
               name={gameMode === 'wordle' ? 'grid-outline' : 'apps-outline'}
@@ -69,6 +83,7 @@ export default function TabLayout() {
         options={{
           title: 'Settings',
           headerShown: false,
+          tabBarButton: NoFocusTabButton,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="settings-outline" size={size} color={color} />
           ),

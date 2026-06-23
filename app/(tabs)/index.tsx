@@ -18,6 +18,11 @@ import { useQuordleStore, QuordleGuess } from '@/store/quordleStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { TileStatus } from '@/components/Tile';
 
+// Prevents buttons from stealing keyboard focus on web.
+// tabIndex=-1 removes them from the tab order; onMouseDown preventDefault
+// stops the browser from moving focus to the element on click.
+const noFocus = { tabIndex: -1, onMouseDown: (e: any) => e.preventDefault() };
+
 // ── Key status helpers ──────────────────────────────────────────────────────
 
 const STATUS_PRIORITY: Record<string, number> = { correct: 3, present: 2, absent: 1 };
@@ -180,14 +185,19 @@ export default function WordleScreen() {
     }, []),
   );
 
-  // Physical keyboard — capture phase for highest priority.
+  // Physical keyboard — capture phase intercepts before any focused button.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     function onKeyDown(e: KeyboardEvent) {
       const { key } = e;
+      const isGameKey = key === 'Enter' || key === 'Backspace' || /^[a-zA-Z]$/.test(key);
+      if (!isGameKey) return;
+      // Blur whatever is focused so no button can intercept Enter as a click.
+      (document.activeElement as HTMLElement | null)?.blur();
+      e.preventDefault();
       if (key === 'Enter') submitGuess();
       else if (key === 'Backspace') removeLetter();
-      else if (/^[a-zA-Z]$/.test(key)) addLetter(key.toUpperCase());
+      else addLetter(key.toUpperCase());
     }
     window.addEventListener('keydown', onKeyDown, { capture: true });
     return () => window.removeEventListener('keydown', onKeyDown, { capture: true });
@@ -240,7 +250,7 @@ export default function WordleScreen() {
             <Text style={[styles.tooSmallSub, { color: colors.text }]}>
               Your device: {Math.round(screenH)}px
             </Text>
-            <Pressable style={styles.tooSmallBtn} onPress={() => setGameMode('wordle')}>
+            <Pressable {...(noFocus as any)} style={styles.tooSmallBtn} onPress={() => setGameMode('wordle')}>
               <Text style={styles.tooSmallBtnText}>Play Wordout instead</Text>
             </Pressable>
           </View>
@@ -314,7 +324,7 @@ export default function WordleScreen() {
                 {copyConfirmed ? 'Copied!' : qResultText}
               </Text>
               {!copyConfirmed && (
-                <Pressable onPress={handleShare} hitSlop={12} accessibilityLabel="Share result">
+                <Pressable {...(noFocus as any)} onPress={handleShare} hitSlop={12} accessibilityLabel="Share result">
                   <Ionicons name="share-social-outline" size={20} color="#878a8c" />
                 </Pressable>
               )}
@@ -401,6 +411,7 @@ function renderHeader({
     <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
       <View style={styles.iconGroupLeft}>
         <Pressable
+          {...(noFocus as any)}
           hitSlop={12}
           accessibilityLabel={language === 'en_us' ? 'American English — tap to switch' : 'British English — tap to switch'}
           onPress={() => setLanguage(language === 'en_us' ? 'en_gb' : 'en_us')}
@@ -408,6 +419,7 @@ function renderHeader({
           <Text style={styles.flagEmoji}>{language === 'en_us' ? '🇺🇸' : '🇬🇧'}</Text>
         </Pressable>
         <Pressable
+          {...(noFocus as any)}
           hitSlop={12}
           accessibilityLabel={hardMode ? 'Hard mode on — tap to disable' : 'Hard mode off — tap to enable'}
           onPress={() => setHardMode(!hardMode)}
@@ -420,6 +432,7 @@ function renderHeader({
       </View>
       <View style={styles.iconGroupRight}>
         <Pressable
+          {...(noFocus as any)}
           hitSlop={12}
           accessibilityLabel={darkTheme ? 'Switch to light mode' : 'Switch to dark mode'}
           onPress={() => setDarkTheme(!darkTheme)}
@@ -427,6 +440,7 @@ function renderHeader({
           <Ionicons name={darkTheme ? 'sunny-outline' : 'moon-outline'} size={21} color="#878a8c" />
         </Pressable>
         <Pressable
+          {...(noFocus as any)}
           hitSlop={12}
           accessibilityLabel="How to play"
           onPress={() => setShowHelp(true)}
