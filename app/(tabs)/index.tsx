@@ -300,10 +300,31 @@ export default function WordleScreen() {
         {boardCount > 1 && (
           <View style={styles.dotRow}>
             {solvedBoards.map((solved, i) => {
-              const isActive = activeBoard === i;
+              const isActive   = activeBoard === i;
               const greenCount = solved ? 0 : boardCorrectCount(qGuesses, i);
               const hasYellow  = solved ? false : boardHasYellow(qGuesses, i);
-              const hasAnyInfo = greenCount > 0 || hasYellow;
+
+              // Stroke: solved/greens→green, yellows→yellow, else→grey
+              const strokeColor = solved || (!hasYellow && greenCount > 0)
+                ? '#6aaa64'
+                : hasYellow ? '#c9b458' : '#878a8c';
+
+              // Fill: solved→green, yellows→card bg (light=white, dark=dark bg), else transparent
+              const fillColor = solved
+                ? '#6aaa64'
+                : hasYellow
+                ? (darkTheme ? colors.background as string : '#ffffff')
+                : 'transparent';
+
+              // Content: ✓ > ▶ (current) > count > nothing
+              const inner = solved
+                ? <Text style={styles.indicatorCheckText}>✓</Text>
+                : isActive
+                ? <Ionicons name="play" size={11} color="#878a8c" />
+                : greenCount > 0
+                ? <Text style={styles.indicatorGreenNum}>{greenCount}</Text>
+                : null;
+
               return (
                 <Pressable
                   key={i}
@@ -311,25 +332,15 @@ export default function WordleScreen() {
                   hitSlop={6}
                   onPress={() => scrollTo(i)}
                   accessibilityLabel={
-                    solved ? `Board ${i + 1} — solved`
+                    solved   ? `Board ${i + 1} — solved`
                     : isActive ? `Board ${i + 1} — current`
                     : `Board ${i + 1}${greenCount > 0 ? `, ${greenCount} correct` : ''}`
                   }
                 >
                   <View style={styles.indicatorWrap}>
-                    {solved ? (
-                      <View style={[styles.indicatorCircle, styles.indicatorSolved]}>
-                        <Text style={styles.indicatorCheckText}>✓</Text>
-                      </View>
-                    ) : isActive ? (
-                      <Ionicons name="play" size={16} color="#878a8c" />
-                    ) : !hasAnyInfo ? (
-                      <View style={[styles.indicatorCircle, styles.indicatorEmpty]} />
-                    ) : (
-                      <View style={[styles.indicatorCircle, hasYellow && styles.indicatorYellowBg]}>
-                        {greenCount > 0 && <Text style={styles.indicatorGreenNum}>{greenCount}</Text>}
-                      </View>
-                    )}
+                    <View style={[styles.indicatorCircle, { borderColor: strokeColor, backgroundColor: fillColor }]}>
+                      {inner}
+                    </View>
                   </View>
                 </Pressable>
               );
@@ -551,33 +562,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // 24×24 circle used by all circle states.
+  // 24×24 circle — borderWidth always 2; borderColor and backgroundColor set inline.
   indicatorCircle: {
     width: 24,
     height: 24,
     borderRadius: 12,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // States
-  indicatorEmpty: {
-    borderWidth: 2,
-    borderColor: '#878a8c',
-  },
-  indicatorYellowBg: {
-    backgroundColor: '#c9b458',
-  },
-  indicatorSolved: {
-    backgroundColor: '#6aaa64',
-  },
-  // White ✓ on green background.
   indicatorCheckText: {
     color: '#fff',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '800',
-    lineHeight: 15,
+    lineHeight: 14,
   },
-  // Green count number — shown on yellow bg or transparent.
   indicatorGreenNum: {
     color: '#6aaa64',
     fontSize: 12,
