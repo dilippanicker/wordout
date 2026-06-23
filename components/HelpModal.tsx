@@ -142,7 +142,7 @@ export function HelpModal({ visible, onClose, hardMode }: HelpModalProps) {
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       {/* Overlay — View (not Pressable) so it doesn't interfere with ScrollView height */}
       <View style={styles.overlay}>
-        <View style={[styles.modalBox, { backgroundColor: colors.card, maxHeight: screenHeight * 0.85 }]}>
+        <View style={[styles.modalBox, { backgroundColor: colors.card }]}>
 
           {/* Fixed header — outside ScrollView so it doesn't scroll away */}
           <View style={[styles.header, { borderColor: colors.border }]}>
@@ -152,9 +152,10 @@ export function HelpModal({ visible, onClose, hardMode }: HelpModalProps) {
             </Pressable>
           </View>
 
-          {/* Scrollable content — flex:1 works because modalBox is a View with maxHeight */}
+          {/* Scrollable content — maxHeight on the ScrollView itself is the reliable pattern;
+              flex:1 requires the parent to have an explicit height, maxHeight is not enough. */}
           <ScrollView
-            style={styles.scrollView}
+            style={[styles.scrollView, { maxHeight: screenHeight * 0.72 }]}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={true}
             bounces={false}
@@ -313,7 +314,7 @@ const styles = StyleSheet.create({
     color: '#878a8c',
   },
   scrollView: {
-    flex: 1,
+    // maxHeight set inline from screenHeight — no flex:1 needed here
   },
   scrollContent: {
     paddingHorizontal: 24,
