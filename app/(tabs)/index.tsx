@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, ColorValue, useWindowDimensions } from 'react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet, ColorValue, useWindowDimensions, Platform } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
@@ -222,20 +222,19 @@ export default function WordleScreen() {
   // Blur focused tab button so Enter goes to the game keydown handler, not the tab.
   useFocusEffect(
     useCallback(() => {
-      if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+      if (Platform.OS === 'web' && typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
         document.activeElement.blur();
       }
     }, []),
   );
 
-  // Physical keyboard — capture phase intercepts before any focused button.
+  // Physical keyboard — web only. capture: true intercepts before any focused button.
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (Platform.OS !== 'web') return;
     function onKeyDown(e: KeyboardEvent) {
       const { key } = e;
       const isGameKey = key === 'Enter' || key === 'Backspace' || /^[a-zA-Z]$/.test(key);
       if (!isGameKey) return;
-      // Blur whatever is focused so no button can intercept Enter as a click.
       (document.activeElement as HTMLElement | null)?.blur();
       e.preventDefault();
       if (key === 'Enter') submitGuess();
