@@ -73,6 +73,16 @@ function boardCorrectCount(qGuesses: QuordleGuess[], boardIndex: number): number
   return found.size;
 }
 
+// Row index of the winning guess for a board (-1 if not yet solved).
+// Used to slice displayed guesses so solved boards don't show post-win rows.
+function boardSolvedAtRow(qGuesses: QuordleGuess[], boardIndex: number): number {
+  for (let row = 0; row < qGuesses.length; row++) {
+    const results = qGuesses[row].boardResults[boardIndex];
+    if (results && results.length === 5 && results.every(r => r === 'correct')) return row;
+  }
+  return -1;
+}
+
 // True if this board has at least one present-but-wrong-position (yellow) result.
 function boardHasYellow(qGuesses: QuordleGuess[], boardIndex: number): boolean {
   for (const g of qGuesses) {
@@ -183,7 +193,7 @@ export default function WordleScreen() {
 
   // Single-board Wordout tile size — no dot row in this layout.
   const wordleAvailH = screenH - insets.top - insets.bottom - HEADER_H - MSG_H - KBD_H - TAB_H;
-  const wordleTileSize = Math.max(44, Math.min(74,
+  const wordleTileSize = Math.max(44, Math.min(80,
     Math.min(Math.floor(wordleAvailH / 6) - 4, Math.floor(boardAreaW / 5) - 4),
   ));
   console.log(`[tileSize:wordle] screenH: ${screenH}, availH: ${wordleAvailH}, numRows: 6, tileSize: ${wordleTileSize}`);
@@ -289,7 +299,7 @@ export default function WordleScreen() {
     const qAvailH = screenH - insets.top - insets.bottom - HEADER_H - DOTS_H - MSG_H - KBD_H - TAB_H;
     const qTileSize = Math.max(20, Math.min(74,
       Math.min(
-        Math.floor(qAvailH / maxGuesses) - 4,
+        Math.floor(qAvailH / maxGuesses) - 6,
         Math.floor(boardAreaW / 5) - 4,
       ),
     ));
@@ -369,19 +379,26 @@ export default function WordleScreen() {
           }}
           scrollEventThrottle={16}
         >
-          {Array.from({ length: boardCount }, (_, i) => (
-            <View key={i} style={[styles.boardPage, { width: screenW, backgroundColor: colors.background }]}>
-              <GameBoard
-                words={qGuesses.map(g => g.word)}
-                boardResults={qGuesses.map(g => g.boardResults[i])}
-                currentGuess={solvedBoards[i] ? '' : qCurrent}
-                tileSize={qTileSize}
-                maxGuesses={maxGuesses}
-                solved={solvedBoards[i]}
-                shakeKey={shakeKey}
-              />
-            </View>
-          ))}
+          {Array.from({ length: boardCount }, (_, i) => {
+            // Slice guesses to the winning row so solved boards don't show
+            // post-solve guesses. Derive solved state from data, not async state.
+            const solvedRow = boardSolvedAtRow(qGuesses, i);
+            const isSolved = solvedRow >= 0;
+            const visibleGuesses = isSolved ? qGuesses.slice(0, solvedRow + 1) : qGuesses;
+            return (
+              <View key={i} style={[styles.boardPage, { width: screenW, backgroundColor: colors.background }]}>
+                <GameBoard
+                  words={visibleGuesses.map(g => g.word)}
+                  boardResults={visibleGuesses.map(g => g.boardResults[i])}
+                  currentGuess={isSolved ? '' : qCurrent}
+                  tileSize={qTileSize}
+                  maxGuesses={maxGuesses}
+                  solved={isSolved}
+                  shakeKey={shakeKey}
+                />
+              </View>
+            );
+          })}
         </ScrollView>
 
         <View style={styles.messageArea}>
@@ -604,6 +621,7 @@ const styles = StyleSheet.create({
   boardPage: {
     alignItems: 'center',
     justifyContent: 'center',
+    paddingTop: 8,
   },
   flagEmoji: {
     fontSize: 21,
