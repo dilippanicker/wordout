@@ -8,7 +8,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Tile, TileStatus } from './Tile';
 import { FlipTile } from './FlipTile';
-import { GuessResult } from '@/store/gameStore';
+import { GuessResult, LetterResult } from '@/store/gameStore';
 
 const COLS = 5;
 const STAGGER = 150; // ms between each tile flip
@@ -38,17 +38,25 @@ function ShakeRow({ children, shakeKey }: { children: React.ReactNode; shakeKey:
 }
 
 interface GameBoardProps {
-  guesses: GuessResult[];
+  // Single-board (Wordout) mode: pre-merged per-guess results
+  guesses?: GuessResult[];
+  // Multi-board (Quordle) mode: words shared across all boards,
+  // boardResults specific to THIS board (one array per guess)
+  words?: string[];
+  boardResults?: LetterResult[][];
+  // Common
   currentGuess: string;
   tileSize?: number;
   shakeKey?: number;
-  maxGuesses?: number;  // default 6; Quordle uses 9
-  solved?: boolean;     // show a green border when the board is solved
-  label?: string;       // small label shown above the board ("1", "2", …)
+  maxGuesses?: number;
+  solved?: boolean;
+  label?: string;
 }
 
 export function GameBoard({
   guesses,
+  words,
+  boardResults,
   currentGuess,
   tileSize = 60,
   shakeKey = 0,
@@ -56,36 +64,35 @@ export function GameBoard({
   solved = false,
   label,
 }: GameBoardProps) {
+  // Normalise to a row count, independent of which API is used.
+  const count = words != null ? words.length : (guesses?.length ?? 0);
+
   const [animatingRow, setAnimatingRow] = useState(-1);
-  const prevGuessCount = useRef(guesses.length);
+  const prevCount = useRef(count);
 
   useEffect(() => {
-    const prev = prevGuessCount.current;
-    prevGuessCount.current = guesses.length;
-    if (guesses.length > prev) setAnimatingRow(guesses.length - 1);
-    else if (guesses.length === 0) setAnimatingRow(-1);
-  }, [guesses.length]);
+    const prev = prevCount.current;
+    prevCount.current = count;
+    if (count > prev) setAnimatingRow(count - 1);
+    else if (count === 0) setAnimatingRow(-1);
+  }, [count]);
 
   const rows = Array.from({ length: maxGuesses }, (_, row) => {
-    const submitted = guesses[row];
-    const isActive = !solved && row === guesses.length;
+    const hasSubmitted = row < count;
+    const isActive = !solved && row === count;
+
+    // Per-row data: letter text and colour status.
+    const word   = words   != null ? (words[row] ?? '')            : (guesses?.[row]?.word ?? '');
+    const result = boardResults != null ? (boardResults[row] ?? []) : (guesses?.[row]?.results ?? []);
 
     const tiles = Array.from({ length: COLS }, (_, col) => {
-      if (submitted) {
+      if (hasSubmitted) {
+        const letter = word[col] ?? '';
+        const status = (result[col] ?? 'absent') as TileStatus;
         if (row === animatingRow) {
-          return (
-            <FlipTile
-              key={col}
-              letter={submitted.word[col]}
-              status={submitted.results[col] as TileStatus}
-              delay={col * STAGGER}
-              size={tileSize}
-            />
-          );
+          return <FlipTile key={col} letter={letter} status={status} delay={col * STAGGER} size={tileSize} />;
         }
-        return (
-          <Tile key={col} letter={submitted.word[col]} status={submitted.results[col] as TileStatus} size={tileSize} />
-        );
+        return <Tile key={col} letter={letter} status={status} size={tileSize} />;
       }
 
       if (isActive) {

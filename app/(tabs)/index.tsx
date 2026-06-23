@@ -58,17 +58,6 @@ function deriveQuordleKeyStatuses(guesses: QuordleGuess[]): Record<string, TileS
   return map;
 }
 
-// Stop at the winning row so solved boards freeze — no subsequent guesses shown.
-function toBoardGuesses(quordleGuesses: QuordleGuess[], boardIndex: number): GuessResult[] {
-  const out: GuessResult[] = [];
-  for (const g of quordleGuesses) {
-    const results = g.boardResults[boardIndex];
-    out.push({ word: g.word, results });
-    if (results.every(r => r === 'correct')) break;
-  }
-  return out;
-}
-
 // ── Share / emoji grid ──────────────────────────────────────────────────────
 
 function buildShareText(
@@ -274,9 +263,7 @@ export default function WordleScreen() {
       ),
     ));
 
-    const qResultText = gameStatus === 'won'
-      ? 'Solved!'
-      : `The words were: ${qAnswers.join(' ')}`;
+    const qResultText = gameStatus === 'won' ? 'Solved! 🎉' : 'Game over';
 
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
@@ -320,12 +307,13 @@ export default function WordleScreen() {
           scrollEventThrottle={16}
         >
           {Array.from({ length: boardCount }, (_, i) => (
-            <View key={i} style={[styles.boardPage, { width: screenW }]}>
+            <View key={i} style={[styles.boardPage, { width: screenW, backgroundColor: colors.background }]}>
               <Text style={[styles.boardPageLabel, { color: colors.text }]}>
                 {boardCount > 1 ? `Board ${i + 1}/${boardCount}` : boardCountName(boardCount)}
               </Text>
               <GameBoard
-                guesses={toBoardGuesses(qGuesses, i)}
+                words={qGuesses.map(g => g.word)}
+                boardResults={qGuesses.map(g => g.boardResults[i])}
                 currentGuess={solvedBoards[i] ? '' : qCurrent}
                 tileSize={qTileSize}
                 maxGuesses={maxGuesses}
