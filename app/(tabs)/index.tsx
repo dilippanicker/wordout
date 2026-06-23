@@ -9,6 +9,7 @@ import Animated, {
   withDelay,
 } from 'react-native-reanimated';
 import { useFocusEffect, useTheme } from 'expo-router';
+import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
 import { GameBoard } from '@/components/GameBoard';
 import { Keyboard } from '@/components/Keyboard';
@@ -142,14 +143,11 @@ function buildQuordleShareText(
 
 async function copyToClipboard(text: string): Promise<boolean> {
   try {
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      await navigator.clipboard.writeText(text);
-      return true;
-    }
+    await Clipboard.setStringAsync(text);
+    return true;
   } catch {
-    // clipboard unavailable or denied
+    return false;
   }
-  return false;
 }
 
 // ── Win messages ────────────────────────────────────────────────────────────
