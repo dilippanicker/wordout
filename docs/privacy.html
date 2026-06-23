@@ -1,24 +1,271 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Wordout — Privacy Policy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
   <style>
-    body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 0 20px; color: #333; }
-    h1 { color: #121213; }
+    :root {
+      --green:    #6aaa64;
+      --green-dk: #538d4e;
+      --grey-lt:  #d3d6da;
+      --tile-bg:  #121213;
+      --bg:       #f9f9f7;
+      --ink:      #1a1a1b;
+      --ink-mute: #6b6b6b;
+      --sans: 'Space Grotesk', sans-serif;
+      --mono: 'Space Mono', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body { font-family: var(--sans); background: var(--bg); color: var(--ink); -webkit-font-smoothing: antialiased; }
+    a { color: var(--green); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Nav */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 32px;
+      border-bottom: 1px solid var(--grey-lt);
+      background: var(--bg);
+    }
+    .nav-logo { display: flex; align-items: center; }
+    .wordmark { height: 32px; width: auto; }
+    .nav-back {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--ink-mute);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: color 0.15s;
+    }
+    .nav-back:hover { color: var(--green); text-decoration: none; }
+
+    /* Content */
+    .page {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 64px 32px 96px;
+    }
+    .eyebrow {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--green);
+      margin-bottom: 12px;
+    }
+    h1 {
+      font-size: clamp(1.8rem, 4vw, 2.4rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+    .updated {
+      font-size: 0.85rem;
+      color: var(--ink-mute);
+      margin-bottom: 48px;
+    }
+
+    /* Big statement card */
+    .statement {
+      background: var(--tile-bg);
+      color: #fff;
+      border-radius: 12px;
+      padding: 32px 36px;
+      margin-bottom: 48px;
+    }
+    .statement p {
+      font-size: 1.15rem;
+      line-height: 1.65;
+      opacity: 0.92;
+    }
+    .statement p + p { margin-top: 12px; }
+
+    /* Detail rows */
+    .detail-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      border: 1px solid var(--grey-lt);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 48px;
+    }
+    .detail-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--grey-lt);
+      background: #fff;
+    }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: #f0faf0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+    .detail-text strong {
+      display: block;
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+    .detail-text span {
+      font-size: 0.83rem;
+      color: var(--ink-mute);
+      line-height: 1.5;
+    }
+
+    /* Contact */
+    .contact-block {
+      background: #fff;
+      border: 1px solid var(--grey-lt);
+      border-radius: 12px;
+      padding: 28px 32px;
+    }
+    .contact-block h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .contact-block p {
+      font-size: 0.9rem;
+      color: var(--ink-mute);
+      line-height: 1.6;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--grey-lt);
+      padding: 24px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+    .footer-by { font-size: 0.78rem; color: var(--ink-mute); }
+    .footer-link { font-size: 0.82rem; color: var(--ink-mute); transition: color 0.15s; }
+    .footer-link:hover { color: var(--green); text-decoration: none; }
+
+    @media (max-width: 600px) {
+      nav { padding: 14px 20px; }
+      .page { padding: 40px 20px 72px; }
+      .statement { padding: 24px 20px; }
+      .detail-row { padding: 14px 16px; }
+      footer { flex-direction: column; gap: 12px; text-align: center; }
+    }
   </style>
 </head>
 <body>
-  <h1>Wordout Privacy Policy</h1>
-  <p><strong>Last updated: June 2026</strong></p>
-  <p>Wordout does not collect, store, or transmit any personal data.</p>
-  <p>All game data (statistics, settings, preferences) is stored locally 
-  on your device only and never leaves your device.</p>
-  <p>Wordout contains no ads, no analytics, no tracking, and requires 
-  no account or sign-in.</p>
-  <h2>Contact</h2>
-  <p>Questions? Open an issue at 
-  <a href="https://github.com/dilippanicker/wordout">github.com/dilippanicker/wordout</a></p>
+
+<nav>
+  <div class="nav-logo">
+    <svg class="wordmark" viewBox="0 0 220 40" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Wordout">
+      <rect x="0" y="2" width="36" height="36" rx="5" fill="#6aaa64"/>
+      <text x="18" y="24" font-family="'Space Mono',monospace" font-weight="700" font-size="18" fill="white" text-anchor="middle" dominant-baseline="central">W</text>
+      <rect x="40" y="2" width="36" height="36" rx="5" fill="none" stroke="#d3d6da" stroke-width="2"/>
+      <text x="58" y="24" font-family="'Space Mono',monospace" font-weight="700" font-size="18" fill="#1a1a1b" text-anchor="middle" dominant-baseline="central">O</text>
+      <rect x="80" y="2" width="36" height="36" rx="5" fill="none" stroke="#d3d6da" stroke-width="2"/>
+      <text x="98" y="24" font-family="'Space Mono',monospace" font-weight="700" font-size="18" fill="#1a1a1b" text-anchor="middle" dominant-baseline="central">R</text>
+      <rect x="120" y="2" width="36" height="36" rx="5" fill="none" stroke="#d3d6da" stroke-width="2"/>
+      <text x="138" y="24" font-family="'Space Mono',monospace" font-weight="700" font-size="18" fill="#1a1a1b" text-anchor="middle" dominant-baseline="central">D</text>
+      <rect x="160" y="2" width="36" height="36" rx="5" fill="#6aaa64"/>
+      <path d="M171,21 L180,30 L203,10" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </svg>
+  </div>
+  <a href="index.html" class="nav-back">
+    ← Back to home
+  </a>
+</nav>
+
+<div class="page">
+  <p class="eyebrow">Legal</p>
+  <h1>Privacy Policy</h1>
+  <p class="updated">Last updated: June 2026</p>
+
+  <div class="statement">
+    <p>Wordout does not collect, store, or transmit any personal data.</p>
+    <p>All game data — statistics, settings, preferences — is stored locally on your device only and never leaves your device.</p>
+  </div>
+
+  <div class="detail-grid">
+    <div class="detail-row">
+      <div class="detail-icon">🚫</div>
+      <div class="detail-text">
+        <strong>No ads</strong>
+        <span>Zero ad SDKs. No ad networks. No sponsored content.</span>
+      </div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-icon">📊</div>
+      <div class="detail-text">
+        <strong>No analytics</strong>
+        <span>No Firebase, no Mixpanel, no crash reporters, nothing.</span>
+      </div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-icon">🔍</div>
+      <div class="detail-text">
+        <strong>No tracking</strong>
+        <span>The app has no idea who you are and no way to find out.</span>
+      </div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-icon">👤</div>
+      <div class="detail-text">
+        <strong>No account required</strong>
+        <span>No sign-in, no email, no profile. Just open and play.</span>
+      </div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-icon">📱</div>
+      <div class="detail-text">
+        <strong>Local storage only</strong>
+        <span>Your stats and settings live on your device. Uninstall and they're gone — no cloud backup, no server copy.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="contact-block">
+    <h2>Questions?</h2>
+    <p>Open an issue at <a href="https://github.com/dilippanicker/wordout">github.com/dilippanicker/wordout</a> — that's the only way to reach us, and it's intentionally public so answers benefit everyone.</p>
+  </div>
+</div>
+
+<footer>
+  <div style="display:flex; align-items:center; gap:10px;">
+    <svg style="height:20px; opacity:0.5;" viewBox="0 0 220 40" xmlns="http://www.w3.org/2000/svg">
+      <rect x="0" y="2" width="36" height="36" rx="5" fill="#6aaa64"/>
+      <text x="18" y="24" font-family="'Space Mono',monospace" font-weight="700" font-size="18" fill="white" text-anchor="middle" dominant-baseline="central">W</text>
+      <rect x="40" y="2" width="36" height="36" rx="5" fill="none" stroke="#d3d6da" stroke-width="2"/>
+      <text x="58" y="24" font-family="'Space Mono',monospace" font-weight="700" font-size="18" fill="#1a1a1b" text-anchor="middle" dominant-baseline="central">O</text>
+      <rect x="80" y="2" width="36" height="36" rx="5" fill="none" stroke="#d3d6da" stroke-width="2"/>
+      <text x="98" y="24" font-family="'Space Mono',monospace" font-weight="700" font-size="18" fill="#1a1a1b" text-anchor="middle" dominant-baseline="central">R</text>
+      <rect x="120" y="2" width="36" height="36" rx="5" fill="none" stroke="#d3d6da" stroke-width="2"/>
+      <text x="138" y="24" font-family="'Space Mono',monospace" font-weight="700" font-size="18" fill="#1a1a1b" text-anchor="middle" dominant-baseline="central">D</text>
+      <rect x="160" y="2" width="36" height="36" rx="5" fill="#6aaa64"/>
+      <path d="M171,21 L180,30 L203,10" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </svg>
+    <span class="footer-by">by Onglipo Labs</span>
+  </div>
+  <a href="index.html" class="footer-link">← Back to home</a>
+</footer>
+
 </body>
 </html>
