@@ -186,6 +186,7 @@ export default function WordleScreen() {
   const MSG_H = 44;    // messageArea height (matches styles.messageArea)
   const DOTS_H = 36;   // multi-board indicator row
   const TAB_H = 50;    // tab bar
+  const TILE_GAP = 3;
 
   // Available height for board + keyboard combined (excluding header, message, tab, safe area).
   const totalH = screenH - insets.top - insets.bottom - HEADER_H - MSG_H - TAB_H;
@@ -203,8 +204,8 @@ export default function WordleScreen() {
   const [wordleAreaH, setWordleAreaH] = useState(0);
 
   const wordleMeasuredH = wordleAreaH > 0 ? wordleAreaH : wordleAvailH;
-  const wordleTileSize = Math.max(44, Math.min(80,
-    Math.min(Math.floor(wordleMeasuredH / 6) - 4, Math.floor(availableWidth / 5) - 4),
+  const wordleTileSize = Math.max(44, Math.min(88,
+    Math.min(Math.floor(wordleMeasuredH / 6) - TILE_GAP, Math.floor(availableWidth / 5) - TILE_GAP),
   ));
 
   const [showHelp, setShowHelp] = useState(false);
@@ -307,9 +308,8 @@ export default function WordleScreen() {
 
     // Static estimate used as GameBoard's first-render fallback before it measures itself.
     const qAvailH = totalH - KBD_H - DOTS_H;
-    const qFallbackTile = Math.max(20, Math.min(
-      Math.floor(availableWidth / 5) - 4,
-      Math.floor(qAvailH / maxGuesses) - 4,
+    const qFallbackTile = Math.max(20, Math.min(72,
+      Math.min(Math.floor(availableWidth / 5) - TILE_GAP, Math.floor(qAvailH / maxGuesses) - TILE_GAP),
     ));
 
     return (
