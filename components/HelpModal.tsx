@@ -1,4 +1,4 @@
-import { Modal, View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { Modal, View, Text, Pressable, ScrollView, StyleSheet, useWindowDimensions, Linking } from 'react-native';
 import { useTheme } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Tile, TileStatus } from './Tile';
@@ -136,11 +136,15 @@ const TILE_SIZE = 46;
 
 export function HelpModal({ visible, onClose, hardMode }: HelpModalProps) {
   const { colors } = useTheme();
+  const { height: screenHeight } = useWindowDimensions();
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={[styles.sheet, { backgroundColor: colors.card }]} onPress={() => {}}>
+        <Pressable
+          style={[styles.sheet, { backgroundColor: colors.card, maxHeight: screenHeight * 0.85 }]}
+          onPress={() => {}}
+        >
           <View style={[styles.header, { borderColor: colors.border }]}>
             <Text style={[styles.title, { color: colors.text }]}>How to play</Text>
             <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={12}>
@@ -148,7 +152,11 @@ export function HelpModal({ visible, onClose, hardMode }: HelpModalProps) {
             </Pressable>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+          <ScrollView
+            showsVerticalScrollIndicator={true}
+            bounces={false}
+            contentContainerStyle={styles.scrollContent}
+          >
             <Text style={[styles.rule, { color: colors.text }]}>
               Guess the word in <Text style={styles.bold}>6 tries.</Text>
             </Text>
@@ -219,7 +227,14 @@ export function HelpModal({ visible, onClose, hardMode }: HelpModalProps) {
               </View>
             ))}
 
-            <View style={{ height: 8 }} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <Text style={styles.feedbackPrompt}>Missing a word or shouldn't be an answer?</Text>
+            <Pressable
+              onPress={() => Linking.openURL('https://github.com/dilippanicker/wordout/issues/new?template=word-list-issue.md&title=Word+list+issue:+[WORD]')}
+              hitSlop={8}
+            >
+              <Text style={styles.feedbackLink}>Submit on GitHub →</Text>
+            </Pressable>
           </ScrollView>
         </Pressable>
       </Pressable>
@@ -269,10 +284,12 @@ const styles = StyleSheet.create({
   sheet: {
     width: '90%',
     maxWidth: 380,
-    maxHeight: '85%',
     borderRadius: 12,
     paddingHorizontal: 24,
-    paddingBottom: 16,
+    paddingBottom: 0,
+  },
+  scrollContent: {
+    paddingBottom: 24,
   },
   header: {
     flexDirection: 'row',
@@ -351,5 +368,17 @@ const styles = StyleSheet.create({
   flagPair: {
     fontSize: 16,
     lineHeight: 20,
+  },
+  feedbackPrompt: {
+    fontSize: 13,
+    color: '#878a8c',
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  feedbackLink: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#6aaa64',
+    textAlign: 'center',
   },
 });
