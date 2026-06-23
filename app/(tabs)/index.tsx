@@ -285,7 +285,7 @@ export default function WordleScreen() {
     const qBoardAreaH = screenH - insets.top - insets.bottom - 44 - DOTS_H - 44 - KBD_H;
     const qTileSize = Math.max(20, Math.min(74,
       Math.min(
-        Math.floor((qBoardAreaH - 30) / maxGuesses) - 4,
+        Math.floor(qBoardAreaH / maxGuesses) - 4,
         Math.floor(boardAreaW / 5) - 4,
       ),
     ));
@@ -353,9 +353,6 @@ export default function WordleScreen() {
         >
           {Array.from({ length: boardCount }, (_, i) => (
             <View key={i} style={[styles.boardPage, { width: screenW, backgroundColor: colors.background }]}>
-              <Text style={[styles.boardPageLabel, { color: colors.text }]}>
-                {boardCount > 1 ? `Board ${i + 1}/${boardCount}` : boardCountName(boardCount)}
-              </Text>
               <GameBoard
                 words={qGuesses.map(g => g.word)}
                 boardResults={qGuesses.map(g => g.boardResults[i])}
@@ -592,15 +589,7 @@ const styles = StyleSheet.create({
   },
   boardPage: {
     alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingTop: 4,
-  },
-  boardPageLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    letterSpacing: 0.3,
-    marginBottom: 6,
-    opacity: 0.6,
+    justifyContent: 'center',
   },
   flagEmoji: {
     fontSize: 21,
