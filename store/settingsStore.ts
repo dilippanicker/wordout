@@ -9,7 +9,7 @@ export const BOARD_COUNTS = [1, 2, 3, 4, 6, 8] as const;
 export type BoardCount = typeof BOARD_COUNTS[number];
 
 const BOARD_NAMES: Record<number, string> = {
-  1: 'Wordout', 2: '2-out', 3: '3-out', 4: 'Quadout', 6: '6-out', 8: '8-out',
+  1: 'Wordout', 2: '2-out', 3: '3-out', 4: '4-out', 6: '6-out', 8: '8-out',
 };
 export function boardCountName(n: number): string {
   return BOARD_NAMES[n] ?? `${n}-out`;

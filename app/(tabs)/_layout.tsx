@@ -1,13 +1,14 @@
-import { Tabs } from 'expo-router';
-import { Pressable } from 'react-native';
+import { Tabs, useRouter } from 'expo-router';
+import { Pressable, View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useSettingsStore, boardCountName, BOARD_COUNTS } from '@/store/settingsStore';
+import { useSettingsStore, boardCountName, BOARD_COUNTS, BoardCount } from '@/store/settingsStore';
 import { useGameStore } from '@/store/gameStore';
 import { useQuordleStore } from '@/store/quordleStore';
 import { useStatsStore } from '@/store/statsStore';
 import { isGameInProgress, confirmAbandon } from '@/utils/abandon';
 
-// Wraps each tab bar button so mouse clicks don't steal keyboard focus.
+const noFocus = { tabIndex: -1, onMouseDown: (e: any) => e.preventDefault() };
+
 function NoFocusTabButton(props: any) {
   return (
     <Pressable
@@ -24,6 +25,28 @@ export default function TabLayout() {
   const setGameMode = useSettingsStore(s => s.setGameMode);
   const newGame = useGameStore(s => s.newGame);
   const settingsBadge = useStatsStore(s => s.settingsBadge);
+  const router = useRouter();
+
+  function cycleTo(n: BoardCount) {
+    const doIt = () => {
+      setBoardCount(n);
+      if (n === 1) { setGameMode('wordle'); newGame(); }
+      else { setGameMode('quordle'); useQuordleStore.getState().newGame(); }
+      router.navigate('/(tabs)/' as never);
+    };
+    if (isGameInProgress()) confirmAbandon(doIt);
+    else doIt();
+  }
+
+  function cyclePrev() {
+    const idx = BOARD_COUNTS.indexOf(boardCount);
+    cycleTo(BOARD_COUNTS[(idx - 1 + BOARD_COUNTS.length) % BOARD_COUNTS.length]);
+  }
+
+  function cycleNext() {
+    const idx = BOARD_COUNTS.indexOf(boardCount);
+    cycleTo(BOARD_COUNTS[(idx + 1) % BOARD_COUNTS.length]);
+  }
 
   return (
     <Tabs screenOptions={{ tabBarActiveTintColor: '#6aaa64' }}>
@@ -53,44 +76,40 @@ export default function TabLayout() {
         })}
       />
 
-      {/* ── Game screen — tap cycles through board counts ──────────────── */}
+      {/* ── Game screen — ‹ mode › inline switcher ─────────────────────── */}
       <Tabs.Screen
         name="index"
         options={{
           title: boardCountName(boardCount),
           headerShown: false,
-          tabBarButton: NoFocusTabButton,
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons
-              name={boardCount === 1 ? 'grid-outline' : 'apps-outline'}
-              size={size}
-              color={color}
-            />
+          tabBarButton: (props) => (
+            <View style={[tabStyles.container, props.style as any]}>
+              <Pressable
+                {...(noFocus as any)}
+                onPress={cyclePrev}
+                hitSlop={8}
+                style={tabStyles.arrow}
+              >
+                <Text style={tabStyles.arrowText}>‹</Text>
+              </Pressable>
+              <Pressable
+                {...(noFocus as any)}
+                onPress={props.onPress as any}
+                style={tabStyles.nameArea}
+              >
+                <Text style={tabStyles.modeName}>{boardCountName(boardCount)}</Text>
+              </Pressable>
+              <Pressable
+                {...(noFocus as any)}
+                onPress={cycleNext}
+                hitSlop={8}
+                style={tabStyles.arrow}
+              >
+                <Text style={tabStyles.arrowText}>›</Text>
+              </Pressable>
+            </View>
           ),
         }}
-        listeners={({ navigation }) => ({
-          tabPress: (e) => {
-            e.preventDefault();
-            const state = navigation.getState();
-            const currentTab = state.routes[state.index]?.name;
-            if (currentTab === 'index') {
-              const cycle = () => {
-                const nextCount = BOARD_COUNTS[(BOARD_COUNTS.indexOf(boardCount) + 1) % BOARD_COUNTS.length];
-                setBoardCount(nextCount);
-                if (nextCount === 1) {
-                  setGameMode('wordle');
-                  newGame();
-                } else {
-                  setGameMode('quordle');
-                  useQuordleStore.getState().newGame();
-                }
-              };
-              if (isGameInProgress()) confirmAbandon(cycle);
-              else cycle();
-            }
-            navigation.navigate('index');
-          },
-        })}
       />
 
       {/* ── Settings ────────────────────────────────────────────────────── */}
@@ -118,3 +137,34 @@ export default function TabLayout() {
     </Tabs>
   );
 }
+
+const tabStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  arrow: {
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  arrowText: {
+    fontSize: 20,
+    color: '#878a8c',
+    lineHeight: 24,
+  },
+  nameArea: {
+    paddingHorizontal: 4,
+    paddingVertical: 6,
+    minWidth: 48,
+    alignItems: 'center',
+  },
+  modeName: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#6aaa64',
+    letterSpacing: 0.3,
+    textAlign: 'center',
+  },
+});

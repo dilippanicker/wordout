@@ -38,7 +38,7 @@
 - `gameMode: 'wordle' | 'quordle'`
 - `boardCount: BoardCount` (1 | 2 | 3 | 4 | 6 | 8, default 4)
 - `BOARD_COUNTS = [1,2,3,4,6,8]`, `BoardCount` type
-- `boardCountName(n)` → `'Wordout' | '2-out' | '3-out' | 'Quadout' | '6-out' | '8-out'`
+- `boardCountName(n)` → `'Wordout' | '2-out' | '3-out' | '4-out' | '6-out' | '8-out'`
 
 **`gameStore.ts`** — Wordout logic (6 guesses, single board):
 - Resets only on language change (subscription watches `language` only)
@@ -59,7 +59,7 @@
 
 ### Abandon guard — `utils/abandon.ts`
 `isGameInProgress()` reads the active store imperatively (`getState()`) — no subscription needed. Returns true when `gameStatus === 'playing' && guesses.length > 0`.  
-`confirmAbandon(onConfirm)` shows `Alert.alert` on Android/iOS, `window.confirm` on web. Called before: New Game tab, middle tab cycle, language flag toggle.
+`confirmAbandon(onConfirm)` shows `Alert.alert` on Android/iOS, `window.confirm` on web. Called before: New Game tab, ‹ › mode arrows, language flag toggle.
 
 **Key subscription rule**: `gameStore` and `quordleStore` subscriptions call `newGame()` on `language` change only. Board count changes are handled explicitly in `settings.tsx → handleBoardCountSelect`.
 
@@ -219,7 +219,7 @@ Build command: `npx eas-cli build --platform android --profile preview --non-int
 - Wordout (single board) and multi-board mode (2/3/4/6/8 boards)
 - Middle tab cycles board counts (1→2→3→4→6→8→1); New Game tab resets
 - Abandon-game confirmation guard (New Game, board cycle, language switch) — `utils/abandon.ts`
-- Win bounce wave + lose board shake animations
+- Win bounce wave (per-board solve) + full-screen green shimmer (game win) + unsolved boards dim on game loss
 - Square best-fit tiles: `min(tileFromWidth, tileFromHeight)`, margin gap = 4px
 - Enter-on-right keyboard option; color blind mode; dark/light theme
 - Stats per mode with guess distribution; share emoji grid

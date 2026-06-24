@@ -6,16 +6,16 @@ A free, open-source word puzzle game for Android with no ads, no tracking, and a
 
 - **Wordout** — classic 5-letter word game, 6 guesses
 - **Multi-board mode** — solve 2, 3, 4, 6, or 8 words simultaneously; every guess applies to all boards at once
-  - 2-out (7 guesses), 3-out (8 guesses), Quadout (9 guesses), 6-out (11 guesses), 8-out (13 guesses)
+  - 2-out (7 guesses), 3-out (8 guesses), 4-out (9 guesses), 6-out (11 guesses), 8-out (13 guesses)
   - Swipe between boards; progress indicators show letters found per board at a glance
-  - Tap the middle tab to cycle through board counts instantly (Wordout → 2-out → ... → 8-out → Wordout)
+  - Use **‹ ›** arrows in the bottom tab to cycle board modes instantly
 - **American and British English** word lists
 - **Hard mode** — revealed hints must be used in all future guesses
 - **Color blind mode** — high-contrast orange and blue instead of green and yellow
 - **Dark / light theme**
 - **Stats tracking** with guess distribution, per game mode
 - **Share results** as emoji grid
-- **Win / lose animations** — bounce wave on winning row, board shake on loss
+- **Win / lose animations** — green shimmer on game win; unsolved boards dim on game loss
 - **Enter key on right** option — swaps ⌫ and ENTER positions on the keyboard
 - Confirms before abandoning an in-progress game (New Game, board switch, language change)
 - No ads, no accounts, no tracking

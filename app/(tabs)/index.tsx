@@ -165,6 +165,17 @@ async function copyToClipboard(text: string): Promise<boolean> {
 
 const WIN_MESSAGES = ['Genius!', 'Magnificent!', 'Impressive!', 'Splendid!', 'Great!', 'Phew!'];
 
+// ── BoardPage — dims persistently when the game is lost and this board unsolved ─
+
+function BoardPage({ dim, style, children }: { dim: boolean; style: object; children: React.ReactNode }) {
+  const opacity = useSharedValue(dim ? 0.45 : 1);
+  useEffect(() => {
+    opacity.value = withTiming(dim ? 0.45 : 1, { duration: 900 });
+  }, [dim]);
+  const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  return <Animated.View style={[style, animStyle]}>{children}</Animated.View>;
+}
+
 // ── Screen ──────────────────────────────────────────────────────────────────
 
 export default function WordleScreen() {
@@ -239,6 +250,9 @@ export default function WordleScreen() {
 
   const [shakeKey, setShakeKey] = useState(0);
   const toastOpacity = useSharedValue(0);
+  const winShimmerOpacity = useSharedValue(0);
+  const boardDimOpacity = useSharedValue(gameStatus === 'lost' ? 0.45 : 1);
+  const prevGameStatusRef = useRef(gameStatus);
 
   // Blur focused tab button so Enter goes to the game keydown handler, not the tab.
   useFocusEffect(
@@ -279,6 +293,31 @@ export default function WordleScreen() {
   }, [toast]);
 
   const toastStyle = useAnimatedStyle(() => ({ opacity: toastOpacity.value }));
+
+  // Game-over animations: win shimmer + single-board lose dim.
+  useEffect(() => {
+    const prev = prevGameStatusRef.current;
+    prevGameStatusRef.current = gameStatus;
+    if (gameStatus === prev) return;
+    if (gameStatus === 'won') {
+      winShimmerOpacity.value = withSequence(
+        withTiming(0.4, { duration: 150 }),
+        withDelay(350, withTiming(0, { duration: 700 })),
+      );
+    }
+    if (gameStatus === 'lost') {
+      boardDimOpacity.value = withTiming(0.45, { duration: 900 });
+    }
+    if (gameStatus === 'playing') {
+      boardDimOpacity.value = withTiming(1, { duration: 300 });
+    }
+  }, [gameStatus]);
+
+  const winShimmerStyle = useAnimatedStyle(() => ({
+    opacity: winShimmerOpacity.value,
+    backgroundColor: '#5BA75A',
+  }));
+  const boardDimStyle = useAnimatedStyle(() => ({ opacity: boardDimOpacity.value }));
 
   function handleKey(key: string) {
     if (key === 'ENTER') submitGuess();
@@ -392,7 +431,11 @@ export default function WordleScreen() {
             const isSolved = solvedRow >= 0;
             const visibleGuesses = isSolved ? qGuesses.slice(0, solvedRow + 1) : qGuesses;
             return (
-              <View key={i} style={[styles.boardPage, { width: screenW, backgroundColor: colors.background }]}>
+              <BoardPage
+                key={i}
+                dim={gameStatus === 'lost' && !isSolved}
+                style={[styles.boardPage, { width: screenW, backgroundColor: colors.background }]}
+              >
                 <GameBoard
                   words={visibleGuesses.map(g => g.word)}
                   boardResults={visibleGuesses.map(g => g.boardResults[i])}
@@ -404,7 +447,7 @@ export default function WordleScreen() {
                   gameOver={gameStatus === 'lost' && !isSolved}
                   shakeKey={shakeKey}
                 />
-              </View>
+              </BoardPage>
             );
           })}
         </ScrollView>
@@ -433,6 +476,7 @@ export default function WordleScreen() {
 
         <Keyboard onKey={handleKey} keyStatuses={qKeyStatuses} keyHeight={keyHeight} />
         <HelpModal visible={showHelp} onClose={() => setShowHelp(false)} hardMode={hardMode} />
+        <Animated.View style={[StyleSheet.absoluteFill, winShimmerStyle]} pointerEvents="none" />
       </SafeAreaView>
     );
   }
@@ -450,9 +494,9 @@ export default function WordleScreen() {
     >
       {renderHeader({ ...headerProps, title: 'Wordout' })}
 
-      <View style={styles.boardArea} onLayout={e => setWordleAreaH(e.nativeEvent.layout.height)}>
+      <Animated.View style={[styles.boardArea, boardDimStyle]} onLayout={e => setWordleAreaH(e.nativeEvent.layout.height)}>
         <GameBoard guesses={guesses} currentGuess={currentGuess} tileSize={wordleTileSize} shakeKey={shakeKey} gameOver={gameStatus === 'lost'} />
-      </View>
+      </Animated.View>
 
       <View style={styles.messageArea}>
         {gameStatus !== 'playing' ? (
@@ -476,6 +520,7 @@ export default function WordleScreen() {
 
       <Keyboard onKey={handleKey} keyStatuses={keyStatuses} keyHeight={keyHeight} />
       <HelpModal visible={showHelp} onClose={() => setShowHelp(false)} hardMode={hardMode} />
+      <Animated.View style={[StyleSheet.absoluteFill, winShimmerStyle]} pointerEvents="none" />
     </SafeAreaView>
   );
 }

@@ -9,68 +9,27 @@ interface HelpModalProps {
   hardMode: boolean;
 }
 
-interface ExampleTile { letter: string; status: TileStatus }
-interface Example { tiles: ExampleTile[]; description: string }
+const TILE_SIZE = 44;
+type ExTile = { letter: string; status: TileStatus };
 
-const EXAMPLES: Example[] = [
-  {
-    tiles: [
-      { letter: 'W', status: 'correct' },
-      { letter: 'E', status: 'filled' },
-      { letter: 'A', status: 'filled' },
-      { letter: 'R', status: 'filled' },
-      { letter: 'Y', status: 'filled' },
-    ],
-    description: 'W is in the word and in the correct spot.',
-  },
-  {
-    tiles: [
-      { letter: 'P', status: 'filled' },
-      { letter: 'I', status: 'present' },
-      { letter: 'L', status: 'filled' },
-      { letter: 'L', status: 'filled' },
-      { letter: 'S', status: 'filled' },
-    ],
-    description: 'I is in the word but in the wrong spot.',
-  },
-  {
-    tiles: [
-      { letter: 'V', status: 'filled' },
-      { letter: 'A', status: 'filled' },
-      { letter: 'G', status: 'filled' },
-      { letter: 'U', status: 'absent' },
-      { letter: 'E', status: 'filled' },
-    ],
-    description: 'U is not in the word in any spot.',
-  },
+// RAISE vs FROST: R=present, A=absent, I=absent, S=correct, E=absent
+const EXAMPLE_RAISE: ExTile[] = [
+  { letter: 'R', status: 'present' },
+  { letter: 'A', status: 'absent' },
+  { letter: 'I', status: 'absent' },
+  { letter: 'S', status: 'correct' },
+  { letter: 'E', status: 'absent' },
 ];
 
-type IconRowDef = { renderIcon: () => React.ReactNode; text: string };
-
-const ICON_ROWS: IconRowDef[] = [
-  {
-    renderIcon: () => <Ionicons name="refresh-outline" size={18} color="#878a8c" />,
-    text: 'Start a new game at any time, abandoning the current game',
-  },
-  {
-    renderIcon: () => <Text style={styles.flagPair}>🇺🇸 🇬🇧</Text>,
-    text: 'Switch between American and British English word lists',
-  },
-  {
-    renderIcon: () => <Text style={styles.flagPair}>🐣 🔥</Text>,
-    text: 'Hard mode — 🐣 off, 🔥 on. Revealed hints must be used in all future guesses.',
-  },
-  {
-    renderIcon: () => <Ionicons name="moon-outline" size={18} color="#878a8c" />,
-    text: 'Toggle dark / light theme',
-  },
-  {
-    renderIcon: () => <Ionicons name="help-circle-outline" size={18} color="#878a8c" />,
-    text: 'This help screen',
-  },
+// CLOUT vs FROST: C=absent, L=absent, O=correct, U=absent, T=correct
+const EXAMPLE_CLOUT: ExTile[] = [
+  { letter: 'C', status: 'absent' },
+  { letter: 'L', status: 'absent' },
+  { letter: 'O', status: 'correct' },
+  { letter: 'U', status: 'absent' },
+  { letter: 'T', status: 'correct' },
 ];
 
-// Small indicator shape helpers used in the BOARD INDICATORS section.
 function IndicatorSquare() {
   return (
     <View style={indStyles.square}>
@@ -95,32 +54,37 @@ function IndicatorCircle({
   );
 }
 
-type BoardIndRowDef = { renderIndicator: () => React.ReactNode; text: string };
+type IconRowDef = { renderIcon: () => React.ReactNode; text: string };
+type IndRowDef = { renderIndicator: () => React.ReactNode; text: string };
 
-const BOARD_IND_ROWS: BoardIndRowDef[] = [
+const BOARD_IND_ROWS: IndRowDef[] = [
   {
     renderIndicator: () => <IndicatorSquare />,
-    text: 'Current board you are playing',
+    text: 'Board you are currently playing',
   },
   {
     renderIndicator: () => <IndicatorCircle borderColor="#878a8c" />,
-    text: 'No guesses yet, or all results were grey',
+    text: 'No correct letters yet',
+  },
+  {
+    renderIndicator: () => <IndicatorCircle borderColor="#c9b458" />,
+    text: 'Has misplaced letters, no greens yet',
   },
   {
     renderIndicator: () => (
       <IndicatorCircle borderColor="#6aaa64">
-        <Text style={indStyles.greenNum}>3</Text>
-      </IndicatorCircle>
-    ),
-    text: 'Green number = letters in the correct position (greens only, no yellows)',
-  },
-  {
-    renderIndicator: () => (
-      <IndicatorCircle borderColor="#c9b458" backgroundColor="#c9b458">
         <Text style={indStyles.greenNum}>2</Text>
       </IndicatorCircle>
     ),
-    text: 'Yellow fill = board also has misplaced letters (present but wrong position)',
+    text: '2 letters in correct position, no misplaced',
+  },
+  {
+    renderIndicator: () => (
+      <IndicatorCircle borderColor="#c9b458">
+        <Text style={indStyles.greenNum}>2</Text>
+      </IndicatorCircle>
+    ),
+    text: '2 correct position + misplaced letters',
   },
   {
     renderIndicator: () => (
@@ -132,28 +96,56 @@ const BOARD_IND_ROWS: BoardIndRowDef[] = [
   },
 ];
 
-const TILE_SIZE = 46;
+const TOP_ICON_ROWS: IconRowDef[] = [
+  {
+    renderIcon: () => <Text style={styles.flagPair}>🇺🇸 🇬🇧</Text>,
+    text: 'Switch between American and British English',
+  },
+  {
+    renderIcon: () => <Text style={styles.flagPair}>🐣 🔥</Text>,
+    text: 'Easy / hard mode — revealed hints must be used in all future guesses',
+  },
+  {
+    renderIcon: () => <Ionicons name="moon-outline" size={18} color="#878a8c" />,
+    text: 'Toggle dark / light theme',
+  },
+  {
+    renderIcon: () => <Ionicons name="help-circle-outline" size={18} color="#878a8c" />,
+    text: 'This help screen',
+  },
+];
 
-export function HelpModal({ visible, onClose, hardMode }: HelpModalProps) {
+const BOTTOM_ICON_ROWS: IconRowDef[] = [
+  {
+    renderIcon: () => <Ionicons name="refresh-outline" size={18} color="#878a8c" />,
+    text: 'Start a new game, abandoning the current one',
+  },
+  {
+    renderIcon: () => <Text style={styles.arrowPair}>‹ ›</Text>,
+    text: 'Cycle through board modes (1, 2, 3, 4, 6, 8 boards)',
+  },
+  {
+    renderIcon: () => <Ionicons name="settings-outline" size={18} color="#878a8c" />,
+    text: 'Settings',
+  },
+];
+
+export function HelpModal({ visible, onClose }: HelpModalProps) {
   const { colors } = useTheme();
   const { height: screenHeight } = useWindowDimensions();
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      {/* Overlay — View (not Pressable) so it doesn't interfere with ScrollView height */}
       <View style={styles.overlay}>
         <View style={[styles.modalBox, { backgroundColor: colors.card }]}>
 
-          {/* Fixed header — outside ScrollView so it doesn't scroll away */}
           <View style={[styles.header, { borderColor: colors.border }]}>
-            <Text style={[styles.title, { color: colors.text }]}>How to play</Text>
+            <Text style={[styles.title, { color: colors.text }]}>HOW TO PLAY</Text>
             <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={12}>
               <Text style={styles.closeIcon}>✕</Text>
             </Pressable>
           </View>
 
-          {/* Scrollable content — maxHeight on the ScrollView itself is the reliable pattern;
-              flex:1 requires the parent to have an explicit height, maxHeight is not enough. */}
           <ScrollView
             style={[styles.scrollView, { maxHeight: screenHeight * 0.72 }]}
             contentContainerStyle={styles.scrollContent}
@@ -161,49 +153,48 @@ export function HelpModal({ visible, onClose, hardMode }: HelpModalProps) {
             bounces={false}
             nestedScrollEnabled={true}
           >
+
+            {/* ── SINGLE BOARD ──────────────────────────────────────── */}
+            <Text style={styles.sectionLabel}>SINGLE BOARD</Text>
             <Text style={[styles.rule, { color: colors.text }]}>
               Guess the word in <Text style={styles.bold}>6 tries.</Text>
             </Text>
             <Text style={[styles.rule, { color: colors.text }]}>
-              Each guess must be a valid 5-letter word.
-            </Text>
-            <Text style={[styles.rule, { color: colors.text }]}>
-              After each guess, the colour of the tiles will change to show how close your guess was.
+              Each guess must be a valid 5-letter word. After each guess, the colour of the tiles will change to show how close you were.
             </Text>
 
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <Text style={styles.sectionLabel}>EXAMPLES</Text>
+            <Text style={[styles.subLabel, { color: colors.text }]}>EXAMPLE</Text>
 
-            {EXAMPLES.map(({ tiles, description }, i) => (
-              <View key={i} style={styles.example}>
-                <View style={styles.exampleRow}>
-                  {tiles.map((t, j) => (
-                    <Tile key={j} letter={t.letter} status={t.status} size={TILE_SIZE} />
-                  ))}
-                </View>
-                <Text style={[styles.exampleDesc, { color: colors.text }]}>{description}</Text>
-              </View>
-            ))}
+            <View style={styles.exampleRow}>
+              {EXAMPLE_RAISE.map((t, j) => <Tile key={j} letter={t.letter} status={t.status} size={TILE_SIZE} />)}
+            </View>
+            <View style={styles.exampleRow}>
+              {EXAMPLE_CLOUT.map((t, j) => <Tile key={j} letter={t.letter} status={t.status} size={TILE_SIZE} />)}
+            </View>
+            <View style={[styles.exampleRow, styles.exampleRowLast]}>
+              {Array.from({ length: 5 }, (_, j) => <Tile key={j} size={TILE_SIZE} />)}
+            </View>
 
-            <Text style={[styles.colorBlindNote, { color: colors.text }]}>
-              Enable <Text style={styles.bold}>Color Blind Mode</Text> in Settings to replace green and yellow with high-contrast orange and blue.
+            <Text style={[styles.colorKey, { color: colors.text }]}>
+              {'🟩 correct position   🟨 right letter, wrong spot   ⬛ not in word'}
+            </Text>
+            <Text style={styles.mutedNote}>
+              Enable Color Blind Mode in Settings for high-contrast orange and blue.
             </Text>
 
+            {/* ── MULTI-BOARD MODE ────────────────────────────────── */}
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <Text style={styles.sectionLabel}>MULTI-BOARD MODE</Text>
             <Text style={[styles.rule, { color: colors.text }]}>
-              Solve <Text style={styles.bold}>2–8 words simultaneously.</Text> Every guess applies to all boards at once. Choose a board count in Settings.
+              Solve <Text style={styles.bold}>2–8 words simultaneously.</Text> Every guess applies to all boards at once. Use the <Text style={styles.bold}>‹ ›</Text> arrows at the bottom to switch between modes.
             </Text>
             <Text style={[styles.rule, { color: colors.text }]}>
-              You get <Text style={styles.bold}>5 + board count guesses</Text> (e.g. 9 for Quadout, 13 for 8-out).
+              You get <Text style={styles.bold}>5 + board count guesses</Text> (e.g. 9 for 4-out, 13 for 8-out).
             </Text>
 
+            {/* ── BOARD INDICATORS ────────────────────────────────── */}
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <Text style={styles.sectionLabel}>BOARD INDICATORS</Text>
-            <Text style={[styles.rule, { color: colors.text }]}>
-              The row of circles above the board shows the progress of each board at a glance.
-            </Text>
-
             {BOARD_IND_ROWS.map(({ renderIndicator, text }, i) => (
               <View key={i} style={styles.iconRow}>
                 <View style={styles.iconCell}>{renderIndicator()}</View>
@@ -211,30 +202,31 @@ export function HelpModal({ visible, onClose, hardMode }: HelpModalProps) {
               </View>
             ))}
 
-            {hardMode && (
-              <>
-                <View style={[styles.divider, { backgroundColor: colors.border }]} />
-                <Text style={styles.sectionLabel}>HARD MODE</Text>
-                <Text style={[styles.rule, { color: colors.text }]}>
-                  Any revealed hints must be used in all subsequent guesses.
-                </Text>
-              </>
-            )}
-
+            {/* ── ICONS ───────────────────────────────────────────── */}
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <Text style={styles.sectionLabel}>ICONS</Text>
 
-            {ICON_ROWS.map(({ renderIcon, text }, i) => (
+            <Text style={[styles.subLabel, { color: colors.text }]}>Top bar</Text>
+            {TOP_ICON_ROWS.map(({ renderIcon, text }, i) => (
               <View key={i} style={styles.iconRow}>
                 <View style={styles.iconCell}>{renderIcon()}</View>
                 <Text style={[styles.iconDesc, { color: colors.text }]}>{text}</Text>
               </View>
             ))}
 
+            <Text style={[styles.subLabel, { color: colors.text, marginTop: 10 }]}>Bottom bar</Text>
+            {BOTTOM_ICON_ROWS.map(({ renderIcon, text }, i) => (
+              <View key={i} style={styles.iconRow}>
+                <View style={styles.iconCell}>{renderIcon()}</View>
+                <Text style={[styles.iconDesc, { color: colors.text }]}>{text}</Text>
+              </View>
+            ))}
+
+            {/* ── FOOTER ──────────────────────────────────────────── */}
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <Text style={styles.feedbackPrompt}>Missing a word or shouldn't be an answer?</Text>
+            <Text style={styles.feedbackPrompt}>Missing a word or think a word shouldn't be an answer?</Text>
             <Pressable
-              onPress={() => Linking.openURL('https://github.com/dilippanicker/wordout/issues/new?template=word-list-issue.md&title=Word+list+issue:+[WORD]')}
+              onPress={() => Linking.openURL('https://github.com/dilippanicker/wordout/issues')}
               hitSlop={8}
             >
               <Text style={styles.feedbackLink}>Submit on GitHub →</Text>
@@ -246,15 +238,16 @@ export function HelpModal({ visible, onClose, hardMode }: HelpModalProps) {
             >
               <Text style={styles.feedbackLink}>View source on GitHub →</Text>
             </Pressable>
-          </ScrollView>
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <Text style={[styles.madeBy, { color: colors.text }]}>Made with ♥ by Onglipo Labs</Text>
 
+          </ScrollView>
         </View>
       </View>
     </Modal>
   );
 }
 
-// Styles for the small indicator shapes inside the help modal.
 const indStyles = StyleSheet.create({
   square: {
     width: 20,
@@ -320,13 +313,25 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#878a8c',
   },
-  scrollView: {
-    // maxHeight set inline from screenHeight — no flex:1 needed here
-  },
+  scrollView: {},
   scrollContent: {
     paddingHorizontal: 24,
     paddingTop: 16,
     paddingBottom: 32,
+  },
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1,
+    color: '#878a8c',
+    marginBottom: 12,
+  },
+  subLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.4,
+    marginBottom: 10,
+    marginTop: 4,
   },
   rule: {
     fontSize: 15,
@@ -340,30 +345,23 @@ const styles = StyleSheet.create({
     height: StyleSheet.hairlineWidth,
     marginVertical: 16,
   },
-  sectionLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1,
-    color: '#878a8c',
-    marginBottom: 14,
-  },
-  example: {
-    marginBottom: 18,
-  },
   exampleRow: {
     flexDirection: 'row',
-    marginBottom: 8,
+    marginBottom: 4,
   },
-  exampleDesc: {
-    fontSize: 14,
-    lineHeight: 20,
+  exampleRowLast: {
+    marginBottom: 14,
   },
-  colorBlindNote: {
+  colorKey: {
     fontSize: 13,
     lineHeight: 19,
-    marginTop: 4,
+    marginBottom: 8,
+  },
+  mutedNote: {
+    fontSize: 12,
+    lineHeight: 17,
+    color: '#878a8c',
     marginBottom: 4,
-    opacity: 0.7,
   },
   iconRow: {
     flexDirection: 'row',
@@ -381,8 +379,13 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
   flagPair: {
-    fontSize: 16,
+    fontSize: 15,
     lineHeight: 20,
+  },
+  arrowPair: {
+    fontSize: 17,
+    color: '#878a8c',
+    lineHeight: 22,
   },
   feedbackPrompt: {
     fontSize: 13,
@@ -395,5 +398,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#6aaa64',
     textAlign: 'center',
+  },
+  madeBy: {
+    fontSize: 12,
+    textAlign: 'center',
+    opacity: 0.5,
   },
 });
