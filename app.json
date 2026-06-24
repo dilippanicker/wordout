@@ -15,7 +15,7 @@
       "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#121213"
+        "backgroundColor": "#FFF8EE"
       },
       "predictiveBackGestureEnabled": false
     },
@@ -31,7 +31,7 @@
         {
           "image": "./assets/splash-icon.png",
           "resizeMode": "contain",
-          "backgroundColor": "#121213"
+          "backgroundColor": "#FFF8EE"
         }
       ]
     ],

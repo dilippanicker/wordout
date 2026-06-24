@@ -46,3 +46,4 @@ yarn-error.*
 /ios
 /android
 wordlist/.venv/
+assets/images.zip

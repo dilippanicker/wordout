@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- Android adaptive icon foreground layer -->
+  <!-- Safe zone is central 66% (672x672), content scaled down ~15% with extra padding -->
+  <rect width="1024" height="1024" fill="#FFF8EE"/>
+
+  <!-- Tiles scaled to fit safe zone: tile=122px, gap=13px, total=5*122+4*13=662, start x=181 -->
+  <!-- Row 1 y=160, Row 2 y=300 -->
+
+  <!-- RAISE: R🟨 A⬛ I⬛ S🟩 E⬛ -->
+  <rect x="181" y="160" width="122" height="122" rx="18" fill="#C9A227"/>
+  <text x="242" y="254" font-family="Georgia,serif" font-weight="700" font-size="78" fill="white" text-anchor="middle">R</text>
+
+  <rect x="316" y="160" width="122" height="122" rx="18" fill="#888780"/>
+  <text x="377" y="254" font-family="Georgia,serif" font-weight="700" font-size="78" fill="white" text-anchor="middle">A</text>
+
+  <rect x="451" y="160" width="122" height="122" rx="18" fill="#888780"/>
+  <text x="512" y="254" font-family="Georgia,serif" font-weight="700" font-size="78" fill="white" text-anchor="middle">I</text>
+
+  <rect x="586" y="160" width="122" height="122" rx="18" fill="#5BA75A"/>
+  <text x="647" y="254" font-family="Georgia,serif" font-weight="700" font-size="78" fill="white" text-anchor="middle">S</text>
+
+  <rect x="721" y="160" width="122" height="122" rx="18" fill="#888780"/>
+  <text x="782" y="254" font-family="Georgia,serif" font-weight="700" font-size="78" fill="white" text-anchor="middle">E</text>
+
+  <!-- CLOUT: C⬛ L⬛ O🟩 U⬛ T🟩 -->
+  <rect x="181" y="295" width="122" height="122" rx="18" fill="#888780"/>
+  <text x="242" y="389" font-family="Georgia,serif" font-weight="700" font-size="78" fill="white" text-anchor="middle">C</text>
+
+  <rect x="316" y="295" width="122" height="122" rx="18" fill="#888780"/>
+  <text x="377" y="389" font-family="Georgia,serif" font-weight="700" font-size="78" fill="white" text-anchor="middle">L</text>
+
+  <rect x="451" y="295" width="122" height="122" rx="18" fill="#5BA75A"/>
+  <text x="512" y="389" font-family="Georgia,serif" font-weight="700" font-size="78" fill="white" text-anchor="middle">O</text>
+
+  <rect x="586" y="295" width="122" height="122" rx="18" fill="#888780"/>
+  <text x="647" y="389" font-family="Georgia,serif" font-weight="700" font-size="78" fill="white" text-anchor="middle">U</text>
+
+  <rect x="721" y="295" width="122" height="122" rx="18" fill="#5BA75A"/>
+  <text x="782" y="389" font-family="Georgia,serif" font-weight="700" font-size="78" fill="white" text-anchor="middle">T</text>
+
+  <!-- Empty rows 3 and 4 -->
+  <rect x="181" y="430" width="122" height="122" rx="18" fill="none" stroke="#D3C9B8" stroke-width="4"/>
+  <rect x="316" y="430" width="122" height="122" rx="18" fill="none" stroke="#D3C9B8" stroke-width="4"/>
+  <rect x="451" y="430" width="122" height="122" rx="18" fill="none" stroke="#D3C9B8" stroke-width="4"/>
+  <rect x="586" y="430" width="122" height="122" rx="18" fill="none" stroke="#D3C9B8" stroke-width="4"/>
+  <rect x="721" y="430" width="122" height="122" rx="18" fill="none" stroke="#D3C9B8" stroke-width="4"/>
+
+  <rect x="181" y="565" width="122" height="122" rx="18" fill="none" stroke="#D3C9B8" stroke-width="4"/>
+  <rect x="316" y="565" width="122" height="122" rx="18" fill="none" stroke="#D3C9B8" stroke-width="4"/>
+  <rect x="451" y="565" width="122" height="122" rx="18" fill="none" stroke="#D3C9B8" stroke-width="4"/>
+  <rect x="586" y="565" width="122" height="122" rx="18" fill="none" stroke="#D3C9B8" stroke-width="4"/>
+  <rect x="721" y="565" width="122" height="122" rx="18" fill="none" stroke="#D3C9B8" stroke-width="4"/>
+
+  <!-- WORDOUT label -->
+  <text x="512" y="790" font-family="Georgia,serif" font-weight="700" font-size="58" fill="#8B6914" text-anchor="middle" letter-spacing="12">WORDOUT</text>
+</svg>

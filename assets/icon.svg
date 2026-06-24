@@ -1,41 +1,57 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
-  <!-- Background: dark rounded square -->
-  <rect width="1024" height="1024" rx="180" ry="180" fill="#121213"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- Background: parchment/cream -->
+  <rect width="1024" height="1024" rx="180" fill="#FFF8EE"/>
 
-  <!-- 5 tiles: 160×160px, 10px gap, side padding 92px, vertically centred at y=432 -->
+  <!-- RAISE row: R🟨 A⬛ I⬛ S🟩 E⬛ -->
+  <!-- 5 tiles, each 148px wide, gap 16px, total = 5*148+4*16 = 804, start x = (1024-804)/2 = 110 -->
+  <!-- Row 1 y=190, Row 2 y=370, empty rows y=550,730 -->
 
-  <!-- Tile 1: W — correct (green) -->
-  <rect x="92" y="432" width="160" height="160" rx="12" fill="#6aaa64"/>
-  <text x="172" y="512"
-        font-family="'Liberation Sans','Noto Sans',sans-serif"
-        font-weight="bold" font-size="88"
-        fill="white" text-anchor="middle" dominant-baseline="central">W</text>
+  <!-- R - yellow -->
+  <rect x="110" y="190" width="148" height="148" rx="22" fill="#C9A227"/>
+  <text x="184" y="306" font-family="Georgia,serif" font-weight="700" font-size="96" fill="white" text-anchor="middle">R</text>
+  <!-- A - grey -->
+  <rect x="274" y="190" width="148" height="148" rx="22" fill="#888780"/>
+  <text x="348" y="306" font-family="Georgia,serif" font-weight="700" font-size="96" fill="white" text-anchor="middle">A</text>
+  <!-- I - grey -->
+  <rect x="438" y="190" width="148" height="148" rx="22" fill="#888780"/>
+  <text x="512" y="306" font-family="Georgia,serif" font-weight="700" font-size="96" fill="white" text-anchor="middle">I</text>
+  <!-- S - green -->
+  <rect x="602" y="190" width="148" height="148" rx="22" fill="#5BA75A"/>
+  <text x="676" y="306" font-family="Georgia,serif" font-weight="700" font-size="96" fill="white" text-anchor="middle">S</text>
+  <!-- E - grey -->
+  <rect x="766" y="190" width="148" height="148" rx="22" fill="#888780"/>
+  <text x="840" y="306" font-family="Georgia,serif" font-weight="700" font-size="96" fill="white" text-anchor="middle">E</text>
 
-  <!-- Tile 2: O — present (yellow) -->
-  <rect x="262" y="432" width="160" height="160" rx="12" fill="#c9b458"/>
-  <text x="342" y="512"
-        font-family="'Liberation Sans','Noto Sans',sans-serif"
-        font-weight="bold" font-size="88"
-        fill="white" text-anchor="middle" dominant-baseline="central">O</text>
+  <!-- CLOUT row: C⬛ L⬛ O🟩 U⬛ T🟩 -->
+  <!-- C - grey -->
+  <rect x="110" y="358" width="148" height="148" rx="22" fill="#888780"/>
+  <text x="184" y="474" font-family="Georgia,serif" font-weight="700" font-size="96" fill="white" text-anchor="middle">C</text>
+  <!-- L - grey -->
+  <rect x="274" y="358" width="148" height="148" rx="22" fill="#888780"/>
+  <text x="348" y="474" font-family="Georgia,serif" font-weight="700" font-size="96" fill="white" text-anchor="middle">L</text>
+  <!-- O - green -->
+  <rect x="438" y="358" width="148" height="148" rx="22" fill="#5BA75A"/>
+  <text x="512" y="474" font-family="Georgia,serif" font-weight="700" font-size="96" fill="white" text-anchor="middle">O</text>
+  <!-- U - grey -->
+  <rect x="602" y="358" width="148" height="148" rx="22" fill="#888780"/>
+  <text x="676" y="474" font-family="Georgia,serif" font-weight="700" font-size="96" fill="white" text-anchor="middle">U</text>
+  <!-- T - green -->
+  <rect x="766" y="358" width="148" height="148" rx="22" fill="#5BA75A"/>
+  <text x="840" y="474" font-family="Georgia,serif" font-weight="700" font-size="96" fill="white" text-anchor="middle">T</text>
 
-  <!-- Tile 3: R — correct (green) -->
-  <rect x="432" y="432" width="160" height="160" rx="12" fill="#6aaa64"/>
-  <text x="512" y="512"
-        font-family="'Liberation Sans','Noto Sans',sans-serif"
-        font-weight="bold" font-size="88"
-        fill="white" text-anchor="middle" dominant-baseline="central">R</text>
+  <!-- Empty rows 3 and 4 -->
+  <rect x="110" y="526" width="148" height="148" rx="22" fill="none" stroke="#D3C9B8" stroke-width="5"/>
+  <rect x="274" y="526" width="148" height="148" rx="22" fill="none" stroke="#D3C9B8" stroke-width="5"/>
+  <rect x="438" y="526" width="148" height="148" rx="22" fill="none" stroke="#D3C9B8" stroke-width="5"/>
+  <rect x="602" y="526" width="148" height="148" rx="22" fill="none" stroke="#D3C9B8" stroke-width="5"/>
+  <rect x="766" y="526" width="148" height="148" rx="22" fill="none" stroke="#D3C9B8" stroke-width="5"/>
 
-  <!-- Tile 4: D — correct (green) -->
-  <rect x="602" y="432" width="160" height="160" rx="12" fill="#6aaa64"/>
-  <text x="682" y="512"
-        font-family="'Liberation Sans','Noto Sans',sans-serif"
-        font-weight="bold" font-size="88"
-        fill="white" text-anchor="middle" dominant-baseline="central">D</text>
+  <rect x="110" y="694" width="148" height="148" rx="22" fill="none" stroke="#D3C9B8" stroke-width="5"/>
+  <rect x="274" y="694" width="148" height="148" rx="22" fill="none" stroke="#D3C9B8" stroke-width="5"/>
+  <rect x="438" y="694" width="148" height="148" rx="22" fill="none" stroke="#D3C9B8" stroke-width="5"/>
+  <rect x="602" y="694" width="148" height="148" rx="22" fill="none" stroke="#D3C9B8" stroke-width="5"/>
+  <rect x="766" y="694" width="148" height="148" rx="22" fill="none" stroke="#D3C9B8" stroke-width="5"/>
 
-  <!-- Tile 5: ✓ — correct (green) -->
-  <rect x="772" y="432" width="160" height="160" rx="12" fill="#6aaa64"/>
-  <!-- Checkmark centred in tile (tile centre: 852, 512) -->
-  <path d="M804,510 L830,542 L900,468"
-        stroke="white" stroke-width="17"
-        stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- WORDOUT label -->
+  <text x="512" y="930" font-family="Georgia,serif" font-weight="700" font-size="72" fill="#8B6914" text-anchor="middle" letter-spacing="16">WORDOUT</text>
 </svg>
