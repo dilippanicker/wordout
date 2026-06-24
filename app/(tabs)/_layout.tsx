@@ -83,7 +83,7 @@ export default function TabLayout() {
           title: boardCountName(boardCount),
           headerShown: false,
           tabBarButton: (props) => (
-            <View style={[tabStyles.container, props.style as any]}>
+            <View style={tabStyles.container}>
               <Pressable
                 {...(noFocus as any)}
                 onPress={cyclePrev}
@@ -142,23 +142,26 @@ const tabStyles = StyleSheet.create({
   container: {
     flex: 1,
     flexDirection: 'row',
+    flexWrap: 'nowrap',
     alignItems: 'center',
     justifyContent: 'center',
   },
   arrow: {
-    paddingHorizontal: 8,
-    paddingVertical: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   arrowText: {
-    fontSize: 20,
+    fontSize: 18,
     color: '#878a8c',
-    lineHeight: 24,
+    lineHeight: 22,
   },
   nameArea: {
-    paddingHorizontal: 4,
-    paddingVertical: 6,
-    minWidth: 48,
+    paddingHorizontal: 2,
+    paddingVertical: 8,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   modeName: {
     fontSize: 10,
