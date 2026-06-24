@@ -2,6 +2,12 @@
 
 A free, open-source word puzzle game for Android with no ads, no tracking, and a carefully curated word list.
 
+## Download
+
+**[⬇ Download latest APK](https://github.com/dilippanicker/wordout/releases/latest/download/wordout.apk)**
+
+Built automatically on every release via GitHub Actions. No login required.
+
 ## Features
 
 - **Wordout** — classic 5-letter word game, 6 guesses

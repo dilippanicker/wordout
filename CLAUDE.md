@@ -236,6 +236,8 @@ Build command: `npx eas-cli build --platform android --profile preview --non-int
 - Requires `EXPO_TOKEN` secret set in GitHub repo settings
 - Build time: ~28 minutes first run, faster with warm cache
 - APK uploaded as artifact `wordout-apk`, retained 14 days
+- APK also published to GitHub Releases as `latest` tag — permanent public download link:
+  `https://github.com/dilippanicker/wordout/releases/latest/download/wordout.apk`
 
 **Last successful build:** GitHub Actions run `28120107075`, commit `000243e`  
 **APK:** Downloaded to `/home/dilip/Downloads/wordout.apk` (98 MB)  
