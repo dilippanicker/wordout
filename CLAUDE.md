@@ -215,28 +215,47 @@ Build command: `npx eas-cli build --platform android --profile preview --non-int
 
 ## Version 1.0 — Release Status
 
-### What's in 1.0
+### What's in 1.0 (all committed, all built)
 - Wordout (single board) and multi-board mode (2/3/4/6/8 boards)
-- Middle tab cycles board counts; New Game tab resets
-- Abandon-game confirmation guard (New Game, board cycle, language switch)
+- Middle tab cycles board counts (1→2→3→4→6→8→1); New Game tab resets
+- Abandon-game confirmation guard (New Game, board cycle, language switch) — `utils/abandon.ts`
 - Win bounce wave + lose board shake animations
-- Square best-fit tiles with correct gap accounting
+- Square best-fit tiles: `min(tileFromWidth, tileFromHeight)`, margin gap = 4px
 - Enter-on-right keyboard option; color blind mode; dark/light theme
 - Stats per mode with guess distribution; share emoji grid
 - American + British English word lists
 - Privacy policy at GitHub Pages
+- New icons: RAISE/CLOUT tile design, cream background `#FFF8EE`
+- Splash/adaptive-icon background updated to `#FFF8EE` in app.json
 
-### EAS builds
-Free tier exhausted (15/15 used). Upgrade plan or wait for monthly reset.  
-Last APK built: commit `bc1a64c` (square tiles + animations + enter-on-right).  
-Committed but not yet built: cycling tab (`e0f82bf`), abandon guard (`d25a9ab`).
+### Build pipeline
+**EAS:** Free tier exhausted (15/15 used). Resets July 1, 2026.  
+**GitHub Actions (primary):** `.github/workflows/build-apk.yml` — triggered manually via Actions tab.
+- Uses `eas build --local --profile preview` (no EAS quota consumed)
+- Gradle cache enabled; JVM heap 4g, Metaspace 2g (fixes OOM on compile)
+- Requires `EXPO_TOKEN` secret set in GitHub repo settings
+- Build time: ~28 minutes first run, faster with warm cache
+- APK uploaded as artifact `wordout-apk`, retained 14 days
+
+**Last successful build:** GitHub Actions run `28120107075`, commit `000243e`  
+**APK:** Downloaded to `/home/dilip/Downloads/wordout.apk` (98 MB)  
+**All commits are built** — nothing pending in code.
+
+### Play Store setup
+- App created in Google Play Console under publisher "Onglipo"
+- Package: `com.dilippanicker.wordout`
+- Store listing text drafted (see README for short/full description)
+- Feature graphic (1024×500) still needed
+- Screenshots still needed (Pixel 7 / 1080×2400, min 2)
+- API access / service account not yet set up (do after first manual upload)
 
 ### Before Play Store submission
-- [ ] Build final APK once EAS quota resets
-- [ ] Test on physical device (all board counts, win/lose animations, abandon guard)
-- [ ] Store listing screenshots (Pixel 7 / 360×800 — 1-board and 4-board recommended)
-- [ ] Verify hard mode validation on all board counts
-- [ ] Verify stats persist across app restarts
+- [ ] Test APK on physical device (all board counts, win/lose, abandon guard, cycling tab)
+- [ ] Create feature graphic (1024×500 banner)
+- [ ] Take store listing screenshots (Pixel 7 size, 1-board and 4-board at minimum)
+- [ ] Complete Play Console setup: content rating, data safety, target audience
+- [ ] First manual APK upload via Play Console web UI (required before automation)
+- [ ] Set up GitHub Actions → Play Store automation (service account JSON)
 
 ### Nice-to-have (post-1.0)
 - Animate board indicator state transitions
