@@ -25,7 +25,7 @@
 - `_layout.tsx` — root Stack + ThemeProvider (light/dark driven by `settingsStore.darkTheme`)
 - `(tabs)/_layout.tsx` — 3-tab layout:
   - **New Game** (refresh icon) — action tab; `tabPress` calls `newGame()` on both stores, never navigates away
-  - **Wordout / mode name** (grid/apps icon) — toggles mode only when already on this tab; tab label is dynamic via `boardCountName(boardCount)`; `tabBarButton: NoFocusTabButton` on all three tabs to prevent focus stealing on web
+  - **Wordout / mode name** (grid/apps icon) — tapping while on this tab cycles through all board counts (1→2→3→4→6→8→1), starts a new game, and updates the label; coming from another tab just navigates back without cycling; `tabBarButton: NoFocusTabButton` on all three tabs to prevent focus stealing on web
   - **Settings** (gear icon) — badge dot when stats update
 - `(tabs)/index.tsx` — game screen (renders Wordout or multi-board based on `gameMode`)
 - `(tabs)/settings.tsx` — settings + stats; GAME MODE segmented control drives `boardCount` + `gameMode`
@@ -211,10 +211,14 @@ Build command: `npx eas-cli build --platform android --profile preview --non-int
 
 ## Remaining Work
 
+### EAS builds
+Free tier exhausted (15/15 builds used). Upgrade EAS plan or wait for quota reset before building again.
+Last good APK (square tiles, animations, enter-on-right): `39e0865e` on commit `bc1a64c`.
+Pending in code but not yet built: cycling middle tab (`e0f82bf`).
+
 ### Play Store prep
-- Privacy policy page (required by Google Play)
 - Store listing screenshots (Pixel 7 / 360×800)
-- Test APK on physical device before submitting
+- Submit to Play Store (privacy policy page already live at GitHub Pages)
 
 ### Testing checklist before Play Store
 - [ ] Hard mode validation correct on all board counts
@@ -224,6 +228,7 @@ Build command: `npx eas-cli build --platform android --profile preview --non-int
 - [ ] Share emoji output correct for all board counts
 - [ ] Board indicator states verified at each stage of a multi-board game
 - [ ] Both 412×915 (Pixel 7) and 360×800 layouts verified for 1/4/8 board counts
+- [ ] Middle tab cycles correctly through all 6 board counts
 
 ### Nice-to-have
 - Animate board indicator state transitions (e.g. fade from grey→yellow on first yellow found)

@@ -7,12 +7,15 @@ A free, open-source word puzzle game for Android with no ads, no tracking, and a
 - **Multi-board mode** — solve 2, 3, 4, 6, or 8 words simultaneously; every guess applies to all boards at once
   - 2-out (7 guesses), 3-out (8 guesses), Quadout (9 guesses), 6-out (11 guesses), 8-out (13 guesses)
   - Swipe between boards; progress indicators show correct letters found per board
+  - Tap the middle tab to cycle through board counts instantly
 - American English and British English word lists
 - Hard mode — revealed hints must be used in future guesses
 - Color blind mode — high contrast orange and blue
 - Dark theme
 - Stats tracking with guess distribution (per game mode)
 - Share results as emoji grid
+- Win animation (bounce wave) and loss animation (board shake)
+- Enter key on right option (swaps ⌫ and ENTER positions)
 - No ads, no accounts, no tracking
 
 ## Word List
