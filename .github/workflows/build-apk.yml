@@ -55,3 +55,15 @@ jobs:
           name: wordout-apk
           path: wordout.apk
           retention-days: 14
+
+      - name: Publish latest release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete latest --yes 2>/dev/null || true
+          git tag -f latest
+          git push -f origin latest
+          gh release create latest wordout.apk \
+            --title "Latest build" \
+            --notes "Built from commit ${{ github.sha }}" \
+            --latest
