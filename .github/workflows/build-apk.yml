@@ -35,6 +35,9 @@ jobs:
           key: gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: gradle-
 
+      - name: Increase JVM Metaspace for Gradle
+        run: mkdir -p ~/.gradle && echo "org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=2g -XX:+HeapDumpOnOutOfMemoryError" >> ~/.gradle/gradle.properties
+
       - name: Install dependencies
         run: npm ci
 
