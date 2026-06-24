@@ -5,6 +5,7 @@ import { useSettingsStore, boardCountName, BOARD_COUNTS } from '@/store/settings
 import { useGameStore } from '@/store/gameStore';
 import { useQuordleStore } from '@/store/quordleStore';
 import { useStatsStore } from '@/store/statsStore';
+import { isGameInProgress, confirmAbandon } from '@/utils/abandon';
 
 // Wraps each tab bar button so mouse clicks don't steal keyboard focus.
 function NoFocusTabButton(props: any) {
@@ -41,9 +42,13 @@ export default function TabLayout() {
         listeners={({ navigation }) => ({
           tabPress: (e) => {
             e.preventDefault();
-            newGame();
-            useQuordleStore.getState().newGame();
-            navigation.navigate('index');
+            const start = () => {
+              newGame();
+              useQuordleStore.getState().newGame();
+              navigation.navigate('index');
+            };
+            if (isGameInProgress()) confirmAbandon(start);
+            else start();
           },
         })}
       />
@@ -69,16 +74,19 @@ export default function TabLayout() {
             const state = navigation.getState();
             const currentTab = state.routes[state.index]?.name;
             if (currentTab === 'index') {
-              // Cycle to the next board count.
-              const nextCount = BOARD_COUNTS[(BOARD_COUNTS.indexOf(boardCount) + 1) % BOARD_COUNTS.length];
-              setBoardCount(nextCount);
-              if (nextCount === 1) {
-                setGameMode('wordle');
-                newGame();
-              } else {
-                setGameMode('quordle');
-                useQuordleStore.getState().newGame();
-              }
+              const cycle = () => {
+                const nextCount = BOARD_COUNTS[(BOARD_COUNTS.indexOf(boardCount) + 1) % BOARD_COUNTS.length];
+                setBoardCount(nextCount);
+                if (nextCount === 1) {
+                  setGameMode('wordle');
+                  newGame();
+                } else {
+                  setGameMode('quordle');
+                  useQuordleStore.getState().newGame();
+                }
+              };
+              if (isGameInProgress()) confirmAbandon(cycle);
+              else cycle();
             }
             navigation.navigate('index');
           },

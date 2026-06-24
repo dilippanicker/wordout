@@ -17,6 +17,7 @@ import { HelpModal } from '@/components/HelpModal';
 import { useGameStore, GuessResult, LetterResult } from '@/store/gameStore';
 import { useQuordleStore, QuordleGuess } from '@/store/quordleStore';
 import { useSettingsStore, boardCountName } from '@/store/settingsStore';
+import { isGameInProgress, confirmAbandon } from '@/utils/abandon';
 import { TileStatus } from '@/components/Tile';
 
 // Prevents buttons from stealing keyboard focus on web.
@@ -504,7 +505,11 @@ function renderHeader({
           {...(noFocus as any)}
           hitSlop={12}
           accessibilityLabel={language === 'en_us' ? 'American English — tap to switch' : 'British English — tap to switch'}
-          onPress={() => setLanguage(language === 'en_us' ? 'en_gb' : 'en_us')}
+          onPress={() => {
+            const next = language === 'en_us' ? 'en_gb' : 'en_us';
+            if (isGameInProgress()) confirmAbandon(() => setLanguage(next));
+            else setLanguage(next);
+          }}
         >
           <Text style={styles.flagEmoji}>{language === 'en_us' ? '🇺🇸' : '🇬🇧'}</Text>
         </Pressable>
