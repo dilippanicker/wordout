@@ -186,7 +186,7 @@ export default function WordleScreen() {
   const MSG_H = 44;    // messageArea height (matches styles.messageArea)
   const DOTS_H = 36;   // multi-board indicator row
   const TAB_H = 50;    // tab bar
-  const TILE_GAP = 3;
+  const TILE_GAP = 4;
 
   // Available height for board + keyboard combined (excluding header, message, tab, safe area).
   const totalH = screenH - insets.top - insets.bottom - HEADER_H - MSG_H - TAB_H;

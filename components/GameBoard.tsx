@@ -92,12 +92,13 @@ export function GameBoard({
   // In flex mode we measure the board container and compute tile dimensions ourselves.
   // tileW and tileH are computed independently so the grid fills both axes.
   const [boardLayout, setBoardLayout] = useState({ width: 0, height: 0 });
-  const effectiveTileH = (!flexMode || boardLayout.height === 0)
+  const tileFromW = Math.max(16, Math.floor(boardLayout.width / COLS) - 4);
+  const tileFromH = Math.max(16, Math.floor(boardLayout.height / maxGuesses) - 4);
+  const effectiveTileSize = (!flexMode || boardLayout.width === 0 || boardLayout.height === 0)
     ? tileSize
-    : Math.max(16, Math.floor(boardLayout.height / maxGuesses) - 4);
-  const effectiveTileW = (!flexMode || boardLayout.width === 0)
-    ? tileSize
-    : Math.max(16, Math.min(Math.floor(boardLayout.width / COLS) - 4, effectiveTileH * 2));
+    : Math.min(tileFromW, tileFromH);
+  const effectiveTileW = effectiveTileSize;
+  const effectiveTileH = effectiveTileSize;
 
   // Board shake on lose — fires once when gameOver transitions false→true.
   const boardShakeX = useSharedValue(0);
