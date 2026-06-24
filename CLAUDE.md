@@ -24,7 +24,7 @@
 ### Routing — `app/`
 - `_layout.tsx` — root Stack + ThemeProvider (light/dark driven by `settingsStore.darkTheme`)
 - `(tabs)/_layout.tsx` — 3-tab layout:
-  - **New Game** (refresh icon) — action tab; `tabPress` calls `newGame()` on both stores, never navigates away
+  - **New Game** (refresh icon) — action tab; `tabPress` prompts to abandon if game in progress, then calls `newGame()` on both stores, never navigates away
   - **Wordout / mode name** (grid/apps icon) — tapping while on this tab cycles through all board counts (1→2→3→4→6→8→1), starts a new game, and updates the label; coming from another tab just navigates back without cycling; `tabBarButton: NoFocusTabButton` on all three tabs to prevent focus stealing on web
   - **Settings** (gear icon) — badge dot when stats update
 - `(tabs)/index.tsx` — game screen (renders Wordout or multi-board based on `gameMode`)
@@ -56,6 +56,10 @@
 - `BoardStats`: `totalGames`, `wins`, `currentStreak`, `maxStreak`, `guessCounts: Record<string, number>`
 - `emptyBoardStats()` exported for default value
 - `recordResult(won, guessCount, modeKey)`, `clearSettingsBadge`, `resetStats` (clears all modes)
+
+### Abandon guard — `utils/abandon.ts`
+`isGameInProgress()` reads the active store imperatively (`getState()`) — no subscription needed. Returns true when `gameStatus === 'playing' && guesses.length > 0`.  
+`confirmAbandon(onConfirm)` shows `Alert.alert` on Android/iOS, `window.confirm` on web. Called before: New Game tab, middle tab cycle, language flag toggle.
 
 **Key subscription rule**: `gameStore` and `quordleStore` subscriptions call `newGame()` on `language` change only. Board count changes are handled explicitly in `settings.tsx → handleBoardCountSelect`.
 
@@ -209,28 +213,32 @@ Build command: `npx eas-cli build --platform android --profile preview --non-int
 
 ---
 
-## Remaining Work
+## Version 1.0 — Release Status
+
+### What's in 1.0
+- Wordout (single board) and multi-board mode (2/3/4/6/8 boards)
+- Middle tab cycles board counts; New Game tab resets
+- Abandon-game confirmation guard (New Game, board cycle, language switch)
+- Win bounce wave + lose board shake animations
+- Square best-fit tiles with correct gap accounting
+- Enter-on-right keyboard option; color blind mode; dark/light theme
+- Stats per mode with guess distribution; share emoji grid
+- American + British English word lists
+- Privacy policy at GitHub Pages
 
 ### EAS builds
-Free tier exhausted (15/15 builds used). Upgrade EAS plan or wait for quota reset before building again.
-Last good APK (square tiles, animations, enter-on-right): `39e0865e` on commit `bc1a64c`.
-Pending in code but not yet built: cycling middle tab (`e0f82bf`).
+Free tier exhausted (15/15 used). Upgrade plan or wait for monthly reset.  
+Last APK built: commit `bc1a64c` (square tiles + animations + enter-on-right).  
+Committed but not yet built: cycling tab (`e0f82bf`), abandon guard (`d25a9ab`).
 
-### Play Store prep
-- Store listing screenshots (Pixel 7 / 360×800)
-- Submit to Play Store (privacy policy page already live at GitHub Pages)
+### Before Play Store submission
+- [ ] Build final APK once EAS quota resets
+- [ ] Test on physical device (all board counts, win/lose animations, abandon guard)
+- [ ] Store listing screenshots (Pixel 7 / 360×800 — 1-board and 4-board recommended)
+- [ ] Verify hard mode validation on all board counts
+- [ ] Verify stats persist across app restarts
 
-### Testing checklist before Play Store
-- [ ] Hard mode validation correct on all board counts
-- [ ] Duplicate letter handling correct
-- [ ] Stats persist across app restarts (all modes)
-- [ ] Language switch starts new game (both stores)
-- [ ] Share emoji output correct for all board counts
-- [ ] Board indicator states verified at each stage of a multi-board game
-- [ ] Both 412×915 (Pixel 7) and 360×800 layouts verified for 1/4/8 board counts
-- [ ] Middle tab cycles correctly through all 6 board counts
-
-### Nice-to-have
-- Animate board indicator state transitions (e.g. fade from grey→yellow on first yellow found)
+### Nice-to-have (post-1.0)
+- Animate board indicator state transitions
 - Daily word mode (deterministic word from date seed)
-- Haptic feedback on correct/wrong guess (mobile)
+- Haptic feedback on correct/wrong guess
