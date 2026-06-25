@@ -4,6 +4,13 @@ All notable changes to Wordout are documented here.
 
 ## [Unreleased]
 
+## [1.0.3] — 2026-06-25
+### Fixed
+- Duplicate guesses now rejected with "Already guessed" toast (both single and multi-board modes)
+
+### Added
+- Production AAB built alongside APK in GitHub Actions; both uploaded as artifacts and included in GitHub Release
+
 ## [1.0.2] — 2026-06-25
 ### Fixed
 - Multi-board mode: each guess row was appearing boardCount times instead of once (`flex: 1` on board pages caused CSS `flex-basis: 0`, collapsing page widths so all boards were visible simultaneously — fixed with `flexShrink: 0` and plain View wrapper)
