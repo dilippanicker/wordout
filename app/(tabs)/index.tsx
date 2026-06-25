@@ -75,7 +75,6 @@ function boardCorrectCount(qGuesses: QuordleGuess[], boardIndex: number): number
 }
 
 // Row index of the winning guess for a board (-1 if not yet solved).
-// Used to slice displayed guesses so solved boards don't show post-win rows.
 function boardSolvedAtRow(qGuesses: QuordleGuess[], boardIndex: number): number {
   for (let row = 0; row < qGuesses.length; row++) {
     const results = qGuesses[row].boardResults[boardIndex];
@@ -165,17 +164,6 @@ async function copyToClipboard(text: string): Promise<boolean> {
 
 const WIN_MESSAGES = ['Genius!', 'Magnificent!', 'Impressive!', 'Splendid!', 'Great!', 'Phew!'];
 
-// ── BoardPage — dims persistently when the game is lost and this board unsolved ─
-
-function BoardPage({ dim, style, children }: { dim: boolean; style: object; children: React.ReactNode }) {
-  const opacity = useSharedValue(dim ? 0.45 : 1);
-  useEffect(() => {
-    opacity.value = withTiming(dim ? 0.45 : 1, { duration: 900 });
-  }, [dim]);
-  const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
-  return <Animated.View style={[style, animStyle]}>{children}</Animated.View>;
-}
-
 // ── Screen ──────────────────────────────────────────────────────────────────
 
 export default function WordleScreen() {
@@ -211,7 +199,6 @@ export default function WordleScreen() {
   const availableWidth = screenW - 16;
 
   // Tile size is computed from measured layout height once onLayout fires.
-  // wordleAvailH is the static estimate used for the first render before measurement.
   const wordleAvailH = totalH - KBD_H;
   const [wordleAreaH, setWordleAreaH] = useState(0);
 
@@ -250,11 +237,86 @@ export default function WordleScreen() {
 
   const [shakeKey, setShakeKey] = useState(0);
   const toastOpacity = useSharedValue(0);
-  const winShimmerOpacity = useSharedValue(0);
-  const boardDimOpacity = useSharedValue(gameStatus === 'lost' ? 0.45 : 1);
+
+  // ── End-of-game overlay ──────────────────────────────────────────────────
+  const [endGameVisible, setEndGameVisible] = useState(false);
+  const endGameOpacity = useSharedValue(0);
+  const endGameTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevGameStatusRef = useRef(gameStatus);
 
-  // Blur focused tab button so Enter goes to the game keydown handler, not the tab.
+  const endGameAnimStyle = useAnimatedStyle(() => ({ opacity: endGameOpacity.value }));
+
+  function dismissEndGame() {
+    if (endGameTimerRef.current) { clearTimeout(endGameTimerRef.current); endGameTimerRef.current = null; }
+    endGameOpacity.value = withTiming(0, { duration: 300 });
+    setTimeout(() => setEndGameVisible(false), 320);
+  }
+
+  useEffect(() => {
+    const prev = prevGameStatusRef.current;
+    prevGameStatusRef.current = gameStatus;
+    if (gameStatus === prev) return;
+
+    if (gameStatus !== 'playing' && prev === 'playing') {
+      // Show overlay after per-board animations finish.
+      // Won: ~1800ms (after wave + ✓ overlay appear); Lost: ~2500ms (after shake + ✗ overlay appear).
+      const delay = gameStatus === 'won' ? 1800 : 2500;
+      endGameTimerRef.current = setTimeout(() => {
+        setEndGameVisible(true);
+        endGameOpacity.value = withTiming(1, { duration: 300 });
+        // Auto-dismiss after 3 seconds.
+        endGameTimerRef.current = setTimeout(dismissEndGame, 3000);
+      }, delay);
+    }
+
+    if (gameStatus === 'playing') {
+      if (endGameTimerRef.current) { clearTimeout(endGameTimerRef.current); endGameTimerRef.current = null; }
+      setEndGameVisible(false);
+      endGameOpacity.value = 0;
+    }
+
+    return () => {
+      if (endGameTimerRef.current) { clearTimeout(endGameTimerRef.current); endGameTimerRef.current = null; }
+    };
+  }, [gameStatus]);
+
+  // ── Compute end-game overlay content ────────────────────────────────────
+  let endEmoji = '';
+  let endMessage = '';
+  let endWordsNode: React.ReactNode = null;
+
+  if (gameStatus !== 'playing') {
+    if (!isQuordle) {
+      endEmoji = gameStatus === 'won' ? '🎉' : '😢';
+      endMessage = gameStatus === 'won' ? 'Solved!' : 'Better luck next time';
+      endWordsNode = <Text style={styles.endWordText}>{wordleStore.answer}</Text>;
+    } else {
+      const { answers, solvedBoards, boardCount } = quordleStore;
+      const solvedCount = solvedBoards.filter(Boolean).length;
+      if (gameStatus === 'won') {
+        endEmoji = '🎉';
+        endMessage = boardCount === 1 ? 'Solved!' : 'You got them all!';
+        endWordsNode = (
+          <Text style={styles.endWordText}>{answers.join('  ')}</Text>
+        );
+      } else {
+        const isPartial = solvedCount > 0;
+        endEmoji = isPartial ? '😅' : '😢';
+        endMessage = isPartial ? `${solvedCount} out of ${boardCount}!` : 'Better luck next time';
+        endWordsNode = (
+          <View style={styles.endWordRow}>
+            {answers.map((w, i) => (
+              <Text key={i} style={[styles.endWordItem, { color: solvedBoards[i] ? '#5BA75A' : '#E24B4A' }]}>
+                {solvedBoards[i] ? '✓' : '✗'} {w}
+              </Text>
+            ))}
+          </View>
+        );
+      }
+    }
+  }
+
+  // ── Blur focused tab button so Enter goes to game keydown handler ────────
   useFocusEffect(
     useCallback(() => {
       if (Platform.OS === 'web' && typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
@@ -294,31 +356,6 @@ export default function WordleScreen() {
 
   const toastStyle = useAnimatedStyle(() => ({ opacity: toastOpacity.value }));
 
-  // Game-over animations: win shimmer + single-board lose dim.
-  useEffect(() => {
-    const prev = prevGameStatusRef.current;
-    prevGameStatusRef.current = gameStatus;
-    if (gameStatus === prev) return;
-    if (gameStatus === 'won') {
-      winShimmerOpacity.value = withSequence(
-        withTiming(0.4, { duration: 150 }),
-        withDelay(350, withTiming(0, { duration: 700 })),
-      );
-    }
-    if (gameStatus === 'lost') {
-      boardDimOpacity.value = withTiming(0.45, { duration: 900 });
-    }
-    if (gameStatus === 'playing') {
-      boardDimOpacity.value = withTiming(1, { duration: 300 });
-    }
-  }, [gameStatus]);
-
-  const winShimmerStyle = useAnimatedStyle(() => ({
-    opacity: winShimmerOpacity.value,
-    backgroundColor: '#5BA75A',
-  }));
-  const boardDimStyle = useAnimatedStyle(() => ({ opacity: boardDimOpacity.value }));
-
   function handleKey(key: string) {
     if (key === 'ENTER') submitGuess();
     else if (key === '⌫') removeLetter();
@@ -336,6 +373,28 @@ export default function WordleScreen() {
       setTimeout(() => setCopyConfirmed(false), 1500);
     }
   }
+
+  // Shared end-game overlay — rendered on top of either layout.
+  const endGameOverlay = endGameVisible ? (
+    <Animated.View style={[StyleSheet.absoluteFill, styles.endGameOverlay, endGameAnimStyle]}>
+      <Pressable
+        style={[StyleSheet.absoluteFill, styles.endGamePressable]}
+        onPress={dismissEndGame}
+        {...(noFocus as any)}
+      >
+        <Text style={styles.endGameEmoji}>{endEmoji}</Text>
+        <Text style={styles.endGameMessage}>{endMessage}</Text>
+        {endWordsNode}
+        <Pressable
+          style={styles.shareButton}
+          onPress={() => { handleShare(); dismissEndGame(); }}
+          {...(noFocus as any)}
+        >
+          <Text style={styles.shareButtonText}>Share ↗</Text>
+        </Pressable>
+      </Pressable>
+    </Animated.View>
+  ) : null;
 
   const headerProps = { language, setLanguage, hardMode, setHardMode, darkTheme, setDarkTheme, colors, setShowHelp };
 
@@ -364,10 +423,8 @@ export default function WordleScreen() {
               const greenCount = solved ? 0 : boardCorrectCount(qGuesses, i);
               const hasYellow  = solved ? false : boardHasYellow(qGuesses, i);
 
-              // Square indicator for the current (non-solved) board.
               const squareColor = darkTheme ? '#ffffff' : '#878a8c';
 
-              // Circle stroke/fill for every other state.
               const strokeColor = solved || (!hasYellow && greenCount > 0)
                 ? '#6aaa64'
                 : hasYellow ? '#c9b458' : '#878a8c';
@@ -425,15 +482,12 @@ export default function WordleScreen() {
           scrollEventThrottle={16}
         >
           {Array.from({ length: boardCount }, (_, i) => {
-            // Slice guesses to the winning row so solved boards don't show
-            // post-solve guesses. Derive solved state from data, not async state.
             const solvedRow = boardSolvedAtRow(qGuesses, i);
             const isSolved = solvedRow >= 0;
             const visibleGuesses = isSolved ? qGuesses.slice(0, solvedRow + 1) : qGuesses;
             return (
-              <BoardPage
+              <View
                 key={i}
-                dim={gameStatus === 'lost' && !isSolved}
                 style={[styles.boardPage, { width: screenW, backgroundColor: colors.background }]}
               >
                 <GameBoard
@@ -445,9 +499,10 @@ export default function WordleScreen() {
                   maxGuesses={maxGuesses}
                   solved={isSolved}
                   gameOver={gameStatus === 'lost' && !isSolved}
+                  answer={quordleStore.answers[i]}
                   shakeKey={shakeKey}
                 />
-              </BoardPage>
+              </View>
             );
           })}
         </ScrollView>
@@ -476,7 +531,7 @@ export default function WordleScreen() {
 
         <Keyboard onKey={handleKey} keyStatuses={qKeyStatuses} keyHeight={keyHeight} />
         <HelpModal visible={showHelp} onClose={() => setShowHelp(false)} hardMode={hardMode} />
-        <Animated.View style={[StyleSheet.absoluteFill, winShimmerStyle]} pointerEvents="none" />
+        {endGameOverlay}
       </SafeAreaView>
     );
   }
@@ -494,9 +549,17 @@ export default function WordleScreen() {
     >
       {renderHeader({ ...headerProps, title: 'Wordout' })}
 
-      <Animated.View style={[styles.boardArea, boardDimStyle]} onLayout={e => setWordleAreaH(e.nativeEvent.layout.height)}>
-        <GameBoard guesses={guesses} currentGuess={currentGuess} tileSize={wordleTileSize} shakeKey={shakeKey} gameOver={gameStatus === 'lost'} />
-      </Animated.View>
+      <View style={styles.boardArea} onLayout={e => setWordleAreaH(e.nativeEvent.layout.height)}>
+        <GameBoard
+          guesses={guesses}
+          currentGuess={currentGuess}
+          tileSize={wordleTileSize}
+          shakeKey={shakeKey}
+          gameOver={gameStatus === 'lost'}
+          solved={gameStatus === 'won'}
+          answer={answer}
+        />
+      </View>
 
       <View style={styles.messageArea}>
         {gameStatus !== 'playing' ? (
@@ -520,7 +583,7 @@ export default function WordleScreen() {
 
       <Keyboard onKey={handleKey} keyStatuses={keyStatuses} keyHeight={keyHeight} />
       <HelpModal visible={showHelp} onClose={() => setShowHelp(false)} hardMode={hardMode} />
-      <Animated.View style={[StyleSheet.absoluteFill, winShimmerStyle]} pointerEvents="none" />
+      {endGameOverlay}
     </SafeAreaView>
   );
 }
@@ -636,14 +699,12 @@ const styles = StyleSheet.create({
     height: 36,
     gap: 6,
   },
-  // Fixed-size hit target for each board indicator.
   indicatorWrap: {
     width: 30,
     height: 30,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // 24×24 square outline for the current (non-solved) board — borderColor set inline.
   indicatorSquare: {
     width: 24,
     height: 24,
@@ -651,7 +712,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // 24×24 circle — borderWidth always 2; borderColor and backgroundColor set inline.
   indicatorCircle: {
     width: 24,
     height: 24,
@@ -729,5 +789,55 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: '#878a8c',
+  },
+  // End-of-game full-screen overlay
+  endGameOverlay: {
+    zIndex: 100,
+  },
+  endGamePressable: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.75)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 14,
+  },
+  endGameEmoji: {
+    fontSize: 48,
+    lineHeight: 56,
+  },
+  endGameMessage: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#ffffff',
+  },
+  endWordText: {
+    fontSize: 20,
+    color: '#ffffff',
+    fontWeight: '600',
+    letterSpacing: 3,
+    textAlign: 'center',
+  },
+  endWordRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  endWordItem: {
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 2,
+  },
+  shareButton: {
+    marginTop: 8,
+    backgroundColor: '#5BA75A',
+    paddingHorizontal: 28,
+    paddingVertical: 13,
+    borderRadius: 6,
+  },
+  shareButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });

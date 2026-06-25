@@ -68,8 +68,14 @@
 **`GameBoard.tsx`** — dual API:
 - Wordle mode: `guesses?: GuessResult[]` (pre-merged word + results)
 - Quordle mode: `words?: string[]` + `boardResults?: LetterResult[][]` (shared words, per-board colors passed separately)
-- Common: `currentGuess`, `tileSize` (default 60), `shakeKey`, `maxGuesses` (default 6), `solved` (green border), `label`
+- Common: `currentGuess`, `tileSize` (default 60), `shakeKey`, `maxGuesses` (default 6), `solved`, `gameOver`, `answer`, `label`
 - `count` derived from `words.length ?? guesses.length` — drives animation tracking
+- No border on board (removed in v1.0.1 — green solved border looked ugly)
+- Win overlay: `rgba(0,0,0,0.3)` dim + 80px green ✓, fades in 1500ms after `solved` transitions; persists on remount
+- Lose overlay: board shakes (3×, 14px, 910ms), red tint flash, then dim + 80px red ✗ + `answer` word; fades in ~2050ms after `gameOver` transitions
+- Wave animation fires on ALL tiles (left→right, top→bottom, 50ms stagger) when `solved && animatingRow === count - 1`; `animatingRow` guard prevents replay on remount
+- Overlay opacities initialised to 1 on mount if board already in end-state (navigation remount safety)
+- **Wordle mode must pass `solved={gameStatus === 'won'}`** — previously missing, was breaking win-row bounce
 
 **`Tile.tsx`** — `margin: 2` around each tile (so each row = `tileSize + 4` px tall). Color blind: correct=🟧, present=🟦.
 
@@ -219,7 +225,9 @@ Build command: `npx eas-cli build --platform android --profile preview --non-int
 - Wordout (single board) and multi-board mode (2/3/4/6/8 boards)
 - Middle tab cycles board counts (1→2→3→4→6→8→1); New Game tab resets
 - Abandon-game confirmation guard (New Game, board cycle, language switch) — `utils/abandon.ts`
-- Win bounce wave (per-board solve) + full-screen green shimmer (game win) + unsolved boards dim on game loss
+- Win: all tiles wave (left→right, top→bottom), then per-board dim overlay + ✓, then end-of-game full-screen overlay
+- Lose: board shakes (3×, 14px) + red tint flash, then per-board dim overlay + ✗ + answer, then end-of-game overlay
+- End-of-game overlay: emoji + message + answer words + Share button; auto-dismisses in 3s or on tap
 - Square best-fit tiles: `min(tileFromWidth, tileFromHeight)`, margin gap = 4px
 - Enter-on-right keyboard option; color blind mode; dark/light theme
 - Stats per mode with guess distribution; share emoji grid
@@ -263,3 +271,37 @@ Build command: `npx eas-cli build --platform android --profile preview --non-int
 - Animate board indicator state transitions
 - Daily word mode (deterministic word from date seed)
 - Haptic feedback on correct/wrong guess
+
+---
+
+## Model Selection — Cost Optimization
+
+**Start every session on Haiku** — `/model haiku` is run automatically by `/open`.
+
+Models self-escalate and de-escalate as needed — no user intervention required:
+
+### Escalate UP when:
+| Situation | Switch to |
+|-----------|-----------|
+| Simple edits, config, renaming, file reading | Stay on Haiku |
+| Boilerplate, repetitive code | Stay on Haiku |
+| Complex logic, hard bug — not making progress after 2 attempts | Sonnet |
+| Architecture decision, major refactor | Sonnet |
+| Animation / reanimated logic | Sonnet |
+| Cross-file reasoning, store schema changes | Sonnet |
+| Sonnet also failing after 2 attempts | Opus |
+| Genuinely novel problem requiring deep reasoning | Opus |
+
+### De-escalate DOWN when:
+- Complex bug fixed → back to Haiku for cleanup, testing, review, close ritual
+- Never stay on Sonnet/Opus for file reading, grep, or simple edits
+
+### Cost awareness:
+- Haiku ≈ 20× cheaper than Sonnet per token
+- Sonnet ≈ 5× cheaper than Opus per token
+- Always `/compact` at 50%+ context before escalating models
+- Never start a new session for a tiny change — batch related work
+
+### Self-regulation rule:
+When escalating, announce it: "Switching to Sonnet — animation logic is complex."
+When de-escalating, announce it: "Switching back to Haiku — cleanup work now."
