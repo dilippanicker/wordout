@@ -252,7 +252,7 @@ Build command: `npx eas-cli build --platform android --profile preview --non-int
 - Never trigger or instruct triggering a build without a confirmed version bump.
 - Update `CHANGELOG.md` with the new version entry as part of the same commit as `app.json`.
 
-**Current version:** `1.0.0` (versionCode 1) — as of last successful build.  
+**Current version:** `1.0.2` (versionCode 3) — as of last confirmed bump (2026-06-25).  
 Update this line after each confirmed bump so future sessions start from the right baseline.
 
 ### Build pipeline

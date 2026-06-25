@@ -4,7 +4,15 @@ All notable changes to Wordout are documented here.
 
 ## [Unreleased]
 
-## [1.0.1] — 2026-06-25 (code complete, not yet built)
+## [1.0.2] — 2026-06-25
+### Fixed
+- Multi-board mode: each guess row was appearing boardCount times instead of once (adjacent board pages bleeding through on Android due to missing hardware compositing layer — restored Animated.View wrapper per board page)
+- Settings Game Mode selector showed "Quadout" instead of "4-out"
+
+### Added
+- Words INBOX, ADMIN, DEBUG added to EN-US and EN-GB answer and guess lists (PIXEL, CLICK, SWIPE, CACHE, VIRAL, PATCH, LOGIN, EMAIL, FORUM were already present)
+
+## [1.0.1] — 2026-06-25
 ### Fixed
 - Removed green rectangle border that appeared around solved boards in multi-board mode
 - Win animation: all tiles now wave left→right top→bottom (50ms stagger) on solve; board dims to 70% with large green ✓ overlay after wave
