@@ -7,6 +7,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -60,9 +62,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release delete latest --yes 2>/dev/null || true
-          git tag -f latest
-          git push -f origin latest
+          gh release delete latest --cleanup-tag --yes 2>/dev/null || true
           gh release create latest wordout.apk \
             --title "Latest build" \
             --notes "Built from commit ${{ github.sha }}" \
