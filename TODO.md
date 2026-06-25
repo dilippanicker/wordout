@@ -1,12 +1,12 @@
 # Wordout — Master TODO
 **Updated: 2026-06-25**
-**Current version: v1.0.2 (code complete, not yet built)**
+**Current version: v1.0.2 (code complete, pushed, not yet built)**
 
 ---
 
 ## 🔴 IMMEDIATE — v1.0.2 Build & Test
 
-- [ ] Push commits to origin (`git push`)
+- [ ] Verify fix on web first: `npx expo start --clear` → 4-out mode → guess RAISE → confirm 1 row per board (swipe to verify)
 - [ ] Trigger GitHub Actions build for v1.0.2
 - [ ] Test on S24 Ultra:
   - Multi-board: each guess row appears exactly ONCE per board page (row duplication fix)
@@ -99,10 +99,11 @@
 - ✅ 2026-06-25 v1.0.1: Win overlay (dim + ✓ + wave animation)
 - ✅ 2026-06-25 v1.0.1: Lose overlay (shake + red flash + dim + ✗ + answer word)
 - ✅ 2026-06-25 v1.0.1: End-of-game full screen overlay
-- ✅ 2026-06-25 v1.0.2: Fix multi-board row duplication (Android compositing layer)
+- ✅ 2026-06-25 v1.0.2: Fix multi-board row duplication (real fix: flexShrink:0 + plain View)
 - ✅ 2026-06-25 v1.0.2: Fix "Quadout" → "4-out" (and consistent N-out for all counts) in Settings
 - ✅ 2026-06-25 v1.0.2: Add INBOX, ADMIN, DEBUG to EN-US and EN-GB wordlists
 - ✅ 2026-06-25 Version bumping protocol added to CLAUDE.md
+- ✅ 2026-06-25 All v1.0.2 commits pushed to origin
 
 ---
 

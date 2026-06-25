@@ -1,63 +1,60 @@
 # Session Handoff
 
 **Last updated:** 2026-06-25
-**Session:** v1.0.2 — row duplication fix, label fix, word additions
-**Model:** claude-sonnet-4-6
-**Status:** v1.0.2 code complete, not yet built. Ready to trigger GitHub Actions.
+**Session:** v1.0.2 — row duplication root cause found and fixed (plain View + flexShrink:0)
+**Model:** claude-sonnet-4-6 → claude-haiku-4-5 (close ritual)
+**Status:** v1.0.2 code complete, all 7 commits pushed to origin. Ready to trigger GitHub Actions build.
 
 ---
 
 ## What was done this session
 
-### Bug fixed (from previous session, unresolved at handoff)
-**`app/(tabs)/index.tsx`** — Restored `BoardPage` as a minimal `Animated.View` wrapper (commit `23aafbf`):
-- Root cause: replacing `BoardPage` (Animated.View from Reanimated) with a plain `<View>` in v1.0.1 removed the per-page GPU compositing layer (hardware layer) that Android uses to clip each board page within the horizontal ScrollView. Without it, all board pages bled through simultaneously → each guess appeared boardCount times.
-- Fix: re-added `BoardPage` function component that returns `<Animated.View style={[style, animStyle]}>` with a static `opacity: useSharedValue(1)`. No visible animation — just restores the Reanimated native view type to re-establish the hardware compositing layer.
-- The dim animation from v1.0 is intentionally NOT restored (that's now handled by GameBoard's per-board overlay system).
+### Row duplication bug — correct root cause identified and fixed
+**`app/(tabs)/index.tsx`** — commit `5d27652`:
 
-### Label fix
-**`app/(tabs)/settings.tsx`** — Line 117: Changed `n === 4 ? 'Quadout' : \`${n}\`` to `\`${n}-out\`` so the Game Mode selector shows "2-out", "3-out", "4-out" etc. consistently. "Wordout" for n=1 is preserved.
+Previous session's fix (`23aafbf` — restore `BoardPage` as `Animated.View`) was **wrong**. The bug persisted on web after that fix.
 
-### Word additions
-**`assets/wordlists/answers_en_us.json`**, **`assets/wordlists/answers_en_gb.json`**, **`assets/wordlists/guesses_en_us.json`**, **`assets/wordlists/guesses_en_gb.json`**:
-- Added: INBOX, ADMIN, DEBUG (were missing from all four lists)
-- Already present (no change): PIXEL, CLICK, SWIPE, CACHE, VIRAL, PATCH, LOGIN, EMAIL, FORUM
-- Files are sorted alphabetical, lowercase, pretty-printed (one word per line, 2-space indent, trailing newline)
-- Note: first write was compact JSON (a mistake) — immediately corrected with a second commit restoring pretty-print format
+**Real root cause (two-part):**
 
-### Version bump
-**`app.json`**: `version` → `"1.0.2"`, `versionCode` → `3`
-**`CHANGELOG.md`**: v1.0.2 entry added
-**`CLAUDE.md`**: Version bumping protocol section added; current version line updated to v1.0.2 (versionCode 3)
+1. **`boardPage` style had `flex: 1`** — In CSS flexbox, `flex: 1` expands to `flex-grow: 1; flex-shrink: 1; flex-basis: 0`. The `flex-basis: 0` overrides the explicit `width: screenW` on each page. In a scroll container, this causes all N pages to divide the viewport equally (`screenW / N` each), making all boards visible simultaneously. Each submitted guess then appeared N times (once per board).
+
+2. **`BoardPage` as `Animated.View` compounded the issue** — `Animated.View` received `style={[style, animStyle]}` where `style` was already a nested array `[styles.boardPage, { width: screenW, ... }]`. Reanimated on web may not flatten doubly-nested style arrays, silently discarding `flexShrink: 0` and `width: screenW`.
+
+**Fix:**
+- Changed `boardPage` from `flex: 1` to `flexShrink: 0` — pages no longer collapse; `width: screenW` is authoritative.
+- Changed `BoardPage` back to a plain `<View>` — removes nested style array ambiguity. The `opacity: useSharedValue(1)` animation was a no-op anyway (value never changed).
+
+**Why the Android compositing theory (previous session) was wrong:** The original working commit (`a615ede`) also used `<View>` for board pages with `flex: 1` on `boardPage`. The bug existed on web from the start but was only noticed later. `Animated.View` is not required for correct layout on Android.
 
 ---
 
-## Commits this session (chronological)
-- `23aafbf` — fix: restore Animated.View wrapper for board pages (row duplication)
+## All commits this session (across both sessions, now all pushed)
+
+- `23aafbf` — fix: restore Animated.View wrapper (WRONG — superseded by 5d27652)
 - `5587946` — docs: add version bumping protocol to CLAUDE.md
 - `b0137d1` — v1.0.2: fix Quadout label, add tech words, fix row duplication
 - `a0a6c12` — fix: reformat wordlists to pretty-printed JSON
 - `5b12f24` — bump version to 1.0.2 (versionCode 3)
+- `f8c6e00` — chore: session close (previous session)
+- `5d27652` — fix: use plain View for board pages — removes Animated.View style nesting bug (**this is the real fix**)
 
-All commits are local only — not yet pushed to origin.
+All pushed to origin (`8205bf0..5d27652`).
 
 ---
 
 ## Decisions made
 
-1. **BoardPage restored without dim animation** — The v1.0 dim effect (opacity 0.45 on loss) is intentionally kept out. GameBoard now handles per-board overlays (✓/✗). BoardPage only exists to re-establish the native compositing layer.
+1. **Plain `View` is correct for `BoardPage`** — The Android GPU compositing layer theory was debunked. Plain `View` with `flexShrink: 0` on the style works on both platforms. No `Animated.View` needed.
 
-2. **Wordlist format** — Maintained original sorted/pretty-printed format. The compact-JSON intermediate commit was a mistake; corrected immediately with a reformatting commit. Both commits are local and could be squashed before push, but are harmless as-is.
+2. **`flex: 1` on `boardPage` was the root cause** — Not `Animated.View` vs `View`. The CSS `flex-basis: 0` expansion of `flex: 1` collapsed page widths in a scroll container.
 
-3. **Settings label** — Changed the condition from `n === 4 ? 'Quadout' : \`${n}\`` to just `\`${n}-out\`` for all n > 1. This fixes n=4 and also ensures n=2,3,6,8 all use the consistent "N-out" pattern (they were already showing numbers, now they show "2-out" etc. with the suffix).
-
-   **Wait — this may have changed labels for n=2,3,6,8 from bare numbers to "2-out" etc.** Double-check on device. The original code was `n === 4 ? 'Quadout' : \`${n}\`` meaning 2→"2", 3→"3", 6→"6", 8→"8". My change makes them 2→"2-out", 3→"3-out", 6→"6-out", 8→"8-out". This is actually correct (matches the tab bar and rest of the app) but is a wider change than just fixing "Quadout".
+3. **No version bump needed** — v1.0.2 (versionCode 3) covers all fixes. The additional fix commit is part of the same patch before any build was triggered.
 
 ---
 
 ## Current state
 
-All v1.0.2 code is committed locally. Nothing is staged. No uncommitted changes.
+All code is committed and pushed. No uncommitted changes. No staged files.
 
 Version: `1.0.2` (versionCode 3) in `app.json`.
 
@@ -65,20 +62,21 @@ Version: `1.0.2` (versionCode 3) in `app.json`.
 
 ## Exact next step
 
-1. Push commits to origin: `git push`
-2. Trigger GitHub Actions build: go to github.com/dilippanicker/wordout → Actions → "Build Android APK" → Run workflow
-3. Test on S24 Ultra:
-   - Multi-board: each guess appears exactly ONCE per board page (row duplication fix)
-   - Settings: Game Mode selector shows "Wordout / 2-out / 3-out / 4-out / 6-out / 8-out" (no "Quadout")
-   - Type INBOX, ADMIN, or DEBUG mid-game — should be accepted as valid guesses, and could appear as answers
-   - Win/lose overlays still working (v1.0.1 animations not regressed)
+1. **Verify fix on web first**: `npx expo start --clear` → open localhost:8081 → switch to 4-out → guess RAISE → confirm it appears exactly ONCE per board (swipe between boards to verify)
+2. **Trigger GitHub Actions build**: github.com/dilippanicker/wordout → Actions → "Build Android APK" → Run workflow
+3. **Test on S24 Ultra**:
+   - Multi-board: each guess row appears ONCE (swipe to confirm boards are separate pages)
+   - Settings: Game Mode shows "Wordout / 2-out / 3-out / 4-out / 6-out / 8-out"
+   - INBOX, ADMIN, DEBUG accepted as valid guesses
+   - Win/lose overlays not regressed
 
 ---
 
 ## Gotchas for next session
 
-- **BoardPage must stay as Animated.View** — removing it or replacing with plain View re-introduces the Android compositing bug. The comment in the code explains why.
-- **Wordlist format**: always pretty-print (indent=2, one word per line, trailing newline). Never write compact JSON. Use `json.dump(data, f, indent=2); f.write('\n')`.
-- **Settings label change scope**: the `n-out` label change affected ALL board counts (2,3,4,6,8), not just 4. Verify they all look right on device.
+- **`boardPage` must use `flexShrink: 0`, NOT `flex: 1`** — `flex: 1` causes `flex-basis: 0` in CSS, which overrides `width: screenW` and collapses all pages into viewport width.
+- **`BoardPage` must be a plain `View`** — Do NOT change it to `Animated.View`. The nested style array `[style, animStyle]` where `style` is itself an array causes Reanimated to silently drop layout styles on web.
+- **Wordlist format**: always pretty-print (indent=2, one word per line, trailing newline).
+- **Settings label change scope**: the `n-out` label change affected ALL board counts (2,3,4,6,8). Verify on device.
 - EAS free tier exhausted until July 1, 2026 — use GitHub Actions for all builds.
-- `versionCode` is now 3. Next build must use versionCode 4.
+- `versionCode` is 3. Next build uses versionCode 3. Next RELEASE after that uses versionCode 4.

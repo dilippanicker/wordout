@@ -6,7 +6,7 @@ All notable changes to Wordout are documented here.
 
 ## [1.0.2] — 2026-06-25
 ### Fixed
-- Multi-board mode: each guess row was appearing boardCount times instead of once (adjacent board pages bleeding through on Android due to missing hardware compositing layer — restored Animated.View wrapper per board page)
+- Multi-board mode: each guess row was appearing boardCount times instead of once (`flex: 1` on board pages caused CSS `flex-basis: 0`, collapsing page widths so all boards were visible simultaneously — fixed with `flexShrink: 0` and plain View wrapper)
 - Settings Game Mode selector showed "Quadout" instead of "4-out"
 
 ### Added

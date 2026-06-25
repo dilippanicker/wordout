@@ -141,7 +141,8 @@ Dark mode: square stroke + play icon use `'#ffffff'`; yellow-circle fill uses `c
 - `onMomentumScrollEnd` updates `activeBoard` state for indicator rendering
 - `useEffect` resets scroll to x=0 when `quordleStore.guesses.length === 0` (new game)
 - Board pages have explicit `backgroundColor: colors.background` to prevent adjacent-page bleed
-- **`BoardPage` wrapper is mandatory** — a `function BoardPage` defined above `WordleScreen` that returns `<Animated.View style={[style, animStyle]}>` with a static `useSharedValue(1)` opacity. On Android, Reanimated's `Animated.View` with an animated style is promoted to a hardware GPU compositing layer (LAYER_TYPE_HARDWARE). Without this, plain `View` pages lose their native layer boundary and adjacent pages bleed through in the `pagingEnabled` ScrollView, causing each guess to appear `boardCount` times. **Do not replace with a plain `View`.**
+- **`boardPage` style must use `flexShrink: 0`, NOT `flex: 1`** — `flex: 1` in CSS expands to `flex-basis: 0`, which overrides the explicit `width: screenW` inline style. In a scroll container this collapses all pages to `screenW / boardCount` each, making every board visible simultaneously and causing each guess to appear `boardCount` times. `flexShrink: 0` keeps the item at its explicit `width`.
+- **`BoardPage` must be a plain `View`** — `Animated.View` with a nested style array `[style, animStyle]` where `style` is itself an array caused Reanimated to silently drop the inner layout styles on web. The original Android compositing layer theory was wrong — the original working code also used a plain `View`.
 
 ### Settings — handleBoardCountSelect
 ```ts
