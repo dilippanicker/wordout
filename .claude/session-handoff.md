@@ -63,7 +63,7 @@ Version: `1.0.3` (versionCode 4) in `app.json`.
 
 ## Gotchas for next session
 
-- **Duplicate guess bug was game logic, not CSS** — the CSS `flexShrink:0` fix was a separate web layout improvement. Don't conflate the two.
+- **The CSS investigation was a complete red herring** — we burnt a large number of tokens across multiple sessions chasing a layout bug that never existed. The user saw RAISE appearing multiple times because they were submitting the same word repeatedly and the game accepted it. The only real fix was the duplicate guess check. The `flexShrink:0` and plain-View changes are harmless but fixed nothing observable.
 - **`boardPage` must use `flexShrink: 0`, NOT `flex: 1`** — `flex:1` causes `flex-basis:0` in CSS, collapsing page widths on web.
 - **`BoardPage` must be a plain `View`** — Animated.View with nested style arrays drops layout styles on web.
 - **Wordlist format**: always pretty-print (indent=2, one word per line, trailing newline).
