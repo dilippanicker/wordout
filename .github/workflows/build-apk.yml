@@ -51,6 +51,11 @@ jobs:
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
+      - name: Build AAB locally
+        run: eas build --platform android --profile production --local --output ./wordout.aab
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
@@ -58,12 +63,19 @@ jobs:
           path: wordout.apk
           retention-days: 14
 
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: wordout-aab
+          path: wordout.aab
+          retention-days: 14
+
       - name: Publish latest release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release delete latest --cleanup-tag --yes 2>/dev/null || true
-          gh release create latest wordout.apk \
+          gh release create latest wordout.apk wordout.aab \
             --title "Latest build" \
             --notes "Built from commit ${{ github.sha }}" \
             --latest
