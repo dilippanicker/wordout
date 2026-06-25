@@ -164,15 +164,12 @@ async function copyToClipboard(text: string): Promise<boolean> {
 
 const WIN_MESSAGES = ['Genius!', 'Magnificent!', 'Impressive!', 'Splendid!', 'Great!', 'Phew!'];
 
-// Restores the Reanimated Animated.View wrapper per board page.
-// On Android a Reanimated view with an animated style is promoted to a
-// hardware compositing layer, which correctly clips each page within the
-// horizontal ScrollView. A plain View loses that layer boundary and adjacent
-// pages bleed through — causing each guess to appear boardCount times.
+// Each board page in the horizontal ScrollView needs flexShrink:0 so that
+// CSS flex-basis doesn't collapse the explicit width:screenW on web.
+// This is a plain View — Animated.View was tried but nested style arrays
+// caused the layout styles to be silently dropped on web.
 function BoardPage({ style, children }: { style: object; children: React.ReactNode }) {
-  const opacity = useSharedValue(1);
-  const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
-  return <Animated.View style={[style, animStyle]}>{children}</Animated.View>;
+  return <View style={style as any}>{children}</View>;
 }
 
 // ── Screen ──────────────────────────────────────────────────────────────────
@@ -747,7 +744,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   boardPage: {
-    flex: 1,
+    // flex: 1 caused flex-basis: 0 in CSS (web), overriding the explicit
+    // width: screenW inline style and collapsing pages to screenW/boardCount.
+    // flexShrink: 0 prevents that while keeping width: screenW authoritative
+    // on both Yoga (native) and CSS (web).
+    flexShrink: 0,
     alignItems: 'center',
     justifyContent: 'flex-start',
     paddingTop: 8,
