@@ -1,19 +1,20 @@
 # Wordout — Master TODO
 **Updated: 2026-06-25**
-**Current version: v1.0.1 (code complete, not yet built)**
+**Current version: v1.0.2 (code complete, not yet built)**
 
 ---
 
-## 🔴 IMMEDIATE — v1.0.1 Build & Test
+## 🔴 IMMEDIATE — v1.0.2 Build & Test
 
-- ✅ 2026-06-25 Remove green rectangle border around solved boards in multi-board mode
-- ✅ 2026-06-25 Win overlay: all tiles wave (left→right, top→bottom, ~50ms apart) then dim to 70% + big green ✓
-- ✅ 2026-06-25 Lose overlay: shake (3×, 14px, ~900ms, red tint flash) then dim to 70% + big red ✗ + answer word
-- ✅ 2026-06-25 End-of-game full screen overlay (all won 🎉 / partial 😅 / all lost 😢 + Share ↗, fades after 3s or on tap)
-- [ ] Trigger GitHub Actions build for v1.0.1
-- [ ] Test on S24 Ultra (win, lose, multi-board, navigate between boards, new game reset)
+- [ ] Push commits to origin (`git push`)
+- [ ] Trigger GitHub Actions build for v1.0.2
+- [ ] Test on S24 Ultra:
+  - Multi-board: each guess row appears exactly ONCE per board page (row duplication fix)
+  - Settings: Game Mode shows "Wordout / 2-out / 3-out / 4-out / 6-out / 8-out" (no "Quadout")
+  - INBOX, ADMIN, DEBUG accepted as valid guesses and eligible as answers
+  - Win/lose overlays not regressed (v1.0.1 animations still working)
 
-## 🔴 IMMEDIATE — Play Store Submission (v1.0)
+## 🔴 IMMEDIATE — Play Store Submission
 
 - [ ] Feature graphic (1024×500px) — design in claude.ai
 - [ ] Screenshots on S24 Ultra (min 2, recommend 6):
@@ -27,7 +28,7 @@
   - Content rating questionnaire
   - Data safety (no data collected — all local)
   - Target audience (everyone)
-- [ ] Upload AAB to internal testing track
+- [ ] Upload APK/AAB to internal testing track
 - [ ] Promote to production
 - [ ] Set up Google Play service account for automation (after first manual upload)
 - [ ] Add GOOGLE_PLAY_SERVICE_ACCOUNT_JSON secret to GitHub
@@ -98,6 +99,10 @@
 - ✅ 2026-06-25 v1.0.1: Win overlay (dim + ✓ + wave animation)
 - ✅ 2026-06-25 v1.0.1: Lose overlay (shake + red flash + dim + ✗ + answer word)
 - ✅ 2026-06-25 v1.0.1: End-of-game full screen overlay
+- ✅ 2026-06-25 v1.0.2: Fix multi-board row duplication (Android compositing layer)
+- ✅ 2026-06-25 v1.0.2: Fix "Quadout" → "4-out" (and consistent N-out for all counts) in Settings
+- ✅ 2026-06-25 v1.0.2: Add INBOX, ADMIN, DEBUG to EN-US and EN-GB wordlists
+- ✅ 2026-06-25 Version bumping protocol added to CLAUDE.md
 
 ---
 

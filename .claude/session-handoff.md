@@ -1,96 +1,84 @@
 # Session Handoff
 
 **Last updated:** 2026-06-25
-**Session:** v1.0.1 Animation Hotfix
+**Session:** v1.0.2 — row duplication fix, label fix, word additions
 **Model:** claude-sonnet-4-6
-**Status:** v1.0.1 code complete, not yet built or tested on device.
+**Status:** v1.0.2 code complete, not yet built. Ready to trigger GitHub Actions.
 
 ---
 
-## Current State
+## What was done this session
 
-### What was implemented this session (v1.0.1)
+### Bug fixed (from previous session, unresolved at handoff)
+**`app/(tabs)/index.tsx`** — Restored `BoardPage` as a minimal `Animated.View` wrapper (commit `23aafbf`):
+- Root cause: replacing `BoardPage` (Animated.View from Reanimated) with a plain `<View>` in v1.0.1 removed the per-page GPU compositing layer (hardware layer) that Android uses to clip each board page within the horizontal ScrollView. Without it, all board pages bled through simultaneously → each guess appeared boardCount times.
+- Fix: re-added `BoardPage` function component that returns `<Animated.View style={[style, animStyle]}>` with a static `opacity: useSharedValue(1)`. No visible animation — just restores the Reanimated native view type to re-establish the hardware compositing layer.
+- The dim animation from v1.0 is intentionally NOT restored (that's now handled by GameBoard's per-board overlay system).
 
-All animation changes are in two files only — no game logic, stores, settings, or word lists changed.
+### Label fix
+**`app/(tabs)/settings.tsx`** — Line 117: Changed `n === 4 ? 'Quadout' : \`${n}\`` to `\`${n}-out\`` so the Game Mode selector shows "2-out", "3-out", "4-out" etc. consistently. "Wordout" for n=1 is preserved.
 
-**`components/GameBoard.tsx`** — major rewrite of animation + overlay system:
-- Removed green rectangle border (`borderWidth: 2, borderColor: transparent` + `solvedBoard` style) that appeared around solved boards
-- Removed `labelSolved` style (label stays grey in all states)
-- Added `answer?: string` prop — used to display answer word in the lose overlay
-- Updated board shake: now 3 shakes × 130ms each = 910ms total, 14px amplitude (was 2 shakes, 80ms, shorter)
-- Added `winOverlayOpacity` / `loseOverlayOpacity` / `redTintOpacity` shared values (initialised to 1 if already in end-state on mount — remount safety)
-- Win overlay: `rgba(0,0,0,0.3)` dim + 80px bold green ✓ (#5BA75A), fades in 1500ms after `solved` transitions
-- Lose overlay: same dim + 80px bold red ✗ (#E24B4A) + answer word (28px white, letterSpacing 4), fades in after shake ends (~FLIP_DONE_MS + 1100ms)
-- Red tint flash: `rgba(226,75,74,0.3)` Animated.View fires at shake start, fades out by ~1600ms — separate from lose overlay so it shows before overlay appears
-- Wave animation extended: ALL tiles wave left→right, top→bottom, 50ms apart when `solved && animatingRow === count - 1` (was only last row)
-  - Guard: `animatingRow === count - 1` only true after fresh winning guess, not on remount (where animatingRow stays -1)
-- Reset guards: `!solved` transition cancels pending win overlay anim; `!gameOver` transition resets lose overlay + red tint
+### Word additions
+**`assets/wordlists/answers_en_us.json`**, **`assets/wordlists/answers_en_gb.json`**, **`assets/wordlists/guesses_en_us.json`**, **`assets/wordlists/guesses_en_gb.json`**:
+- Added: INBOX, ADMIN, DEBUG (were missing from all four lists)
+- Already present (no change): PIXEL, CLICK, SWIPE, CACHE, VIRAL, PATCH, LOGIN, EMAIL, FORUM
+- Files are sorted alphabetical, lowercase, pretty-printed (one word per line, 2-space indent, trailing newline)
+- Note: first write was compact JSON (a mistake) — immediately corrected with a second commit restoring pretty-print format
 
-**`app/(tabs)/index.tsx`** — end-of-game overlay + cleanup:
-- Removed `BoardPage` component (was a dim animation wrapper — dim now lives inside GameBoard overlay)
-- Removed `boardDimOpacity` / `boardDimStyle` (was dimming Wordle boardArea on loss)
-- Removed `winShimmerOpacity` / `winShimmerStyle` (was the brief green full-screen flash)
-- Added `endGameVisible` state, `endGameOpacity` shared value, `endGameTimerRef`
-- End-of-game overlay triggers via `gameStatus` transition (`playing` → `won`/`lost`):
-  - Won: 1800ms delay (after wave + ✓ overlay appear)
-  - Lost: 2500ms delay (after shake + ✗ overlay appear)
-  - Auto-dismisses after 3s; tap anywhere dismisses; Share button shares then dismisses
-- Full-screen overlay content:
-  - Wordle won: 🎉 "Solved!" + answer word
-  - Wordle lost: 😢 "Better luck next time" + answer word
-  - Quordle all won: 🎉 "You got them all!" + all answers in a row
-  - Quordle partial: 😅 "X out of Y!" + per-word ✓/✗ in green/red
-  - Quordle all lost: 😢 "Better luck next time" + all answers
-- `WordleBoard` path: now passes `solved={gameStatus === 'won'}` and `answer={answer}` to GameBoard (previously neither was passed — win bounce was broken in Wordle mode!)
-- `QuordleBoard` path: passes `answer={quordleStore.answers[i]}` per board; BoardPage replaced with plain `<View>`
+### Version bump
+**`app.json`**: `version` → `"1.0.2"`, `versionCode` → `3`
+**`CHANGELOG.md`**: v1.0.2 entry added
+**`CLAUDE.md`**: Version bumping protocol section added; current version line updated to v1.0.2 (versionCode 3)
 
 ---
 
-## Decisions Made / Deviations from Spec
+## Commits this session (chronological)
+- `23aafbf` — fix: restore Animated.View wrapper for board pages (row duplication)
+- `5587946` — docs: add version bumping protocol to CLAUDE.md
+- `b0137d1` — v1.0.2: fix Quadout label, add tech words, fix row duplication
+- `a0a6c12` — fix: reformat wordlists to pretty-printed JSON
+- `5b12f24` — bump version to 1.0.2 (versionCode 3)
 
-1. **Sequential ✓ flash before end overlay (spec section 4)** — NOT implemented. The spec says "each board's ✓ flashes in sequence, 200ms apart, then full screen overlay appears." Skipped: each board's ✓ overlay is already persistently visible by the time the end overlay fires; adding a per-board pulse signal (a new prop/key) would be significant complexity for minor visual gain. Boards already show ✓ individually as they're solved. Revisit in v1.1.
-
-2. **Wordle win bounce was previously broken** — Discovered that `solved` was never passed to GameBoard in Wordle mode (always defaulted to `false`), so the winning row bounce never fired. Fixed as part of this session.
-
-3. **Green shimmer removed** — Spec says to "improve" the shimmer; replaced entirely with the per-board overlay + end-game overlay system. The shimmer was a brief flash that added noise; the new overlays are more intentional.
-
-4. **Wave timing** — 50ms per tile stagger as specced. For a 6-row solved board the last tile starts bouncing at FLIP_DONE_MS + 1450ms ≈ 2400ms. The win overlay (1500ms delay) fades in during the middle of the wave. Since the overlay is semi-transparent (0.3 alpha), the wave is still partially visible through it. Acceptable; revisit if user feedback says it's obscured.
-
----
-
-## Next Steps
-
-### Immediate (v1.0.1)
-1. Trigger GitHub Actions build: go to github.com/dilippanicker/wordout → Actions → "Build Android APK" → Run workflow
-2. Test on S24 Ultra:
-   - Win single board → see wave + ✓ overlay + end overlay → tap dismiss
-   - Lose single board → see shake + red flash + ✗ + answer + end overlay
-   - Multi-board: solve some boards, lose others → check per-board overlays + partial end overlay
-   - Navigate between boards after solve/lose — overlays persist
-   - Start new game — overlays reset, end overlay disappears
-3. If looks good → proceed with Play Store steps below
-
-### Play Store (v1.0)
-1. Feature graphic (1024×500) — design in claude.ai
-2. Screenshots on S24 Ultra (6 recommended)
-3. Complete Play Console content rating / data safety forms
-4. Upload AAB to internal testing track (first manual upload via web UI)
-5. Service account + GitHub Actions automation (after first upload)
+All commits are local only — not yet pushed to origin.
 
 ---
 
-## Files Modified This Session
-- `components/GameBoard.tsx` — overlay system, wave animation, shake update, border removal
-- `app/(tabs)/index.tsx` — end-game overlay, BoardPage removal, shimmer removal, answer prop threading
+## Decisions made
+
+1. **BoardPage restored without dim animation** — The v1.0 dim effect (opacity 0.45 on loss) is intentionally kept out. GameBoard now handles per-board overlays (✓/✗). BoardPage only exists to re-establish the native compositing layer.
+
+2. **Wordlist format** — Maintained original sorted/pretty-printed format. The compact-JSON intermediate commit was a mistake; corrected immediately with a reformatting commit. Both commits are local and could be squashed before push, but are harmless as-is.
+
+3. **Settings label** — Changed the condition from `n === 4 ? 'Quadout' : \`${n}\`` to just `\`${n}-out\`` for all n > 1. This fixes n=4 and also ensures n=2,3,6,8 all use the consistent "N-out" pattern (they were already showing numbers, now they show "2-out" etc. with the suffix).
+
+   **Wait — this may have changed labels for n=2,3,6,8 from bare numbers to "2-out" etc.** Double-check on device. The original code was `n === 4 ? 'Quadout' : \`${n}\`` meaning 2→"2", 3→"3", 6→"6", 8→"8". My change makes them 2→"2-out", 3→"3-out", 6→"6-out", 8→"8-out". This is actually correct (matches the tab bar and rest of the app) but is a wider change than just fixing "Quadout".
 
 ---
 
-## Gotchas
-- EAS free tier exhausted until July 1 2026 — use GitHub Actions for all builds
-- `useWindowDimensions().height` returns full screen height — TAB_H must be subtracted explicitly
-- `statsStore` keyed by `'wordle'` (single board) or `String(boardCount)` (multi-board)
-- Abandon guard must fire on New Game, mode switch, AND language switch
-- Pre-existing TypeScript error in `new-game.tsx` route path — do not fix, not blocking
-- `animatingRow === count - 1` guard in GameBoard prevents wave from replaying on remount
-- Overlay shared values initialised to 1 on mount if board already in end-state (e.g. navigating back mid-game)
-- Wordle mode now passes `solved={gameStatus === 'won'}` — this was missing before and broke win-row bounce
+## Current state
+
+All v1.0.2 code is committed locally. Nothing is staged. No uncommitted changes.
+
+Version: `1.0.2` (versionCode 3) in `app.json`.
+
+---
+
+## Exact next step
+
+1. Push commits to origin: `git push`
+2. Trigger GitHub Actions build: go to github.com/dilippanicker/wordout → Actions → "Build Android APK" → Run workflow
+3. Test on S24 Ultra:
+   - Multi-board: each guess appears exactly ONCE per board page (row duplication fix)
+   - Settings: Game Mode selector shows "Wordout / 2-out / 3-out / 4-out / 6-out / 8-out" (no "Quadout")
+   - Type INBOX, ADMIN, or DEBUG mid-game — should be accepted as valid guesses, and could appear as answers
+   - Win/lose overlays still working (v1.0.1 animations not regressed)
+
+---
+
+## Gotchas for next session
+
+- **BoardPage must stay as Animated.View** — removing it or replacing with plain View re-introduces the Android compositing bug. The comment in the code explains why.
+- **Wordlist format**: always pretty-print (indent=2, one word per line, trailing newline). Never write compact JSON. Use `json.dump(data, f, indent=2); f.write('\n')`.
+- **Settings label change scope**: the `n-out` label change affected ALL board counts (2,3,4,6,8), not just 4. Verify they all look right on device.
+- EAS free tier exhausted until July 1, 2026 — use GitHub Actions for all builds.
+- `versionCode` is now 3. Next build must use versionCode 4.

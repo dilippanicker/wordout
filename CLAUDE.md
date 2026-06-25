@@ -141,6 +141,7 @@ Dark mode: square stroke + play icon use `'#ffffff'`; yellow-circle fill uses `c
 - `onMomentumScrollEnd` updates `activeBoard` state for indicator rendering
 - `useEffect` resets scroll to x=0 when `quordleStore.guesses.length === 0` (new game)
 - Board pages have explicit `backgroundColor: colors.background` to prevent adjacent-page bleed
+- **`BoardPage` wrapper is mandatory** — a `function BoardPage` defined above `WordleScreen` that returns `<Animated.View style={[style, animStyle]}>` with a static `useSharedValue(1)` opacity. On Android, Reanimated's `Animated.View` with an animated style is promoted to a hardware GPU compositing layer (LAYER_TYPE_HARDWARE). Without this, plain `View` pages lose their native layer boundary and adjacent pages bleed through in the `pagingEnabled` ScrollView, causing each guess to appear `boardCount` times. **Do not replace with a plain `View`.**
 
 ### Settings — handleBoardCountSelect
 ```ts
@@ -152,6 +153,7 @@ function handleBoardCountSelect(n: BoardCount) {
 }
 ```
 Mode segment active state: `(n === 1 && gameMode === 'wordle') || (n > 1 && gameMode === 'quordle' && boardCount === n)`
+Mode segment label: `n === 1 ? 'Wordout' : \`${n}-out\`` — produces "Wordout / 2-out / 3-out / 4-out / 6-out / 8-out". (Was `n === 4 ? 'Quadout' : \`${n}\`` — fixed in v1.0.2.)
 
 ### Per-mode stats display
 `modeKey = gameMode === 'wordle' ? 'wordle' : String(boardCount)`  
@@ -266,9 +268,9 @@ Update this line after each confirmed bump so future sessions start from the rig
 - APK also published to GitHub Releases as `latest` tag — permanent public download link:
   `https://github.com/dilippanicker/wordout/releases/latest/download/wordout.apk`
 
-**Last successful build:** GitHub Actions run `28120107075`, commit `000243e`  
+**Last successful build:** GitHub Actions run `28120107075`, commit `000243e` (v1.0.1)  
 **APK:** Downloaded to `/home/dilip/Downloads/wordout.apk` (98 MB)  
-**All commits are built** — nothing pending in code.
+**Pending build:** v1.0.2 (versionCode 3) — commits through `5b12f24`, not yet pushed or built.
 
 ### Play Store setup
 - App created in Google Play Console under publisher "Onglipo"
