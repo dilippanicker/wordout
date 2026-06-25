@@ -164,6 +164,17 @@ async function copyToClipboard(text: string): Promise<boolean> {
 
 const WIN_MESSAGES = ['Genius!', 'Magnificent!', 'Impressive!', 'Splendid!', 'Great!', 'Phew!'];
 
+// Restores the Reanimated Animated.View wrapper per board page.
+// On Android a Reanimated view with an animated style is promoted to a
+// hardware compositing layer, which correctly clips each page within the
+// horizontal ScrollView. A plain View loses that layer boundary and adjacent
+// pages bleed through — causing each guess to appear boardCount times.
+function BoardPage({ style, children }: { style: object; children: React.ReactNode }) {
+  const opacity = useSharedValue(1);
+  const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  return <Animated.View style={[style, animStyle]}>{children}</Animated.View>;
+}
+
 // ── Screen ──────────────────────────────────────────────────────────────────
 
 export default function WordleScreen() {
@@ -486,7 +497,7 @@ export default function WordleScreen() {
             const isSolved = solvedRow >= 0;
             const visibleGuesses = isSolved ? qGuesses.slice(0, solvedRow + 1) : qGuesses;
             return (
-              <View
+              <BoardPage
                 key={i}
                 style={[styles.boardPage, { width: screenW, backgroundColor: colors.background }]}
               >
@@ -502,7 +513,7 @@ export default function WordleScreen() {
                   answer={quordleStore.answers[i]}
                   shakeKey={shakeKey}
                 />
-              </View>
+              </BoardPage>
             );
           })}
         </ScrollView>
