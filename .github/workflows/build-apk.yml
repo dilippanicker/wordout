@@ -46,6 +46,21 @@ jobs:
       - name: Install EAS CLI
         run: npm install -g eas-cli
 
+      - name: Read version from app.json
+        id: version
+        run: |
+          VERSION=$(node -p "require('./app.json').expo.version")
+          echo "version=v$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Extract changelog for this version
+        id: changelog
+        run: |
+          VERSION=$(node -p "require('./app.json').expo.version")
+          # Extract the section between ## [VERSION] and the next ## heading
+          NOTES=$(awk "/^## \[$VERSION\]/{found=1; next} found && /^## /{exit} found{print}" CHANGELOG.md)
+          # Write to a file to preserve newlines
+          echo "$NOTES" > release_notes.md
+
       - name: Build APK locally
         run: eas build --platform android --profile preview --local --output ./wordout.apk
         env:
@@ -70,12 +85,14 @@ jobs:
           path: wordout.aab
           retention-days: 14
 
-      - name: Publish latest release
+      - name: Publish versioned release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release delete latest --cleanup-tag --yes 2>/dev/null || true
-          gh release create latest wordout.apk wordout.aab \
-            --title "Latest build" \
-            --notes "Built from commit ${{ github.sha }}" \
+          TAG=${{ steps.version.outputs.version }}
+          # Delete existing release+tag for this version if re-running
+          gh release delete "$TAG" --cleanup-tag --yes 2>/dev/null || true
+          gh release create "$TAG" wordout.apk wordout.aab \
+            --title "Wordout $TAG" \
+            --notes-file release_notes.md \
             --latest
