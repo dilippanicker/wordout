@@ -114,7 +114,7 @@ export default function SettingsScreen() {
             {BOARD_COUNTS.map((n, idx) => (
               <ModeSegment
                 key={n}
-                label={n === 1 ? 'Wordout' : n === 4 ? 'Quadout' : `${n}`}
+                label={n === 1 ? 'Wordout' : `${n}-out`}
                 active={(n === 1 && gameMode === 'wordle') || (n > 1 && gameMode === 'quordle' && boardCount === n)}
                 onPress={() => handleBoardCountSelect(n)}
                 last={idx === BOARD_COUNTS.length - 1}
