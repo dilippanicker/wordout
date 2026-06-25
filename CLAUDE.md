@@ -193,7 +193,7 @@ SVG: 5 tiles [W][O][R][D][✓] on dark `#121213` background, rounded square. Exp
 
 ### EAS build
 `eas.json` has `development` (internal APK), `preview` (APK), `production` (AAB) profiles.  
-`app.json`: `android.package: "com.dilippanicker.wordout"`, `android.versionCode: 1`  
+`app.json`: `android.package: "com.dilippanicker.wordout"`, `android.versionCode: 1` (current — see version bumping protocol before building)  
 Build command: `npx eas-cli build --platform android --profile preview --non-interactive`
 
 ---
@@ -235,6 +235,25 @@ Build command: `npx eas-cli build --platform android --profile preview --non-int
 - Privacy policy at GitHub Pages
 - New icons: RAISE/CLOUT tile design, cream background `#FFF8EE`
 - Splash/adaptive-icon background updated to `#FFF8EE` in app.json
+
+### Version bumping — mandatory protocol
+
+**Before every GitHub Actions build, follow this sequence exactly — no exceptions:**
+
+1. Read `app.json` to get the current `version` string and `versionCode` integer.
+2. Propose the bump with reasoning and wait for explicit user confirmation:
+   > "Ready to build. Proposing v1.0.2 (versionCode 3) — patch: bug fix + word additions. Confirm?"
+3. Only after the user confirms: update `app.json` (`version` and `versionCode`), then instruct the user to trigger the build.
+
+**Rules:**
+- `versionCode` always increments by exactly +1 from the current value. Never skip, never reuse.
+- Use semver: patch = bug fixes / minor content changes; minor = new user-visible features; major = breaking changes or full redesign.
+- Never update `app.json` before receiving explicit confirmation.
+- Never trigger or instruct triggering a build without a confirmed version bump.
+- Update `CHANGELOG.md` with the new version entry as part of the same commit as `app.json`.
+
+**Current version:** `1.0.0` (versionCode 1) — as of last successful build.  
+Update this line after each confirmed bump so future sessions start from the right baseline.
 
 ### Build pipeline
 **EAS:** Free tier exhausted (15/15 used). Resets July 1, 2026.  
