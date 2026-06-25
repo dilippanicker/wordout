@@ -129,6 +129,11 @@ export const useGameStore = create<GameState>((set, get) => ({
       return;
     }
 
+    if (guesses.some(g => g.word === currentGuess)) {
+      set({ toast: 'Already guessed' });
+      return;
+    }
+
     if (hardMode) {
       const violation = checkHardModeConstraints(guesses, currentGuess);
       if (violation) {

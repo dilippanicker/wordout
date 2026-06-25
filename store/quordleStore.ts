@@ -135,6 +135,10 @@ export const useQuordleStore = create<QuordleState>((set, get) => {
         set({ toast: 'Not in word list' }); return;
       }
 
+      if (guesses.some(g => g.word === currentGuess)) {
+        set({ toast: 'Already guessed' }); return;
+      }
+
       if (hardMode) {
         for (let b = 0; b < boardCount; b++) {
           if (solvedBoards[b]) continue;
