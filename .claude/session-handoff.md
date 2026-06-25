@@ -1,71 +1,78 @@
 # Session Handoff
 
-**Last updated:** 2026-06-25
-**Session:** v1.0.3 — duplicate guess fix, AAB build, version bump
+**Last updated:** 2026-06-26
+**Session:** v1.0.3 — duplicate guess fix, AAB build, versioned releases
 **Model:** claude-sonnet-4-6
-**Status:** v1.0.3 build in progress (GitHub Actions run 28189682555).
+**Status:** v1.0.3 build in progress (GitHub Actions run 28189682555). User will trigger next build manually after this close.
 
 ---
 
 ## What was done this session
 
-### Duplicate guess fix (game logic bug)
+### Duplicate guess fix (the only real bug)
 **`store/gameStore.ts`**, **`store/quordleStore.ts`** — commit `e45911c`:
-- Bug: the game accepted the same word submitted multiple times (e.g. guessing RAISE five times in a row was allowed).
-- Fix: added a duplicate check in `submitGuess` in both stores — if `currentGuess` already exists in `guesses`, reject with `toast: 'Already guessed'` and shake. Check is placed after the word-list check and before hard-mode constraints.
+- Bug: submitting the same word multiple times was accepted (no dedup check).
+- Fix: added `guesses.some(g => g.word === currentGuess)` check before accepting. Rejects with `toast: 'Already guessed'` and shake. Placed after word-list check, before hard-mode constraints.
+- Applies to both single-board (gameStore) and multi-board (quordleStore).
 
-### Web layout improvement (separate issue, not the duplicate bug)
-**`app/(tabs)/index.tsx`** — commit `5d27652`:
-- `boardPage` changed from `flex: 1` to `flexShrink: 0` — on web, `flex:1` expands to `flex-basis:0` which overrides `width:screenW`, making all board pages visible simultaneously. This was a web-only layout issue; Android/Yoga was unaffected.
-- `BoardPage` changed back to plain `View` — `Animated.View` with doubly-nested style arrays caused Reanimated to silently drop layout styles on web.
-- **Note:** The "RAISE appearing multiple times" bug the user reported was the duplicate guess logic bug (above), NOT this CSS issue. The CSS fix is a correctness improvement for web layout but was not the user-visible bug.
-
-### AAB build added
+### AAB added to build pipeline
 **`.github/workflows/build-apk.yml`** — commit `93c7da3`:
-- Added `eas build --profile production` step after the APK step.
-- AAB uploaded as artifact `wordout-aab` and included in GitHub Release.
-- Permanent download link: `https://github.com/dilippanicker/wordout/releases/latest/download/wordout.aab`
+- Added `eas build --profile production --local --output ./wordout.aab` step after APK.
+- AAB uploaded as artifact `wordout-aab` (14-day retention).
+- Both APK and AAB attached to GitHub Release.
+
+### Versioned GitHub Releases
+**`.github/workflows/build-apk.yml`** — commit `0883c71`:
+- Replaced static `latest` tag with versioned tags (e.g. `v1.0.3`) read from `app.json`.
+- Release notes extracted from matching `## [VERSION]` section in `CHANGELOG.md` using `awk`.
+- Re-running the same version deletes and recreates the release cleanly.
+- `releases/latest/download/wordout.apk` and `wordout.aab` still work (GitHub resolves `latest` to the most recent `--latest` release).
+- **Note:** build 28189682555 was triggered before this commit — it will still publish as `latest` tag. The versioned release workflow takes effect from the NEXT build.
 
 ### Version bump
-**`app.json`**: `version` → `"1.0.3"`, `versionCode` → `4`
-**`CHANGELOG.md`**: v1.0.3 entry added
+**`app.json`**: `version` → `"1.0.3"`, `versionCode` → `4` — commit `72f06c4`
+
+### CSS red herring (documented)
+Spent significant tokens investigating a supposed web layout bug (`flex:1` → `flex-basis:0` collapsing board pages). The real bug was the duplicate guess logic. The CSS changes (`flexShrink:0`, plain `View` for `BoardPage`) are harmless but fixed nothing observable. Noted in gotchas below.
 
 ---
 
 ## Commits this session (all pushed)
 
-- `5d27652` — fix: plain View for board pages, flexShrink:0 (web layout)
 - `e45911c` — fix: reject duplicate guesses with 'Already guessed' toast
 - `93c7da3` — ci: also build production AAB alongside preview APK
 - `72f06c4` — bump version to 1.0.3 (versionCode 4)
+- `728944f` — docs: correct duplicate bug attribution — game logic not CSS
+- `4e8a526` — docs: note token waste on CSS red herring
+- `0883c71` — ci: versioned GitHub Releases from app.json + CHANGELOG.md
 
 ---
 
 ## Current state
 
-Build `28189682555` in progress — produces APK + AAB (~45 min).
+Build `28189682555` in progress (~45 min total for APK + AAB).
 Version: `1.0.3` (versionCode 4) in `app.json`.
+All commits pushed. Nothing staged or uncommitted.
 
 ---
 
 ## Exact next step
 
 1. Wait for build `28189682555` to complete
-2. Download APK from `https://github.com/dilippanicker/wordout/releases/latest/download/wordout.apk`
-3. Test on S24 Ultra:
-   - Try guessing the same word twice — should be rejected with "Already guessed"
-   - Multi-board: each guess row appears ONCE per board (swipe to confirm)
-   - Settings: Game Mode shows "Wordout / 2-out / 3-out / 4-out / 6-out / 8-out"
-   - Win/lose overlays not regressed
-4. For Play Store: use the AAB from `releases/latest/download/wordout.aab`
+2. Test on S24 Ultra:
+   - Submit same word twice → rejected with "Already guessed" + shake
+   - Multi-board mode: same test
+   - Win/lose overlays, Settings labels, INBOX/ADMIN/DEBUG — all not regressed
+3. User triggers next build manually (will use versioned release workflow for first time)
+4. Play Store submission: upload AAB from `releases/latest/download/wordout.aab`
 
 ---
 
 ## Gotchas for next session
 
-- **The CSS investigation was a complete red herring** — we burnt a large number of tokens across multiple sessions chasing a layout bug that never existed. The user saw RAISE appearing multiple times because they were submitting the same word repeatedly and the game accepted it. The only real fix was the duplicate guess check. The `flexShrink:0` and plain-View changes are harmless but fixed nothing observable.
-- **`boardPage` must use `flexShrink: 0`, NOT `flex: 1`** — `flex:1` causes `flex-basis:0` in CSS, collapsing page widths on web.
-- **`BoardPage` must be a plain `View`** — Animated.View with nested style arrays drops layout styles on web.
+- **Do not chase CSS layout bugs in the horizontal ScrollView** — the only real multi-board bug this cycle was duplicate guess acceptance (game logic). CSS red herring cost many tokens.
+- **`boardPage` uses `flexShrink: 0`** (not `flex: 1`) and `BoardPage` is a plain `View` — harmless changes, leave as-is.
+- **Versioned releases**: build 28189682555 still publishes as `latest`. From the next build onward, releases are tagged `v1.0.3`, `v1.1.0` etc. with CHANGELOG notes.
+- **EAS free tier** exhausted until July 1, 2026 — use GitHub Actions for all builds.
+- **versionCode is 4**. Next build uses versionCode 4 (already set). Build after that needs versionCode 5.
 - **Wordlist format**: always pretty-print (indent=2, one word per line, trailing newline).
-- EAS free tier exhausted until July 1, 2026 — use GitHub Actions for all builds.
-- `versionCode` is now 4. Next build must use versionCode 5.

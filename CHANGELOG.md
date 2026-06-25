@@ -4,12 +4,13 @@ All notable changes to Wordout are documented here.
 
 ## [Unreleased]
 
-## [1.0.3] — 2026-06-25
+## [1.0.3] — 2026-06-26
 ### Fixed
 - Duplicate guesses now rejected with "Already guessed" toast (both single and multi-board modes)
 
 ### Added
-- Production AAB built alongside APK in GitHub Actions; both uploaded as artifacts and included in GitHub Release
+- Production AAB built alongside APK in GitHub Actions; both uploaded as artifacts and attached to GitHub Release
+- GitHub Releases now versioned by `app.json` version (e.g. `v1.0.3`) with release notes pulled from matching `CHANGELOG.md` section
 
 ## [1.0.2] — 2026-06-25
 ### Fixed

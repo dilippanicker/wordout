@@ -196,8 +196,8 @@ SVG: 5 tiles [W][O][R][D][✓] on dark `#121213` background, rounded square. Exp
 
 ### EAS build
 `eas.json` has `development` (internal APK), `preview` (APK), `production` (AAB) profiles.  
-`app.json`: `android.package: "com.dilippanicker.wordout"`, `android.versionCode: 1` (current — see version bumping protocol before building)  
-Build command: `npx eas-cli build --platform android --profile preview --non-interactive`
+`app.json`: `android.package: "com.dilippanicker.wordout"`, `android.versionCode: 4` (current — see version bumping protocol before building)  
+Build commands: `eas build --local --profile preview --output wordout.apk` / `--profile production --output wordout.aab`
 
 ---
 
@@ -261,17 +261,20 @@ Update this line after each confirmed bump so future sessions start from the rig
 ### Build pipeline
 **EAS:** Free tier exhausted (15/15 used). Resets July 1, 2026.  
 **GitHub Actions (primary):** `.github/workflows/build-apk.yml` — triggered manually via Actions tab.
-- Uses `eas build --local --profile preview` (no EAS quota consumed)
+- Builds APK (`preview` profile) then AAB (`production` profile) sequentially
 - Gradle cache enabled; JVM heap 4g, Metaspace 2g (fixes OOM on compile)
 - Requires `EXPO_TOKEN` secret set in GitHub repo settings
-- Build time: ~28 minutes first run, faster with warm cache
-- APK uploaded as artifact `wordout-apk`, retained 14 days
-- APK also published to GitHub Releases as `latest` tag — permanent public download link:
-  `https://github.com/dilippanicker/wordout/releases/latest/download/wordout.apk`
+- Build time: ~45 min total (APK + AAB); faster with warm Gradle cache
+- APK uploaded as artifact `wordout-apk`, AAB as `wordout-aab` (14-day retention each)
+- Creates a versioned GitHub Release (e.g. `v1.0.3`) with both files attached
+  - Tag and title read from `app.json` version field
+  - Release notes extracted from matching `## [VERSION]` section in `CHANGELOG.md`
+  - Re-running the same version deletes and recreates the release cleanly
+- Permanent download links:
+  - `https://github.com/dilippanicker/wordout/releases/latest/download/wordout.apk`
+  - `https://github.com/dilippanicker/wordout/releases/latest/download/wordout.aab`
 
-**Last successful build:** GitHub Actions run `28120107075`, commit `000243e` (v1.0.1)  
-**APK:** Downloaded to `/home/dilip/Downloads/wordout.apk` (98 MB)  
-**Pending build:** v1.0.2 (versionCode 3) — commits through `5b12f24`, not yet pushed or built.
+**Current version:** `1.0.3` (versionCode 4) — build in progress (run 28189682555).
 
 ### Play Store setup
 - App created in Google Play Console under publisher "Onglipo"

@@ -1,18 +1,16 @@
 # Wordout — Master TODO
-**Updated: 2026-06-25**
-**Current version: v1.0.2 (code complete, pushed, not yet built)**
+**Updated: 2026-06-26**
+**Current version: v1.0.3 (build in progress — run 28189682555)**
 
 ---
 
-## 🔴 IMMEDIATE — v1.0.2 Build & Test
+## 🔴 IMMEDIATE — v1.0.3 Test
 
-- [ ] Verify fix on web first: `npx expo start --clear` → 4-out mode → guess RAISE → confirm 1 row per board (swipe to verify)
-- [ ] Trigger GitHub Actions build for v1.0.2
 - [ ] Test on S24 Ultra:
-  - Multi-board: each guess row appears exactly ONCE per board page (row duplication fix)
-  - Settings: Game Mode shows "Wordout / 2-out / 3-out / 4-out / 6-out / 8-out" (no "Quadout")
-  - INBOX, ADMIN, DEBUG accepted as valid guesses and eligible as answers
-  - Win/lose overlays not regressed (v1.0.1 animations still working)
+  - Submit same word twice → "Already guessed" toast + shake (single and multi-board)
+  - Win/lose overlays not regressed
+  - Settings: "Wordout / 2-out / 3-out / 4-out / 6-out / 8-out"
+  - INBOX, ADMIN, DEBUG accepted as valid guesses
 
 ## 🔴 IMMEDIATE — Play Store Submission
 
@@ -28,7 +26,7 @@
   - Content rating questionnaire
   - Data safety (no data collected — all local)
   - Target audience (everyone)
-- [ ] Upload APK/AAB to internal testing track
+- [ ] Upload AAB to internal testing track (`releases/latest/download/wordout.aab`)
 - [ ] Promote to production
 - [ ] Set up Google Play service account for automation (after first manual upload)
 - [ ] Add GOOGLE_PLAY_SERVICE_ACCOUNT_JSON secret to GitHub
@@ -99,11 +97,12 @@
 - ✅ 2026-06-25 v1.0.1: Win overlay (dim + ✓ + wave animation)
 - ✅ 2026-06-25 v1.0.1: Lose overlay (shake + red flash + dim + ✗ + answer word)
 - ✅ 2026-06-25 v1.0.1: End-of-game full screen overlay
-- ✅ 2026-06-25 v1.0.2: Fix multi-board row duplication (real fix: flexShrink:0 + plain View)
-- ✅ 2026-06-25 v1.0.2: Fix "Quadout" → "4-out" (and consistent N-out for all counts) in Settings
+- ✅ 2026-06-25 v1.0.2: Fix "Quadout" → "4-out" in Settings
 - ✅ 2026-06-25 v1.0.2: Add INBOX, ADMIN, DEBUG to EN-US and EN-GB wordlists
 - ✅ 2026-06-25 Version bumping protocol added to CLAUDE.md
-- ✅ 2026-06-25 All v1.0.2 commits pushed to origin
+- ✅ 2026-06-26 v1.0.3: Reject duplicate guesses ("Already guessed" toast + shake)
+- ✅ 2026-06-26 v1.0.3: Production AAB built alongside APK in GitHub Actions
+- ✅ 2026-06-26 v1.0.3: Versioned GitHub Releases (tag from app.json, notes from CHANGELOG.md)
 
 ---
 
