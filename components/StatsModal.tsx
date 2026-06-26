@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useStatsStore, emptyBoardStats, BoardStats } from '@/store/statsStore';
 import { useDailyStore } from '@/store/dailyStore';
 import { useSettingsStore } from '@/store/settingsStore';
+import { HelpModal } from './HelpModal';
 
 interface Props {
   visible: boolean;
@@ -13,10 +14,11 @@ interface Props {
 
 export function StatsModal({ visible, onClose }: Props) {
   const { colors } = useTheme();
-  const { gameMode, boardCount } = useSettingsStore();
+  const { gameMode, boardCount, difficulty } = useSettingsStore();
   const { byMode, resetStats } = useStatsStore();
   const { stats: dailyStats, activeWordleMode, setActiveWordleMode, resetDailyStats } = useDailyStore();
   const [confirmVisible, setConfirmVisible] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
 
   const isQuordle = gameMode === 'quordle' || boardCount > 1;
   const modeKey = gameMode === 'wordle' ? 'wordle' : String(boardCount);
@@ -32,6 +34,9 @@ export function StatsModal({ visible, onClose }: Props) {
 
           {/* Header */}
           <View style={[styles.sheetHeader, { borderBottomColor: colors.border }]}>
+            <Pressable style={styles.helpBtn} onPress={() => setShowHelp(true)} hitSlop={12}>
+              <Ionicons name="help-circle-outline" size={20} color="#878a8c" />
+            </Pressable>
             <Text style={[styles.title, { color: colors.text }]}>STATISTICS</Text>
             <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={12}>
               <Ionicons name="close" size={20} color={colors.text as string} />
@@ -71,6 +76,8 @@ export function StatsModal({ visible, onClose }: Props) {
 
         </Pressable>
       </Pressable>
+
+      <HelpModal visible={showHelp} onClose={() => setShowHelp(false)} difficulty={difficulty} />
 
       {/* Reset confirmation */}
       <Modal visible={confirmVisible} transparent animationType="fade" onRequestClose={() => setConfirmVisible(false)}>
@@ -177,6 +184,13 @@ const styles = StyleSheet.create({
   closeBtn: {
     position: 'absolute',
     right: 12,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+  },
+  helpBtn: {
+    position: 'absolute',
+    left: 12,
     top: 0,
     bottom: 0,
     justifyContent: 'center',

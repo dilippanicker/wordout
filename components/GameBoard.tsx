@@ -77,6 +77,8 @@ interface GameBoardProps {
   // When true the board stretches to fill its parent and measures itself
   // to compute tile size — no need to pass tileSize from the parent.
   flexMode?: boolean;
+  // When true, per-board ✓/✗ overlay is suppressed (shown after end-game popup dismissed).
+  suppressOverlay?: boolean;
 }
 
 export function GameBoard({
@@ -92,6 +94,7 @@ export function GameBoard({
   answer,
   label,
   flexMode = false,
+  suppressOverlay = false,
 }: GameBoardProps) {
   // In flex mode we measure the board container and compute tile dimensions ourselves.
   const [boardLayout, setBoardLayout] = useState({ width: 0, height: 0 });
@@ -103,12 +106,12 @@ export function GameBoard({
   const effectiveTileW = effectiveTileSize;
   const effectiveTileH = effectiveTileSize;
 
-  // Overlay opacities — start at 1 if board is already in end state on mount (remount case).
-  const winOverlayOpacity  = useSharedValue(solved ? 1 : 0);
-  const loseOverlayOpacity = useSharedValue((gameOver && !solved) ? 1 : 0);
+  // Overlay opacities — always start at 0; effects handle fade-in (including remount case).
+  const winOverlayOpacity  = useSharedValue(0);
+  const loseOverlayOpacity = useSharedValue(0);
   const redTintOpacity     = useSharedValue(0);
 
-  // Board shake on lose + red tint flash + lose overlay fade-in.
+  // Board shake on lose + red tint flash (separate from overlay — overlay is suppressOverlay-gated).
   const boardShakeX = useSharedValue(0);
   const prevGameOverRef = useRef(gameOver);
   useEffect(() => {
@@ -134,29 +137,29 @@ export function GameBoard({
           withDelay(400, withTiming(0, { duration: 500 })),
         ),
       );
-      // Lose overlay fades in once shake finishes (400ms settle after shake ends).
-      loseOverlayOpacity.value = withDelay(FLIP_DONE_MS + 1300, withTiming(1, { duration: 400 }));
     }
     if (!gameOver && prev) {
-      loseOverlayOpacity.value = 0;
       redTintOpacity.value = 0;
     }
   }, [gameOver]);
 
-  // Win overlay fades in after the wave animation completes.
-  const prevSolvedRef = useRef(solved);
+  // Win overlay: fade in when solved and not suppressed.
   useEffect(() => {
-    const prev = prevSolvedRef.current;
-    prevSolvedRef.current = solved;
-    if (solved && !prev) {
-      // Wait until the last wave tile starts bouncing, then 400ms settle before fade-in.
-      const waveLastTileDelay = FLIP_DONE_MS + (countRef.current * COLS - 1) * WAVE_STAGGER;
-      winOverlayOpacity.value = withDelay(waveLastTileDelay + 400, withTiming(1, { duration: 400 }));
-    }
-    if (!solved && prev) {
+    if (solved && !suppressOverlay) {
+      winOverlayOpacity.value = withTiming(1, { duration: 400 });
+    } else {
       winOverlayOpacity.value = 0;
     }
-  }, [solved]);
+  }, [solved, suppressOverlay]);
+
+  // Lose overlay: fade in when gameOver (and not solved) and not suppressed.
+  useEffect(() => {
+    if (gameOver && !solved && !suppressOverlay) {
+      loseOverlayOpacity.value = withTiming(1, { duration: 400 });
+    } else {
+      loseOverlayOpacity.value = 0;
+    }
+  }, [gameOver, suppressOverlay]);
 
   const boardShakeStyle  = useAnimatedStyle(() => ({ transform: [{ translateX: boardShakeX.value }] }));
   const winOverlayStyle  = useAnimatedStyle(() => ({ opacity: winOverlayOpacity.value }));
@@ -165,10 +168,6 @@ export function GameBoard({
 
   // Normalise to a row count, independent of which API is used.
   const count = words != null ? words.length : (guesses?.length ?? 0);
-
-  // Always-current count ref — lets the solved effect read count without depending on it.
-  const countRef = useRef(0);
-  countRef.current = count;
 
   const [animatingRow, setAnimatingRow] = useState(-1);
   const prevCount = useRef(count);

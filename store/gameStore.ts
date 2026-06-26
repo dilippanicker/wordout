@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { useSettingsStore, Language } from './settingsStore';
+import { useSettingsStore, Language, maxGuessesForDifficulty } from './settingsStore';
 import { useStatsStore } from './statsStore';
 import answerListEnUs from '../assets/wordlists/answers_en_us.json';
 import answerListEnGb from '../assets/wordlists/answers_en_gb.json';
@@ -9,6 +9,16 @@ import guessListEnGb from '../assets/wordlists/guesses_en_gb.json';
 const ANSWERS: Record<Language, string[]> = {
   en_us: (answerListEnUs as string[]).map(w => w.toUpperCase()),
   en_gb: (answerListEnGb as string[]).map(w => w.toUpperCase()),
+};
+
+export const WORD_COUNT_ANSWERS: Record<Language, number> = {
+  en_us: (answerListEnUs as string[]).length,
+  en_gb: (answerListEnGb as string[]).length,
+};
+
+export const WORD_COUNT_GUESSES: Record<Language, number> = {
+  en_us: (answerListEnUs as string[]).length + (guessListEnUs as string[]).length,
+  en_gb: (answerListEnGb as string[]).length + (guessListEnGb as string[]).length,
 };
 
 // Union answers into valid words so no answer is ever rejected as invalid.
@@ -36,6 +46,7 @@ interface GameState {
   removeLetter: () => void;
   submitGuess: () => void;
   clearToast: () => void;
+  clearCurrentGuess: () => void;
   newGame: () => void;
 }
 
@@ -122,7 +133,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       return;
     }
 
-    const { language, hardMode } = useSettingsStore.getState();
+    const { language, difficulty } = useSettingsStore.getState();
+    const maxGuesses = maxGuessesForDifficulty(difficulty, 1);
 
     if (!VALID_WORDS[language].has(currentGuess)) {
       set({ toast: 'Not in word list' });
@@ -134,7 +146,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       return;
     }
 
-    if (hardMode) {
+    if (difficulty === 'hard') {
       const violation = checkHardModeConstraints(guesses, currentGuess);
       if (violation) {
         set({ toast: violation });
@@ -145,7 +157,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const results = evaluateGuess(currentGuess, answer);
     const newGuesses = [...guesses, { word: currentGuess, results }];
     const won = currentGuess === answer;
-    const lost = !won && newGuesses.length >= 6;
+    const lost = !won && newGuesses.length >= maxGuesses;
 
     set({
       guesses: newGuesses,
@@ -159,6 +171,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   clearToast: () => set({ toast: null }),
+  clearCurrentGuess: () => set({ currentGuess: '' }),
 
   newGame: () => {
     const language = useSettingsStore.getState().language;

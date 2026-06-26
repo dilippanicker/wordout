@@ -3,10 +3,12 @@ import { useTheme } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Tile, TileStatus } from './Tile';
 
+import { Difficulty } from '@/store/settingsStore';
+
 interface HelpModalProps {
   visible: boolean;
   onClose: () => void;
-  hardMode: boolean;
+  difficulty: Difficulty;
 }
 
 const TILE_SIZE = 44;
@@ -150,7 +152,7 @@ const BOTTOM_ICON_ROWS: IconRowDef[] = [
   },
 ];
 
-export function HelpModal({ visible, onClose }: HelpModalProps) {
+export function HelpModal({ visible, onClose, difficulty }: HelpModalProps) {
   const { colors } = useTheme();
   const { height: screenHeight } = useWindowDimensions();
 

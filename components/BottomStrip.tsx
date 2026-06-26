@@ -3,6 +3,7 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { BoardStats } from '@/store/statsStore';
+import { Difficulty } from '@/store/settingsStore';
 
 const GREEN = '#5BA75A';
 const GREY = '#888780';
@@ -15,12 +16,14 @@ interface Props {
   maxGuesses: number;
   boardCount: number;
   solvedCount: number;
+  difficulty: Difficulty;
   justSolvedInfo: { boardNum: number; guessCount: number } | null;
   practiceStats: BoardStats;
   dailyStats: BoardStats;
   shareConfirmed?: boolean;
   onShare: () => void;
   onOpenStats: () => void;
+  onOpenHelp: () => void;
   textColor: string;
   backgroundColor: string;
   borderColor: string;
@@ -28,9 +31,9 @@ interface Props {
 
 export function BottomStrip({
   gameStatus, isQuordle, isDaily,
-  currentGuessNum, maxGuesses, boardCount, solvedCount,
+  currentGuessNum, maxGuesses, boardCount, solvedCount, difficulty,
   justSolvedInfo, practiceStats, dailyStats,
-  shareConfirmed, onShare, onOpenStats,
+  shareConfirmed, onShare, onOpenStats, onOpenHelp,
   textColor, backgroundColor, borderColor,
 }: Props) {
   const { bottom: bottomInset } = useSafeAreaInsets();
@@ -52,11 +55,11 @@ export function BottomStrip({
     // Pre-game tip — shown before first guess
     content = (
       <View style={styles.row}>
-        <View style={styles.tipContent}>
+        <Pressable style={styles.tipContent} onPress={onOpenHelp} hitSlop={6}>
           <Text style={[styles.tipText, { color: textColor }]}>{'Tap '}</Text>
-          <Ionicons name="help-circle-outline" size={16} color={textColor} />
+          <Ionicons name="help-circle" size={16} color={textColor} />
           <Text style={[styles.tipText, { color: textColor }]}>{' for help and game modes'}</Text>
-        </View>
+        </Pressable>
         {statsIcon}
       </View>
     );
@@ -106,17 +109,21 @@ export function BottomStrip({
   } else {
     // State 1 — playing
     const remaining = boardCount - solvedCount;
+    const diffEmoji = difficulty === 'extreme' ? '💀' : difficulty === 'hard' ? '💪' : null;
     content = (
       <View style={styles.row}>
-        <Text style={[styles.guessText, { color: textColor }]}>
-          {'Guess '}
-          <Text style={styles.guessNum}>{currentGuessNum + 1}</Text>
-          {' of '}
-          <Text style={styles.guessNum}>{maxGuesses}</Text>
-          {isQuordle && solvedCount > 0
-            ? `  ·  ${solvedCount} solved  ·  ${remaining} remaining`
-            : null}
-        </Text>
+        <View style={styles.playingLeft}>
+          <Text style={[styles.guessText, { color: textColor }]}>
+            {'Guess '}
+            <Text style={styles.guessNum}>{currentGuessNum + 1}</Text>
+            {' of '}
+            <Text style={styles.guessNum}>{maxGuesses}</Text>
+            {isQuordle && solvedCount > 0
+              ? `  ·  ${solvedCount} solved  ·  ${remaining} remaining`
+              : null}
+          </Text>
+          {diffEmoji ? <Text style={styles.diffBadge}>{diffEmoji}</Text> : null}
+        </View>
         {statsIcon}
       </View>
     );
@@ -167,12 +174,22 @@ const styles = StyleSheet.create({
   tipText: {
     fontSize: 13,
   },
+  playingLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   guessText: {
     fontSize: 14,
-    flex: 1,
+    flexShrink: 1,
   },
   guessNum: {
     fontWeight: '700',
+  },
+  diffBadge: {
+    fontSize: 14,
+    lineHeight: 18,
   },
   statsBtn: {
     paddingLeft: 12,
@@ -221,10 +238,14 @@ const styles = StyleSheet.create({
   },
   streakEmoji: {
     fontSize: 14,
+    lineHeight: 18,
+    includeFontPadding: false,
   },
   streakNum: {
     fontSize: 16,
     fontWeight: '700',
+    lineHeight: 18,
+    includeFontPadding: false,
   },
   shareBtn: {
     flexDirection: 'row',

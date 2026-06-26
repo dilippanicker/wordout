@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useSettingsStore, Language } from './settingsStore';
+import { useSettingsStore, Language, Difficulty, maxGuessesForDifficulty } from './settingsStore';
 import { BoardStats, emptyBoardStats } from './statsStore';
 import { GuessResult, LetterResult } from './gameStore';
 import answerListEnUs from '../assets/wordlists/answers_en_us.json';
@@ -84,6 +84,7 @@ interface DailyState {
   dailyAnswer: string;
   dailySolved: boolean;
   dailyHardMode: boolean;
+  dailyDifficulty: Difficulty;
   toast: string | null;
 
   // Daily-specific stats (separate from practice stats in statsStore)
@@ -99,8 +100,9 @@ interface DailyState {
   removeLetter: () => void;
   submitGuess: () => void;
   clearToast: () => void;
+  clearCurrentGuess: () => void;
   setActiveWordleMode: (mode: WordleMode) => void;
-  // Called when hard mode changes mid-daily after abandon confirm
+  // Called when difficulty changes mid-daily after abandon confirm
   resetDailyForToday: () => void;
   resetDailyStats: () => void;
 }
@@ -115,6 +117,7 @@ export const useDailyStore = create<DailyState>()(
       dailyAnswer: '',
       dailySolved: false,
       dailyHardMode: false,
+      dailyDifficulty: 'easy',
       toast: null,
       stats: emptyBoardStats(),
       activeWordleMode: 'practice',
@@ -134,14 +137,15 @@ export const useDailyStore = create<DailyState>()(
 
       startOrResumeDaily: () => {
         if (get().dailyStatus !== 'available') return;
-        const { language, hardMode } = useSettingsStore.getState();
+        const { language, difficulty } = useSettingsStore.getState();
         set({
           dailyStatus: 'playing',
           dailyGuesses: [],
           currentGuess: '',
           dailyAnswer: getDailyAnswer(language),
           dailySolved: false,
-          dailyHardMode: hardMode,
+          dailyHardMode: difficulty === 'hard',
+          dailyDifficulty: difficulty,
           lastPlayedDate: getTodayString(),
           toast: null,
         });
@@ -160,7 +164,7 @@ export const useDailyStore = create<DailyState>()(
       },
 
       submitGuess: () => {
-        const { currentGuess, dailyAnswer, dailyGuesses, dailyStatus, dailyHardMode } = get();
+        const { currentGuess, dailyAnswer, dailyGuesses, dailyStatus, dailyHardMode, dailyDifficulty } = get();
         if (dailyStatus !== 'playing') return;
 
         if (currentGuess.length < 5) { set({ toast: 'Too short' }); return; }
@@ -174,10 +178,11 @@ export const useDailyStore = create<DailyState>()(
           if (violation) { set({ toast: violation }); return; }
         }
 
+        const maxGuesses = maxGuessesForDifficulty(dailyDifficulty, 1);
         const results = evaluateGuess(currentGuess, dailyAnswer);
         const newGuesses = [...dailyGuesses, { word: currentGuess, results }];
         const won = currentGuess === dailyAnswer;
-        const lost = !won && newGuesses.length >= 6;
+        const lost = !won && newGuesses.length >= maxGuesses;
 
         if (won || lost) {
           const { stats } = get();
@@ -205,20 +210,22 @@ export const useDailyStore = create<DailyState>()(
       },
 
       clearToast: () => set({ toast: null }),
+      clearCurrentGuess: () => set({ currentGuess: '' }),
 
       setActiveWordleMode: (mode) => set({ activeWordleMode: mode }),
 
       resetDailyStats: () => set({ stats: emptyBoardStats() }),
 
       resetDailyForToday: () => {
-        const { language, hardMode } = useSettingsStore.getState();
+        const { language, difficulty } = useSettingsStore.getState();
         set({
           dailyStatus: 'playing',
           dailyGuesses: [],
           currentGuess: '',
           dailyAnswer: getDailyAnswer(language),
           dailySolved: false,
-          dailyHardMode: hardMode,
+          dailyHardMode: difficulty === 'hard',
+          dailyDifficulty: difficulty,
           lastPlayedDate: getTodayString(),
           toast: null,
         });

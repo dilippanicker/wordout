@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { View, Text, Switch, Pressable, StyleSheet, ScrollView, Platform } from 'react-native';
+import { View, Text, Switch, Pressable, StyleSheet, ScrollView, Platform, Linking } from 'react-native';
 import Constants from 'expo-constants';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useSettingsStore, Language, BOARD_COUNTS, BoardCount } from '@/store/settingsStore';
-import { useGameStore } from '@/store/gameStore';
-import { useQuordleStore } from '@/store/quordleStore';
+import { useSettingsStore, Language, BOARD_COUNTS, BoardCount, Difficulty, maxGuessesForDifficulty } from '@/store/settingsStore';
+import { WORD_COUNT_ANSWERS, WORD_COUNT_GUESSES } from '@/store/gameStore';
 import { HelpModal } from '@/components/HelpModal';
 
 export default function SettingsScreen() {
@@ -14,7 +13,7 @@ export default function SettingsScreen() {
   const router = useRouter();
   const {
     language, setLanguage,
-    hardMode, setHardMode,
+    difficulty, setDifficulty,
     darkTheme, setDarkTheme,
     colorBlindMode, setColorBlindMode,
     enterOnRight, setEnterOnRight,
@@ -27,13 +26,8 @@ export default function SettingsScreen() {
 
   function handleBoardCountSelect(n: BoardCount) {
     setBoardCount(n);
-    if (n === 1) {
-      setGameMode('wordle');
-      useGameStore.getState().newGame();
-    } else {
-      setGameMode('quordle');
-      useQuordleStore.getState().newGame();
-    }
+    if (n === 1) setGameMode('wordle');
+    else setGameMode('quordle');
     router.navigate('/(tabs)/' as never);
   }
 
@@ -86,26 +80,45 @@ export default function SettingsScreen() {
           <LanguagePicker value={language} onChange={setLanguage} />
         </View>
 
+        {/* ── Difficulty ────────────────────────────────────────────── */}
+        <Text style={styles.sectionHeader}>DIFFICULTY</Text>
+        <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <DifficultyRow value={difficulty} onChange={setDifficulty} boardCount={boardCount} />
+        </View>
+
         {/* ── Preferences ───────────────────────────────────────────── */}
         <Text style={styles.sectionHeader}>PREFERENCES</Text>
         <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <SwitchRow label="Hard Mode" description="Must use revealed hints" value={hardMode} onChange={setHardMode} />
-          <SwitchRow label="Dark Theme" value={darkTheme} onChange={setDarkTheme} />
-          <SwitchRow label="Color Blind Mode" description="High-contrast orange and blue" value={colorBlindMode} onChange={setColorBlindMode} />
-          <SwitchRow label="Enter Key on Right" description="Move ⌫ left, ENTER right" value={enterOnRight} onChange={setEnterOnRight} last />
+          <SwitchRow label="Dark Theme" value={darkTheme} onChange={setDarkTheme} textColor={colors.text as string} />
+          <SwitchRow label="Color Blind Mode" description="High-contrast orange and blue" value={colorBlindMode} onChange={setColorBlindMode} textColor={colors.text as string} />
+          <SwitchRow label="Enter Key on Right" description="Move ⌫ left, ENTER right" value={enterOnRight} onChange={setEnterOnRight} textColor={colors.text as string} last />
         </View>
 
-        {/* ── Version ───────────────────────────────────────────────── */}
-        <Text style={styles.versionText}>
-          {Platform.OS === 'android'
-            ? `Wordout v${Constants.expoConfig?.version ?? '—'} (build ${Constants.expoConfig?.android?.versionCode ?? '—'})`
-            : `Wordout v${Constants.expoConfig?.version ?? '—'}`
-          }
-        </Text>
+        {/* ── Footer ────────────────────────────────────────────────── */}
+        <View style={styles.footer}>
+          <View style={styles.pillRow}>
+            <View style={styles.pill}>
+              <Text style={styles.pillText}>{WORD_COUNT_ANSWERS[language].toLocaleString()} answers</Text>
+            </View>
+            <View style={styles.pill}>
+              <Text style={styles.pillText}>{WORD_COUNT_GUESSES[language].toLocaleString()} valid words</Text>
+            </View>
+          </View>
+          <Pressable onPress={() => Linking.openURL('https://github.com/dilippanicker/wordout')}>
+            <Text style={styles.githubLink}>GitHub ↗</Text>
+          </Pressable>
+          <Text style={styles.credits}>© 2026 Onglipo Labs · MIT License</Text>
+          <Text style={styles.versionText}>
+            {Platform.OS === 'android'
+              ? `v${Constants.expoConfig?.version ?? '—'} (build ${Constants.expoConfig?.android?.versionCode ?? '—'})`
+              : `v${Constants.expoConfig?.version ?? '—'}`
+            }
+          </Text>
+        </View>
 
       </ScrollView>
 
-      <HelpModal visible={showHelp} onClose={() => setShowHelp(false)} hardMode={hardMode} />
+      <HelpModal visible={showHelp} onClose={() => setShowHelp(false)} difficulty={difficulty} />
     </SafeAreaView>
   );
 }
@@ -167,11 +180,48 @@ function Segment({ label, active, onPress, left = false }: {
   );
 }
 
-function SwitchRow({ label, description, value, onChange, last = false }: {
+function DifficultyRow({ value, onChange, boardCount }: {
+  value: Difficulty;
+  onChange: (d: Difficulty) => void;
+  boardCount: number;
+}) {
+  const { colors } = useTheme();
+  const options: { key: Difficulty; emoji: string; label: string; desc: string }[] = [
+    { key: 'easy',    emoji: '🐣', label: 'Easy',    desc: 'No restrictions' },
+    { key: 'hard',    emoji: '💪', label: 'Hard',    desc: 'Must use revealed hints' },
+    { key: 'extreme', emoji: '💀', label: 'Extreme', desc: `${maxGuessesForDifficulty('extreme', boardCount)} guesses` },
+  ];
+  return (
+    <View>
+      {options.map((opt, idx) => (
+        <Pressable
+          key={opt.key}
+          onPress={() => onChange(opt.key)}
+          style={[
+            styles.row,
+            { backgroundColor: colors.card },
+            idx < options.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
+          ]}
+        >
+          <View style={styles.labelGroup}>
+            <Text style={[styles.label, { color: colors.text as string }]}>{opt.emoji} {opt.label}</Text>
+            <Text style={styles.description}>{opt.desc}</Text>
+          </View>
+          <View style={[styles.diffRadio, value === opt.key && styles.diffRadioActive]}>
+            {value === opt.key && <View style={styles.diffRadioDot} />}
+          </View>
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
+function SwitchRow({ label, description, value, onChange, textColor, last = false }: {
   label: string;
   description?: string;
   value: boolean;
   onChange: (v: boolean) => void;
+  textColor: string;
   last?: boolean;
 }) {
   const { colors } = useTheme();
@@ -184,7 +234,7 @@ function SwitchRow({ label, description, value, onChange, last = false }: {
       ]}
     >
       <View style={styles.labelGroup}>
-        <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
+        <Text style={[styles.label, { color: textColor }]}>{label}</Text>
         {description ? <Text style={styles.description}>{description}</Text> : null}
       </View>
       <Switch value={value} onValueChange={onChange} trackColor={{ true: '#6aaa64' }} />
@@ -291,11 +341,60 @@ const styles = StyleSheet.create({
     color: '#787c7e',
     marginTop: 2,
   },
-  versionText: {
+  // Difficulty radio
+  diffRadio: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: '#878a8c',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  diffRadioActive: {
+    borderColor: '#6aaa64',
+  },
+  diffRadioDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#6aaa64',
+  },
+  // Footer
+  footer: {
+    alignItems: 'center',
+    paddingTop: 20,
+    paddingBottom: 8,
+    gap: 8,
+  },
+  pillRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  pill: {
+    backgroundColor: '#e8e8e8',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  pillText: {
     fontSize: 12,
+    color: '#555',
+    fontWeight: '500',
+  },
+  githubLink: {
+    fontSize: 13,
+    color: '#6aaa64',
+    fontWeight: '600',
+  },
+  credits: {
+    fontSize: 11,
     color: '#878a8c',
     textAlign: 'center',
-    marginTop: 24,
-    marginBottom: 8,
+  },
+  versionText: {
+    fontSize: 11,
+    color: '#878a8c',
+    textAlign: 'center',
   },
 });

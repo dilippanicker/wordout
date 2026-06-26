@@ -6,6 +6,32 @@ All notable changes to Wordout are documented here.
 
 ---
 
+## [1.2.0] — 2026-06-27
+### Added
+- Extreme mode (💀): third difficulty level with reduced guesses — `max(3, (5+boardCount)−2)` — shown in BottomStrip State 1
+- `difficulty: 'easy'|'hard'|'extreme'` replaces `hardMode: boolean` in settingsStore (migrated via Zustand persist `version: 1`)
+- Settings footer: word count pills (answers + valid words), GitHub link, credits, version string
+- ? help icon in StatsModal header opens HelpModal
+- ? help icon in end-of-game overlay
+- ‹ › mode arrows wrapped in grey squares matching board indicator style (#878a8c)
+- Pre-game tip text is now tappable and opens HelpModal
+- `clearCurrentGuess` action in all three game stores
+
+### Changed
+- Invalid-word shake: currentGuess auto-clears after 950ms (no stale text in input row)
+- Overlay timing: wave → end-game popup → dismiss → per-board ✓/✗ overlay (was wave → overlay → popup)
+- Daily completed board: returns to static ✓ overlay on revisit (no re-animation)
+- Mode switching (‹ › and Settings board count select) preserves game state — no longer calls newGame()
+- HelpModal: `hardMode: boolean` prop replaced by `difficulty: Difficulty`
+- Settings "Dark Theme" label: text color passed explicitly (was incorrectly blue/link on iOS)
+
+### Fixed
+- Share button icon vertical alignment in BottomStrip State 3 and end-game overlay
+- Streak emoji/number vertical alignment in BottomStrip State 3
+- 2-out board last row clipped on web — subtracted 12px boardPage padding from tile height calculation
+
+---
+
 ## [1.1.1] — 2026-06-26
 ### Fixed
 - Hard mode toggle mid-game: after abandoning, now starts a new game immediately

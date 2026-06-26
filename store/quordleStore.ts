@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { useSettingsStore, Language } from './settingsStore';
+import { useSettingsStore, Language, maxGuessesForDifficulty } from './settingsStore';
 import { useStatsStore } from './statsStore';
 import answerListEnUs from '../assets/wordlists/answers_en_us.json';
 import answerListEnGb from '../assets/wordlists/answers_en_gb.json';
@@ -38,6 +38,7 @@ interface QuordleState {
   removeLetter: () => void;
   submitGuess: () => void;
   clearToast: () => void;
+  clearCurrentGuess: () => void;
   newGame: () => void;
 }
 
@@ -93,7 +94,8 @@ function checkHardModeConstraints(
 }
 
 function initialState(language: Language, boardCount: number) {
-  const maxGuesses = Math.min(13, 5 + boardCount);
+  const { difficulty } = useSettingsStore.getState();
+  const maxGuesses = maxGuessesForDifficulty(difficulty, boardCount);
   return {
     answers: pickAnswers(boardCount, language),
     boardCount,
@@ -129,7 +131,7 @@ export const useQuordleStore = create<QuordleState>((set, get) => {
 
       if (currentGuess.length < 5) { set({ toast: 'Too short' }); return; }
 
-      const { language, hardMode } = useSettingsStore.getState();
+      const { language, difficulty } = useSettingsStore.getState();
 
       if (!VALID_WORDS[language].has(currentGuess)) {
         set({ toast: 'Not in word list' }); return;
@@ -139,7 +141,7 @@ export const useQuordleStore = create<QuordleState>((set, get) => {
         set({ toast: 'Already guessed' }); return;
       }
 
-      if (hardMode) {
+      if (difficulty === 'hard') {
         for (let b = 0; b < boardCount; b++) {
           if (solvedBoards[b]) continue;
           const boardHistory = guesses.map(g => ({ word: g.word, results: g.boardResults[b] }));
@@ -163,6 +165,7 @@ export const useQuordleStore = create<QuordleState>((set, get) => {
     },
 
     clearToast: () => set({ toast: null }),
+    clearCurrentGuess: () => set({ currentGuess: '' }),
 
     newGame: () => {
       const { language, boardCount } = useSettingsStore.getState();

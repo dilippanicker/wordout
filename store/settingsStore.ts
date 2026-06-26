@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type Language = 'en_us' | 'en_gb';
 export type GameMode = 'wordle' | 'quordle';
+export type Difficulty = 'easy' | 'hard' | 'extreme';
 
 export const BOARD_COUNTS = [1, 2, 3, 4, 6, 8] as const;
 export type BoardCount = typeof BOARD_COUNTS[number];
@@ -15,16 +16,21 @@ export function boardCountName(n: number): string {
   return BOARD_NAMES[n] ?? `${n}-out`;
 }
 
+export function maxGuessesForDifficulty(difficulty: Difficulty, boardCount: number): number {
+  if (difficulty === 'extreme') return Math.max(3, (5 + boardCount) - 2);
+  return boardCount === 1 ? 6 : Math.min(13, 5 + boardCount);
+}
+
 interface SettingsState {
   language: Language;
-  hardMode: boolean;
+  difficulty: Difficulty;
   darkTheme: boolean;
   colorBlindMode: boolean;
   enterOnRight: boolean;
   gameMode: GameMode;
   boardCount: BoardCount;
   setLanguage: (lang: Language) => void;
-  setHardMode: (on: boolean) => void;
+  setDifficulty: (d: Difficulty) => void;
   setDarkTheme: (on: boolean) => void;
   setColorBlindMode: (on: boolean) => void;
   setEnterOnRight: (on: boolean) => void;
@@ -36,14 +42,14 @@ export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
       language: 'en_us',
-      hardMode: false,
+      difficulty: 'easy',
       darkTheme: false,
       colorBlindMode: false,
       enterOnRight: false,
       gameMode: 'wordle',
       boardCount: 4,
       setLanguage: (language) => set({ language }),
-      setHardMode: (hardMode) => set({ hardMode }),
+      setDifficulty: (difficulty) => set({ difficulty }),
       setDarkTheme: (darkTheme) => set({ darkTheme }),
       setColorBlindMode: (colorBlindMode) => set({ colorBlindMode }),
       setEnterOnRight: (enterOnRight) => set({ enterOnRight }),
@@ -53,6 +59,16 @@ export const useSettingsStore = create<SettingsState>()(
     {
       name: 'wordle-settings',
       storage: createJSONStorage(() => AsyncStorage),
+      version: 1,
+      migrate: (persistedState: any, version: number) => {
+        if (version < 1) {
+          return {
+            ...persistedState,
+            difficulty: (persistedState as any).hardMode ? 'hard' : 'easy',
+          };
+        }
+        return persistedState as SettingsState;
+      },
     },
   ),
 );
