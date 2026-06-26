@@ -283,8 +283,7 @@ Build commands: `eas build --local --profile preview --output wordout.apk` / `--
 - Never trigger or instruct triggering a build without a confirmed version bump.
 - Update `CHANGELOG.md` with the new version entry as part of the same commit as `app.json`.
 
-**Current version:** `1.0.4` (versionCode 5) — last confirmed bump.  
-**Pending:** `1.1.0` (versionCode 6) proposed, awaiting user confirmation.  
+**Current version:** `1.1.0` (versionCode 6) — last confirmed bump.  
 Update after each confirmed bump so future sessions start from the right baseline.
 
 ### Build pipeline

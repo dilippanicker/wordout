@@ -4,6 +4,8 @@ All notable changes to Wordout are documented here.
 
 ## [Unreleased]
 
+---
+
 ## [1.1.0] — 2026-06-26
 ### Added
 - Daily Word mode: date-seeded word (epoch 2026-01-01), one word per day per language, persisted state, separate daily stats
