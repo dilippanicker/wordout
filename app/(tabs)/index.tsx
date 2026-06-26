@@ -8,21 +8,22 @@ import Animated, {
   withSequence,
   withDelay,
 } from 'react-native-reanimated';
-import { useFocusEffect, useTheme } from 'expo-router';
+import { useFocusEffect, useTheme, useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
 import { GameBoard } from '@/components/GameBoard';
 import { Keyboard, kbdHeight } from '@/components/Keyboard';
 import { HelpModal } from '@/components/HelpModal';
+import { BottomStrip } from '@/components/BottomStrip';
+import { StatsModal } from '@/components/StatsModal';
 import { useGameStore, GuessResult, LetterResult } from '@/store/gameStore';
 import { useQuordleStore, QuordleGuess } from '@/store/quordleStore';
-import { useSettingsStore, boardCountName } from '@/store/settingsStore';
+import { useSettingsStore, boardCountName, BOARD_COUNTS, BoardCount } from '@/store/settingsStore';
+import { useStatsStore, emptyBoardStats } from '@/store/statsStore';
+import { useDailyStore, getDailyIndex } from '@/store/dailyStore';
 import { isGameInProgress, confirmAbandon } from '@/utils/abandon';
 import { TileStatus } from '@/components/Tile';
 
-// Prevents buttons from stealing keyboard focus on web.
-// tabIndex=-1 removes them from the tab order; onMouseDown preventDefault
-// stops the browser from moving focus to the element on click.
 const noFocus = { tabIndex: -1, onMouseDown: (e: any) => e.preventDefault() };
 
 // ── Key status helpers ──────────────────────────────────────────────────────
@@ -43,7 +44,6 @@ function deriveKeyStatuses(guesses: GuessResult[]): Record<string, TileStatus> {
   return map;
 }
 
-// Best result per letter across all boards (board count is read from boardResults length).
 function deriveQuordleKeyStatuses(guesses: QuordleGuess[]): Record<string, TileStatus> {
   const map: Record<string, TileStatus> = {};
   for (const guess of guesses) {
@@ -60,7 +60,6 @@ function deriveQuordleKeyStatuses(guesses: QuordleGuess[]): Record<string, TileS
   return map;
 }
 
-// Count unique letter positions confirmed correct on a board so far (0–5).
 function boardCorrectCount(qGuesses: QuordleGuess[], boardIndex: number): number {
   const found = new Set<number>();
   for (const g of qGuesses) {
@@ -74,7 +73,6 @@ function boardCorrectCount(qGuesses: QuordleGuess[], boardIndex: number): number
   return found.size;
 }
 
-// Row index of the winning guess for a board (-1 if not yet solved).
 function boardSolvedAtRow(qGuesses: QuordleGuess[], boardIndex: number): number {
   for (let row = 0; row < qGuesses.length; row++) {
     const results = qGuesses[row].boardResults[boardIndex];
@@ -83,7 +81,6 @@ function boardSolvedAtRow(qGuesses: QuordleGuess[], boardIndex: number): number 
   return -1;
 }
 
-// True if this board has at least one present-but-wrong-position (yellow) result.
 function boardHasYellow(qGuesses: QuordleGuess[], boardIndex: number): boolean {
   for (const g of qGuesses) {
     const results = g.boardResults[boardIndex];
@@ -98,76 +95,82 @@ function boardHasYellow(qGuesses: QuordleGuess[], boardIndex: number): boolean {
 
 // ── Share / emoji grid ──────────────────────────────────────────────────────
 
-function buildShareText(
-  guesses: GuessResult[],
-  gameStatus: 'won' | 'lost',
-  colorBlind: boolean,
-  hardMode: boolean,
-): string {
-  const count = gameStatus === 'won' ? String(guesses.length) : 'X';
-  const flag = hardMode ? '*' : '';
+function buildShareText(guesses: GuessResult[], status: 'won' | 'lost', colorBlind: boolean, hard: boolean): string {
+  const count = status === 'won' ? String(guesses.length) : 'X';
+  const flag = hard ? '*' : '';
   const CORRECT = colorBlind ? '🟧' : '🟩';
   const PRESENT = colorBlind ? '🟦' : '🟨';
   const ABSENT = '⬛';
   const grid = guesses
-    .map(({ results }) =>
-      results.map((r: LetterResult) =>
-        r === 'correct' ? CORRECT : r === 'present' ? PRESENT : ABSENT,
-      ).join(''),
-    )
+    .map(({ results }) => results.map((r: LetterResult) =>
+      r === 'correct' ? CORRECT : r === 'present' ? PRESENT : ABSENT,
+    ).join(''))
     .join('\n');
   return `Wordout ${count}/6${flag}\n\n${grid}`;
 }
 
-function buildQuordleShareText(
-  guesses: QuordleGuess[],
-  gameStatus: 'won' | 'lost',
-  colorBlind: boolean,
-  boardCount: number,
-): string {
+function buildDailyShareText(guesses: GuessResult[], solved: boolean, colorBlind: boolean): string {
+  const idx = getDailyIndex();
+  const count = solved ? String(guesses.length) : 'X';
   const CORRECT = colorBlind ? '🟧' : '🟩';
   const PRESENT = colorBlind ? '🟦' : '🟨';
   const ABSENT = '⬛';
-  const count = gameStatus === 'won' ? String(guesses.length) : 'X';
-  const maxGuesses = Math.min(13, 5 + boardCount);
-  const name = boardCountName(boardCount);
+  const grid = guesses
+    .map(({ results }) => results.map((r: LetterResult) =>
+      r === 'correct' ? CORRECT : r === 'present' ? PRESENT : ABSENT,
+    ).join(''))
+    .join('\n');
+  const label = solved ? 'solved in' : 'failed';
+  return `Wordout Daily #${idx} — ${label} ${count}/6\n\n${grid}`;
+}
 
-  if (boardCount === 1) {
+function buildQuordleShareText(guesses: QuordleGuess[], status: 'won' | 'lost', colorBlind: boolean, bc: number): string {
+  const CORRECT = colorBlind ? '🟧' : '🟩';
+  const PRESENT = colorBlind ? '🟦' : '🟨';
+  const ABSENT = '⬛';
+  const count = status === 'won' ? String(guesses.length) : 'X';
+  const maxGuesses = Math.min(13, 5 + bc);
+  const name = boardCountName(bc);
+  if (bc === 1) {
     const grid = guesses.map(({ boardResults }) =>
       boardResults[0].map(r => r === 'correct' ? CORRECT : r === 'present' ? PRESENT : ABSENT).join('')
     ).join('\n');
     return `${name} ${count}/${maxGuesses}\n\n${grid}`;
   }
-
   const LABELS = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣'];
-  const boards = Array.from({ length: boardCount }, (_, b) => {
-    const grid = guesses
-      .map(g => g.boardResults[b].map(r =>
-        r === 'correct' ? CORRECT : r === 'present' ? PRESENT : ABSENT,
-      ).join(''))
-      .join('\n');
+  const boards = Array.from({ length: bc }, (_, b) => {
+    const grid = guesses.map(g => g.boardResults[b].map(r =>
+      r === 'correct' ? CORRECT : r === 'present' ? PRESENT : ABSENT,
+    ).join('')).join('\n');
     return `${LABELS[b]}\n${grid}`;
   });
   return `${name} ${count}/${maxGuesses}\n\n${boards.join('\n\n')}`;
 }
 
 async function copyToClipboard(text: string): Promise<boolean> {
-  try {
-    await Clipboard.setStringAsync(text);
-    return true;
-  } catch {
-    return false;
-  }
+  try { await Clipboard.setStringAsync(text); return true; } catch { return false; }
 }
 
-// ── Win messages ────────────────────────────────────────────────────────────
+// ── Countdown helpers ───────────────────────────────────────────────────────
+
+function msUntilMidnight(): number {
+  const now = new Date();
+  const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  return midnight.getTime() - now.getTime();
+}
+
+function msToHMS(ms: number): string {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+}
+
+// ── Misc ────────────────────────────────────────────────────────────────────
 
 const WIN_MESSAGES = ['Genius!', 'Magnificent!', 'Impressive!', 'Splendid!', 'Great!', 'Phew!'];
 
-// Each board page in the horizontal ScrollView needs flexShrink:0 so that
-// CSS flex-basis doesn't collapse the explicit width:screenW on web.
-// This is a plain View — Animated.View was tried but nested style arrays
-// caused the layout styles to be silently dropped on web.
 function BoardPage({ style, children }: { style: object; children: React.ReactNode }) {
   return <View style={style as any}>{children}</View>;
 }
@@ -175,59 +178,98 @@ function BoardPage({ style, children }: { style: object; children: React.ReactNo
 // ── Screen ──────────────────────────────────────────────────────────────────
 
 export default function WordleScreen() {
-  // Both stores are always subscribed (Rules of Hooks).
   const wordleStore = useGameStore();
   const quordleStore = useQuordleStore();
+  const dailyStore = useDailyStore();
   const {
     language, setLanguage,
     hardMode, setHardMode,
     darkTheme, setDarkTheme,
     colorBlindMode,
     gameMode, setGameMode,
+    boardCount, setBoardCount,
   } = useSettingsStore();
+  const { byMode: statsByMode } = useStatsStore();
   const { colors } = useTheme();
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { height: screenH, width: screenW } = useWindowDimensions();
 
-  // Layout constants — only HEADER_H is fixed; everything else is derived.
+  // Layout constants
   const HEADER_H = 50;
-  const MSG_H = 44;    // messageArea height (matches styles.messageArea)
-  const DOTS_H = 36;   // multi-board indicator row
-  const TAB_H = 50;    // tab bar
+  const MSG_H = 44;
+  const DOTS_H = 36;
+  const TAB_H = 50;   // BottomStrip height
   const TILE_GAP = 4;
 
-  // Available height for board + keyboard combined (excluding header, message, tab, safe area).
   const totalH = screenH - insets.top - insets.bottom - HEADER_H - MSG_H - TAB_H;
-
-  // Responsive keyboard: key height is 8% of totalH, capped at 60px.
   const keyHeight = Math.min(60, Math.floor(totalH * 0.08));
   const KBD_H = kbdHeight(keyHeight);
-
-  // Width available to tiles (8px padding each side — tight but not edge-to-edge).
   const availableWidth = screenW - 16;
 
-  // Tile size is computed from measured layout height once onLayout fires.
-  const wordleAvailH = totalH - KBD_H;
+  // Single-board tile sizing (includes DOTS_H for the 📅/▶/∞ indicator row)
+  const wordleAvailH = totalH - KBD_H - DOTS_H;
   const [wordleAreaH, setWordleAreaH] = useState(0);
-
   const wordleMeasuredH = wordleAreaH > 0 ? wordleAreaH : wordleAvailH;
   const wordleTileSize = Math.max(44, Math.min(88,
     Math.min(Math.floor(wordleMeasuredH / 6) - TILE_GAP, Math.floor(availableWidth / 5) - TILE_GAP),
   ));
 
+  // Derived state
+  const isQuordle = gameMode === 'quordle';
+  const isDaily = !isQuordle && dailyStore.activeWordleMode === 'daily';
+
+  // Active game status across all sub-modes
+  const activeGameStatus: 'playing' | 'won' | 'lost' = isQuordle
+    ? quordleStore.gameStatus
+    : isDaily
+    ? (dailyStore.dailyStatus === 'completed'
+        ? (dailyStore.dailySolved ? 'won' : 'lost')
+        : 'playing')
+    : wordleStore.gameStatus;
+
+  // Route actions to the active sub-mode
+  const addLetter    = isQuordle ? quordleStore.addLetter    : isDaily ? dailyStore.addLetter    : wordleStore.addLetter;
+  const removeLetter = isQuordle ? quordleStore.removeLetter : isDaily ? dailyStore.removeLetter : wordleStore.removeLetter;
+  const submitGuess  = isQuordle ? quordleStore.submitGuess  : isDaily ? dailyStore.submitGuess  : wordleStore.submitGuess;
+  const toast        = isQuordle ? quordleStore.toast        : isDaily ? dailyStore.toast        : wordleStore.toast;
+  const clearToast   = isQuordle ? quordleStore.clearToast   : isDaily ? dailyStore.clearToast   : wordleStore.clearToast;
+
+  // Stats for BottomStrip
+  const practiceStats = isQuordle
+    ? (statsByMode[String(boardCount)] ?? emptyBoardStats())
+    : (statsByMode['wordle'] ?? emptyBoardStats());
+  const dailyStats = dailyStore.stats;
+
+  // UI state
   const [showHelp, setShowHelp] = useState(false);
   const [copyConfirmed, setCopyConfirmed] = useState(false);
   const [activeBoard, setActiveBoard] = useState(0);
+  const [statsModalVisible, setStatsModalVisible] = useState(false);
+  const [justSolvedInfo, setJustSolvedInfo] = useState<{ boardNum: number; guessCount: number } | null>(null);
+  const [countdown, setCountdown] = useState(() => msToHMS(msUntilMidnight()));
   const scrollRef = useRef<ScrollView>(null);
+  const prevSolvedBoardsRef = useRef<boolean[]>([]);
+  const isDailyRef = useRef(isDaily);
+  isDailyRef.current = isDaily;
 
-  const isQuordle = gameMode === 'quordle';
+  // Countdown updates every second (only used in daily overlay display)
+  useEffect(() => {
+    const id = setInterval(() => setCountdown(msToHMS(msUntilMidnight())), 1000);
+    return () => clearInterval(id);
+  }, []);
 
-  function scrollTo(index: number) {
-    scrollRef.current?.scrollTo({ x: index * screenW, animated: true });
-    setActiveBoard(index);
-  }
+  // Check for new day whenever screen gains focus
+  useFocusEffect(useCallback(() => {
+    dailyStore.checkAndReset();
+  }, []));
 
-  // Reset scroll position when a new multi-board game starts.
+  // Start/resume daily whenever activeWordleMode switches to 'daily'
+  useEffect(() => {
+    if (isDaily) dailyStore.startOrResumeDaily();
+  }, [dailyStore.activeWordleMode, isQuordle]);
+
+  // Reset scroll on new quordle game
   useEffect(() => {
     if (isQuordle && quordleStore.guesses.length === 0) {
       setActiveBoard(0);
@@ -235,23 +277,68 @@ export default function WordleScreen() {
     }
   }, [isQuordle, quordleStore.guesses.length]);
 
-  // Route actions and state to the appropriate store.
-  const addLetter    = isQuordle ? quordleStore.addLetter    : wordleStore.addLetter;
-  const removeLetter = isQuordle ? quordleStore.removeLetter : wordleStore.removeLetter;
-  const submitGuess  = isQuordle ? quordleStore.submitGuess  : wordleStore.submitGuess;
-  const toast        = isQuordle ? quordleStore.toast        : wordleStore.toast;
-  const clearToast   = isQuordle ? quordleStore.clearToast   : wordleStore.clearToast;
-  const gameStatus   = isQuordle ? quordleStore.gameStatus   : wordleStore.gameStatus;
+  // Track justSolvedInfo for BottomStrip State 2
+  const solvedBoardsKey = quordleStore.solvedBoards.join(',');
+  useEffect(() => {
+    if (!isQuordle) { prevSolvedBoardsRef.current = []; return; }
+    const curr = quordleStore.solvedBoards;
+    const prev = prevSolvedBoardsRef.current;
+    const idx = curr.findIndex((s, i) => s && !prev[i]);
+    if (idx >= 0) setJustSolvedInfo({ boardNum: idx + 1, guessCount: quordleStore.guesses.length });
+    prevSolvedBoardsRef.current = [...curr];
+  }, [solvedBoardsKey, isQuordle]);
 
-  const [shakeKey, setShakeKey] = useState(0);
-  const toastOpacity = useSharedValue(0);
+  useEffect(() => {
+    if (justSolvedInfo && quordleStore.guesses.length > justSolvedInfo.guessCount) setJustSolvedInfo(null);
+  }, [quordleStore.guesses.length]);
+
+  useEffect(() => {
+    if (activeGameStatus !== 'playing') setJustSolvedInfo(null);
+  }, [activeGameStatus]);
+
+  function scrollTo(index: number) {
+    scrollRef.current?.scrollTo({ x: index * screenW, animated: true });
+    setActiveBoard(index);
+  }
+
+  // Mode cycling (moved from _layout.tsx)
+  function cycleTo(n: BoardCount) {
+    const doIt = () => {
+      setBoardCount(n);
+      if (n === 1) { setGameMode('wordle'); useGameStore.getState().newGame(); }
+      else { setGameMode('quordle'); useQuordleStore.getState().newGame(); }
+    };
+    if (isGameInProgress()) confirmAbandon(doIt);
+    else doIt();
+  }
+  function cyclePrev() {
+    const idx = BOARD_COUNTS.indexOf(boardCount);
+    cycleTo(BOARD_COUNTS[(idx - 1 + BOARD_COUNTS.length) % BOARD_COUNTS.length]);
+  }
+  function cycleNext() {
+    const idx = BOARD_COUNTS.indexOf(boardCount);
+    cycleTo(BOARD_COUNTS[(idx + 1) % BOARD_COUNTS.length]);
+  }
+
+  function handleNewGame() {
+    const doIt = () => {
+      if (isQuordle) {
+        useQuordleStore.getState().newGame();
+      } else if (isDaily) {
+        dailyStore.resetDailyForToday();
+      } else {
+        wordleStore.newGame();
+      }
+    };
+    if (isGameInProgress()) confirmAbandon(doIt);
+    else doIt();
+  }
 
   // ── End-of-game overlay ──────────────────────────────────────────────────
   const [endGameVisible, setEndGameVisible] = useState(false);
   const endGameOpacity = useSharedValue(0);
   const endGameTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const prevGameStatusRef = useRef(gameStatus);
-
+  const prevGameStatusRef = useRef(activeGameStatus);
   const endGameAnimStyle = useAnimatedStyle(() => ({ opacity: endGameOpacity.value }));
 
   function dismissEndGame() {
@@ -262,23 +349,22 @@ export default function WordleScreen() {
 
   useEffect(() => {
     const prev = prevGameStatusRef.current;
-    prevGameStatusRef.current = gameStatus;
-    if (gameStatus === prev) return;
+    prevGameStatusRef.current = activeGameStatus;
+    if (activeGameStatus === prev) return;
 
-    if (gameStatus !== 'playing' && prev === 'playing') {
-      // Show overlay after per-board animations finish.
-      // Won: 4200ms (wave with 80ms stagger + ✓ overlay settle, worst case 6 guesses)
-      // Lost: 3200ms (shake + ✗ overlay fully faded in)
-      const delay = gameStatus === 'won' ? 4200 : 3200;
+    if (activeGameStatus !== 'playing' && prev === 'playing') {
+      const delay = activeGameStatus === 'won' ? 4200 : 3200;
       endGameTimerRef.current = setTimeout(() => {
         setEndGameVisible(true);
         endGameOpacity.value = withTiming(1, { duration: 300 });
-        // Auto-dismiss after 3 seconds.
-        endGameTimerRef.current = setTimeout(dismissEndGame, 3000);
+        // Daily overlay stays until tapped; practice/quordle auto-dismiss after 3s.
+        if (!isDailyRef.current) {
+          endGameTimerRef.current = setTimeout(dismissEndGame, 3000);
+        }
       }, delay);
     }
 
-    if (gameStatus === 'playing') {
+    if (activeGameStatus === 'playing') {
       if (endGameTimerRef.current) { clearTimeout(endGameTimerRef.current); endGameTimerRef.current = null; }
       setEndGameVisible(false);
       endGameOpacity.value = 0;
@@ -287,31 +373,33 @@ export default function WordleScreen() {
     return () => {
       if (endGameTimerRef.current) { clearTimeout(endGameTimerRef.current); endGameTimerRef.current = null; }
     };
-  }, [gameStatus]);
+  }, [activeGameStatus]);
 
-  // ── Compute end-game overlay content ────────────────────────────────────
+  // ── End-game overlay content ─────────────────────────────────────────────
   let endEmoji = '';
   let endMessage = '';
   let endWordsNode: React.ReactNode = null;
 
-  if (gameStatus !== 'playing') {
-    if (!isQuordle) {
-      endEmoji = gameStatus === 'won' ? '🎉' : '😢';
-      endMessage = gameStatus === 'won' ? 'Solved!' : 'Better luck next time';
+  if (activeGameStatus !== 'playing') {
+    if (isDaily) {
+      endEmoji = activeGameStatus === 'won' ? '🎉' : '😢';
+      endMessage = activeGameStatus === 'won' ? 'Solved!' : 'Better luck next time';
+      endWordsNode = <Text style={styles.endWordText}>{dailyStore.dailyAnswer}</Text>;
+    } else if (!isQuordle) {
+      endEmoji = activeGameStatus === 'won' ? '🎉' : '😢';
+      endMessage = activeGameStatus === 'won' ? 'Solved!' : 'Better luck next time';
       endWordsNode = <Text style={styles.endWordText}>{wordleStore.answer}</Text>;
     } else {
-      const { answers, solvedBoards, boardCount } = quordleStore;
+      const { answers, solvedBoards, boardCount: bc } = quordleStore;
       const solvedCount = solvedBoards.filter(Boolean).length;
-      if (gameStatus === 'won') {
+      if (activeGameStatus === 'won') {
         endEmoji = '🎉';
-        endMessage = boardCount === 1 ? 'Solved!' : 'You got them all!';
-        endWordsNode = (
-          <Text style={styles.endWordText}>{answers.join('  ')}</Text>
-        );
+        endMessage = bc === 1 ? 'Solved!' : 'You got them all!';
+        endWordsNode = <Text style={styles.endWordText}>{answers.join('  ')}</Text>;
       } else {
         const isPartial = solvedCount > 0;
         endEmoji = isPartial ? '😅' : '😢';
-        endMessage = isPartial ? `${solvedCount} out of ${boardCount}!` : 'Better luck next time';
+        endMessage = isPartial ? `${solvedCount} out of ${bc}!` : 'Better luck next time';
         endWordsNode = (
           <View style={styles.endWordRow}>
             {answers.map((w, i) => (
@@ -325,16 +413,13 @@ export default function WordleScreen() {
     }
   }
 
-  // ── Blur focused tab button so Enter goes to game keydown handler ────────
-  useFocusEffect(
-    useCallback(() => {
-      if (Platform.OS === 'web' && typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
-        document.activeElement.blur();
-      }
-    }, []),
-  );
+  // ── Keyboard / web focus ─────────────────────────────────────────────────
+  useFocusEffect(useCallback(() => {
+    if (Platform.OS === 'web' && typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+  }, []));
 
-  // Physical keyboard — web only. capture: true intercepts before any focused button.
   useEffect(() => {
     if (Platform.OS !== 'web') return;
     function onKeyDown(e: KeyboardEvent) {
@@ -351,7 +436,11 @@ export default function WordleScreen() {
     return () => window.removeEventListener('keydown', onKeyDown, { capture: true });
   }, [addLetter, removeLetter, submitGuess]);
 
-  // Toast animation — fires on any new toast message.
+  // ── Toast animation ──────────────────────────────────────────────────────
+  const [shakeKey, setShakeKey] = useState(0);
+  const toastOpacity = useSharedValue(0);
+  const toastStyle = useAnimatedStyle(() => ({ opacity: toastOpacity.value }));
+
   useEffect(() => {
     if (!toast) return;
     setShakeKey(k => k + 1);
@@ -363,8 +452,6 @@ export default function WordleScreen() {
     return () => clearTimeout(timer);
   }, [toast]);
 
-  const toastStyle = useAnimatedStyle(() => ({ opacity: toastOpacity.value }));
-
   function handleKey(key: string) {
     if (key === 'ENTER') submitGuess();
     else if (key === '⌫') removeLetter();
@@ -372,10 +459,15 @@ export default function WordleScreen() {
   }
 
   async function handleShare() {
-    if (gameStatus === 'playing') return;
-    const text = isQuordle
-      ? buildQuordleShareText(quordleStore.guesses, gameStatus as 'won' | 'lost', colorBlindMode, quordleStore.boardCount)
-      : buildShareText(wordleStore.guesses, gameStatus as 'won' | 'lost', colorBlindMode, hardMode);
+    if (activeGameStatus === 'playing') return;
+    let text: string;
+    if (isDaily) {
+      text = buildDailyShareText(dailyStore.dailyGuesses, dailyStore.dailySolved, colorBlindMode);
+    } else if (isQuordle) {
+      text = buildQuordleShareText(quordleStore.guesses, activeGameStatus, colorBlindMode, quordleStore.boardCount);
+    } else {
+      text = buildShareText(wordleStore.guesses, activeGameStatus, colorBlindMode, hardMode);
+    }
     const ok = await copyToClipboard(text);
     if (ok) {
       setCopyConfirmed(true);
@@ -383,7 +475,7 @@ export default function WordleScreen() {
     }
   }
 
-  // Shared end-game overlay — rendered on top of either layout.
+  // ── Shared end-game overlay ──────────────────────────────────────────────
   const endGameOverlay = endGameVisible ? (
     <Animated.View style={[StyleSheet.absoluteFill, styles.endGameOverlay, endGameAnimStyle]}>
       <Pressable
@@ -394,27 +486,29 @@ export default function WordleScreen() {
         <Text style={styles.endGameEmoji}>{endEmoji}</Text>
         <Text style={styles.endGameMessage}>{endMessage}</Text>
         {endWordsNode}
+        {isDaily && (
+          <>
+            <Text style={styles.endCountdownLabel}>Next daily in</Text>
+            <Text style={styles.endCountdownValue}>{countdown}</Text>
+          </>
+        )}
         <Pressable
           style={styles.shareButton}
-          onPress={() => { handleShare(); dismissEndGame(); }}
+          onPress={() => { handleShare(); if (!isDaily) dismissEndGame(); }}
           {...(noFocus as any)}
         >
-          <Text style={styles.shareButtonText}>Share ↗</Text>
+          <Text style={styles.shareButtonText}>{copyConfirmed ? 'Copied! ✓' : 'Share ↗'}</Text>
         </Pressable>
       </Pressable>
     </Animated.View>
   ) : null;
 
-  const headerProps = { language, setLanguage, hardMode, setHardMode, darkTheme, setDarkTheme, colors, setShowHelp };
-
-  // ── Multi-board swipeable layout ────────────────────────────────────────
+  // ── Multi-board layout ───────────────────────────────────────────────────
   if (isQuordle) {
-    const { guesses: qGuesses, currentGuess: qCurrent, solvedBoards, boardCount, maxGuesses } = quordleStore;
+    const { guesses: qGuesses, currentGuess: qCurrent, solvedBoards, boardCount: bc, maxGuesses } = quordleStore;
     const qKeyStatuses = deriveQuordleKeyStatuses(qGuesses);
     const solvedCount = solvedBoards.filter(Boolean).length;
-    const qResultText = gameStatus === 'won' ? 'Solved! 🎉' : 'Game over';
 
-    // Static estimate used as GameBoard's first-render fallback before it measures itself.
     const qAvailH = totalH - KBD_H - DOTS_H;
     const qFallbackTile = Math.max(20, Math.min(72,
       Math.min(Math.floor(availableWidth / 5) - TILE_GAP, Math.floor(qAvailH / maxGuesses) - TILE_GAP),
@@ -422,27 +516,26 @@ export default function WordleScreen() {
 
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-        {renderHeader({ ...headerProps, title: boardCountName(boardCount) })}
+        {renderHeader({
+          language, setLanguage, hardMode, setHardMode, darkTheme, setDarkTheme,
+          colors, setShowHelp, title: boardCountName(bc),
+          onNewGame: handleNewGame, onCyclePrev: cyclePrev, onCycleNext: cycleNext,
+          onSettings: () => router.navigate('/(tabs)/settings' as never),
+        })}
 
-        {/* Board progress indicators — hidden when only 1 board */}
-        {boardCount > 1 && (
+        {/* Board progress indicators */}
+        {bc > 1 && (
           <View style={styles.dotRow}>
             {solvedBoards.map((solved, i) => {
               const isActive   = activeBoard === i;
               const greenCount = solved ? 0 : boardCorrectCount(qGuesses, i);
               const hasYellow  = solved ? false : boardHasYellow(qGuesses, i);
-
               const squareColor = darkTheme ? '#ffffff' : '#878a8c';
-
-              const strokeColor = solved || (!hasYellow && greenCount > 0)
-                ? '#6aaa64'
+              const strokeColor = solved || (!hasYellow && greenCount > 0) ? '#6aaa64'
                 : hasYellow ? '#c9b458' : '#878a8c';
-              const fillColor = solved
-                ? '#6aaa64'
-                : hasYellow
-                ? (darkTheme ? colors.background as string : '#ffffff')
+              const fillColor = solved ? '#6aaa64'
+                : hasYellow ? (darkTheme ? colors.background as string : '#ffffff')
                 : 'transparent';
-
               return (
                 <Pressable
                   key={i}
@@ -450,7 +543,7 @@ export default function WordleScreen() {
                   hitSlop={6}
                   onPress={() => scrollTo(i)}
                   accessibilityLabel={
-                    solved   ? `Board ${i + 1} — solved`
+                    solved ? `Board ${i + 1} — solved`
                     : isActive ? `Board ${i + 1} — current`
                     : `Board ${i + 1}${greenCount > 0 ? `, ${greenCount} correct` : ''}`
                   }
@@ -475,9 +568,8 @@ export default function WordleScreen() {
             })}
           </View>
         )}
-        {boardCount === 1 && <View style={{ height: DOTS_H }} />}
+        {bc === 1 && <View style={{ height: DOTS_H }} />}
 
-        {/* Horizontally paged boards */}
         <ScrollView
           ref={scrollRef}
           horizontal
@@ -490,7 +582,7 @@ export default function WordleScreen() {
           }}
           scrollEventThrottle={16}
         >
-          {Array.from({ length: boardCount }, (_, i) => {
+          {Array.from({ length: bc }, (_, i) => {
             const solvedRow = boardSolvedAtRow(qGuesses, i);
             const isSolved = solvedRow >= 0;
             const visibleGuesses = isSolved ? qGuesses.slice(0, solvedRow + 1) : qGuesses;
@@ -507,7 +599,7 @@ export default function WordleScreen() {
                   tileSize={qFallbackTile}
                   maxGuesses={maxGuesses}
                   solved={isSolved}
-                  gameOver={gameStatus === 'lost' && !isSolved}
+                  gameOver={activeGameStatus === 'lost' && !isSolved}
                   answer={quordleStore.answers[i]}
                   shakeKey={shakeKey}
                 />
@@ -516,21 +608,8 @@ export default function WordleScreen() {
           })}
         </ScrollView>
 
+        {/* Toast-only message area */}
         <View style={styles.messageArea}>
-          {gameStatus !== 'playing' ? (
-            <View style={styles.resultRow}>
-              <Text style={[styles.resultText, { color: colors.text }]} numberOfLines={1}>
-                {copyConfirmed ? 'Copied!' : qResultText}
-              </Text>
-              {!copyConfirmed && (
-                <Pressable {...(noFocus as any)} onPress={handleShare} hitSlop={12} accessibilityLabel="Share result">
-                  <Ionicons name="share-social-outline" size={20} color="#878a8c" />
-                </Pressable>
-              )}
-            </View>
-          ) : solvedCount > 0 && solvedCount < boardCount ? (
-            <Text style={styles.progressText}>{solvedCount}/{boardCount} solved</Text>
-          ) : null}
           <Animated.View style={[styles.toastOverlay, toastStyle]} pointerEvents="none">
             <View style={styles.toastPill}>
               <Text style={styles.toastText}>{toast}</Text>
@@ -539,24 +618,89 @@ export default function WordleScreen() {
         </View>
 
         <Keyboard onKey={handleKey} keyStatuses={qKeyStatuses} keyHeight={keyHeight} />
+
+        <BottomStrip
+          gameStatus={activeGameStatus}
+          isQuordle
+          isDaily={false}
+          currentGuessNum={qGuesses.length}
+          maxGuesses={maxGuesses}
+          boardCount={bc}
+          solvedCount={solvedCount}
+          justSolvedInfo={justSolvedInfo}
+          practiceStats={practiceStats}
+          dailyStats={dailyStats}
+          shareConfirmed={copyConfirmed}
+          onShare={handleShare}
+          onOpenStats={() => setStatsModalVisible(true)}
+          textColor={colors.text as string}
+          backgroundColor={colors.card as string}
+          borderColor={colors.border as string}
+        />
+
         <HelpModal visible={showHelp} onClose={() => setShowHelp(false)} hardMode={hardMode} />
+        <StatsModal visible={statsModalVisible} onClose={() => setStatsModalVisible(false)} />
         {endGameOverlay}
       </SafeAreaView>
     );
   }
 
-  // ── Wordle layout ───────────────────────────────────────────────────────
-  const { answer, guesses, currentGuess } = wordleStore;
+  // ── Wordle / daily layout ────────────────────────────────────────────────
+  // In daily mode, use dailyStore; in practice, use wordleStore.
+  const guesses: GuessResult[] = isDaily ? dailyStore.dailyGuesses : wordleStore.guesses;
+  const currentGuess = isDaily ? dailyStore.currentGuess : wordleStore.currentGuess;
+  const answer = isDaily ? dailyStore.dailyAnswer : wordleStore.answer;
   const keyStatuses = deriveKeyStatuses(guesses);
   const winMessage = WIN_MESSAGES[Math.min(guesses.length - 1, WIN_MESSAGES.length - 1)];
-  const resultText = gameStatus === 'won' ? winMessage : `The word was ${answer}`;
+  const resultText = activeGameStatus === 'won' ? winMessage : `The word was ${answer}`;
 
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      edges={['top']}
-    >
-      {renderHeader({ ...headerProps, title: 'Wordout' })}
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+      {renderHeader({
+        language, setLanguage, hardMode, setHardMode, darkTheme, setDarkTheme,
+        colors, setShowHelp, title: 'Wordout',
+        onNewGame: handleNewGame, onCyclePrev: cyclePrev, onCycleNext: cycleNext,
+        onSettings: () => router.navigate('/(tabs)/settings' as never),
+      })}
+
+      {/* Daily 📅 / board indicator ▶ / Practice ∞ row */}
+      <View style={styles.modeIconRow}>
+        <Pressable
+          {...(noFocus as any)}
+          hitSlop={10}
+          onPress={() => {
+            if (isDaily) return;
+            dailyStore.setActiveWordleMode('daily');
+          }}
+          accessibilityLabel="Daily mode"
+        >
+          <View style={[styles.modeIconSquare, { borderColor: isDaily ? '#5BA75A' : '#878a8c' }]}>
+            <Ionicons name="calendar-outline" size={13} color={isDaily ? '#5BA75A' : '#878a8c'} />
+          </View>
+        </Pressable>
+
+        <View style={styles.modeIconCenter}>
+          <View style={styles.indicatorWrap}>
+            <View style={[styles.indicatorSquare, { borderColor: '#5BA75A' }]}>
+              <Ionicons name="play" size={10} color="#5BA75A" />
+            </View>
+          </View>
+        </View>
+
+        <Pressable
+          {...(noFocus as any)}
+          hitSlop={10}
+          onPress={() => {
+            if (!isDaily) return;
+            dailyStore.setActiveWordleMode('practice');
+          }}
+          accessibilityLabel="Practice mode"
+        >
+          <View style={[styles.modeIconSquare, { borderColor: isDaily ? '#878a8c' : '#5BA75A' }]}>
+            <Ionicons name="infinite-outline" size={13} color={isDaily ? '#878a8c' : '#5BA75A'} />
+          </View>
+        </Pressable>
+      </View>
 
       <View style={styles.boardArea} onLayout={e => setWordleAreaH(e.nativeEvent.layout.height)}>
         <GameBoard
@@ -564,25 +708,14 @@ export default function WordleScreen() {
           currentGuess={currentGuess}
           tileSize={wordleTileSize}
           shakeKey={shakeKey}
-          gameOver={gameStatus === 'lost'}
-          solved={gameStatus === 'won'}
+          gameOver={activeGameStatus === 'lost'}
+          solved={activeGameStatus === 'won'}
           answer={answer}
         />
       </View>
 
+      {/* Toast-only message area */}
       <View style={styles.messageArea}>
-        {gameStatus !== 'playing' ? (
-          <View style={styles.resultRow}>
-            <Text style={[styles.resultText, { color: colors.text }]} numberOfLines={1}>
-              {copyConfirmed ? 'Copied!' : resultText}
-            </Text>
-            {!copyConfirmed && (
-              <Pressable onPress={handleShare} hitSlop={12} accessibilityLabel="Share result">
-                <Ionicons name="share-social-outline" size={20} color="#878a8c" />
-              </Pressable>
-            )}
-          </View>
-        ) : null}
         <Animated.View style={[styles.toastOverlay, toastStyle]} pointerEvents="none">
           <View style={styles.toastPill}>
             <Text style={styles.toastText}>{toast}</Text>
@@ -591,13 +724,33 @@ export default function WordleScreen() {
       </View>
 
       <Keyboard onKey={handleKey} keyStatuses={keyStatuses} keyHeight={keyHeight} />
+
+      <BottomStrip
+        gameStatus={activeGameStatus}
+        isQuordle={false}
+        isDaily={isDaily}
+        currentGuessNum={guesses.length}
+        maxGuesses={6}
+        boardCount={1}
+        solvedCount={activeGameStatus === 'won' ? 1 : 0}
+        justSolvedInfo={null}
+        practiceStats={practiceStats}
+        dailyStats={dailyStats}
+        onShare={handleShare}
+        onOpenStats={() => setStatsModalVisible(true)}
+        textColor={colors.text as string}
+        backgroundColor={colors.card as string}
+        borderColor={colors.border as string}
+      />
+
       <HelpModal visible={showHelp} onClose={() => setShowHelp(false)} hardMode={hardMode} />
+      <StatsModal visible={statsModalVisible} onClose={() => setStatsModalVisible(false)} />
       {endGameOverlay}
     </SafeAreaView>
   );
 }
 
-// ── Shared header renderer ──────────────────────────────────────────────────
+// ── Header ──────────────────────────────────────────────────────────────────
 
 interface HeaderProps {
   language: string;
@@ -609,14 +762,20 @@ interface HeaderProps {
   colors: { card: ColorValue; border: ColorValue; text: ColorValue };
   setShowHelp: (v: boolean) => void;
   title: string;
+  onNewGame: () => void;
+  onCyclePrev: () => void;
+  onCycleNext: () => void;
+  onSettings: () => void;
 }
 
 function renderHeader({
-  language, setLanguage, hardMode, setHardMode,
-  darkTheme, setDarkTheme, colors, setShowHelp, title,
+  language, setLanguage, hardMode, setHardMode, darkTheme, setDarkTheme,
+  colors, setShowHelp, title, onNewGame, onCyclePrev, onCycleNext, onSettings,
 }: HeaderProps) {
   return (
     <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+
+      {/* Left cluster: 🇬🇧/🇺🇸  💎/🐣  ↺ */}
       <View style={styles.iconGroupLeft}>
         <Pressable
           {...(noFocus as any)}
@@ -636,12 +795,30 @@ function renderHeader({
           accessibilityLabel={hardMode ? 'Hard mode on — tap to disable' : 'Hard mode off — tap to enable'}
           onPress={() => setHardMode(!hardMode)}
         >
-          <Text style={styles.flagEmoji}>{hardMode ? '🔥' : '🐣'}</Text>
+          <Text style={styles.flagEmoji}>{hardMode ? '💪' : '🐣'}</Text>
+        </Pressable>
+        <Pressable
+          {...(noFocus as any)}
+          hitSlop={12}
+          accessibilityLabel="New game"
+          onPress={onNewGame}
+        >
+          <Ionicons name="refresh-outline" size={21} color="#878a8c" />
         </Pressable>
       </View>
+
+      {/* Center: ‹ mode › */}
       <View style={styles.headerTitleWrapper}>
+        <Pressable {...(noFocus as any)} onPress={onCyclePrev} hitSlop={8} style={styles.cycleArrow}>
+          <Text style={styles.cycleArrowText}>‹</Text>
+        </Pressable>
         <Text style={[styles.headerTitle, { color: colors.text }]}>{title}</Text>
+        <Pressable {...(noFocus as any)} onPress={onCycleNext} hitSlop={8} style={styles.cycleArrow}>
+          <Text style={styles.cycleArrowText}>›</Text>
+        </Pressable>
       </View>
+
+      {/* Right cluster: 🌙  ⚙  ? */}
       <View style={styles.iconGroupRight}>
         <Pressable
           {...(noFocus as any)}
@@ -650,6 +827,14 @@ function renderHeader({
           onPress={() => setDarkTheme(!darkTheme)}
         >
           <Ionicons name={darkTheme ? 'sunny-outline' : 'moon-outline'} size={21} color="#878a8c" />
+        </Pressable>
+        <Pressable
+          {...(noFocus as any)}
+          hitSlop={12}
+          accessibilityLabel="Settings"
+          onPress={onSettings}
+        >
+          <Ionicons name="settings-outline" size={21} color="#878a8c" />
         </Pressable>
         <Pressable
           {...(noFocus as any)}
@@ -676,29 +861,60 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
   },
   iconGroupLeft: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
   },
   iconGroupRight: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
-    gap: 10,
+    gap: 8,
   },
   headerTitleWrapper: {
     flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  cycleArrow: {
+    paddingHorizontal: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cycleArrowText: {
+    fontSize: 20,
+    color: '#878a8c',
+    lineHeight: 24,
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: '700',
     letterSpacing: 0.3,
+  },
+  // Mode icon row (📅 ▶ ∞) for single-board
+  modeIconRow: {
+    height: 36,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+  },
+  modeIconCenter: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  modeIconSquare: {
+    width: 24,
+    height: 24,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   // Multi-board progress indicators
   dotRow: {
@@ -745,10 +961,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   boardPage: {
-    // flex: 1 caused flex-basis: 0 in CSS (web), overriding the explicit
-    // width: screenW inline style and collapsing pages to screenW/boardCount.
-    // flexShrink: 0 prevents that while keeping width: screenW authoritative
-    // on both Yoga (native) and CSS (web).
     flexShrink: 0,
     alignItems: 'center',
     justifyContent: 'flex-start',
@@ -770,7 +982,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 16,
   },
-  // Toast is absolutely positioned so it overlays result/progress text.
   toastOverlay: {
     ...StyleSheet.absoluteFill,
     alignItems: 'center',
@@ -786,22 +997,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 14,
-  },
-  resultRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    width: '100%',
-    justifyContent: 'center',
-  },
-  resultText: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  progressText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#878a8c',
   },
   // End-of-game full-screen overlay
   endGameOverlay: {
@@ -841,8 +1036,21 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 2,
   },
+  endCountdownLabel: {
+    color: '#cccccc',
+    fontSize: 14,
+    marginTop: -4,
+  },
+  endCountdownValue: {
+    color: '#ffffff',
+    fontSize: 28,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+    letterSpacing: 2,
+    marginTop: -8,
+  },
   shareButton: {
-    marginTop: 8,
+    marginTop: 4,
     backgroundColor: '#5BA75A',
     paddingHorizontal: 28,
     paddingVertical: 13,

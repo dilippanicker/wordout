@@ -1,11 +1,9 @@
-import { useCallback, useState } from 'react';
-import { View, Text, Switch, Pressable, StyleSheet, ScrollView, Modal } from 'react-native';
+import { View, Text, Switch, Pressable, StyleSheet, ScrollView } from 'react-native';
 import Constants from 'expo-constants';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect, useTheme, useRouter } from 'expo-router';
+import { useTheme, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSettingsStore, Language, BOARD_COUNTS, BoardCount } from '@/store/settingsStore';
-import { useStatsStore, emptyBoardStats } from '@/store/statsStore';
 import { useGameStore } from '@/store/gameStore';
 import { useQuordleStore } from '@/store/quordleStore';
 
@@ -22,24 +20,7 @@ export default function SettingsScreen() {
     boardCount, setBoardCount,
   } = useSettingsStore();
 
-  const { byMode, clearSettingsBadge, resetStats } = useStatsStore();
-
-  // Show stats for the currently active mode.
-  const modeKey = gameMode === 'wordle' ? 'wordle' : String(boardCount);
-  const activeStats = byMode[modeKey] ?? emptyBoardStats();
-  const { totalGames, wins, currentStreak, maxStreak, guessCounts } = activeStats;
-  const maxGuessesForMode = gameMode === 'wordle' ? 6 : Math.min(13, 5 + boardCount);
-
-  useFocusEffect(
-    useCallback(() => {
-      clearSettingsBadge();
-    }, [clearSettingsBadge]),
-  );
-
   const containerBg = dark ? colors.background : '#f6f7f8';
-  const winPct = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
-  const maxCount = Math.max(...Object.values(guessCounts).map(Number), 1);
-  const [confirmVisible, setConfirmVisible] = useState(false);
 
   function handleBoardCountSelect(n: BoardCount) {
     setBoardCount(n);
@@ -71,41 +52,6 @@ export default function SettingsScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 12 }}>
-
-        {/* ── Statistics ──────────────────────────────────────────────── */}
-        <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionHeaderText}>STATISTICS</Text>
-          <Pressable onPress={() => setConfirmVisible(true)} hitSlop={12} accessibilityLabel="Reset statistics">
-            <Ionicons name="trash-outline" size={15} color="#787c7e" />
-          </Pressable>
-        </View>
-        <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={styles.statsRow}>
-            <StatCell label="Games" value={totalGames} textColor={colors.text as string} />
-            <StatCell label="Win %" value={winPct} textColor={colors.text as string} />
-            <StatCell label="Streak" value={currentStreak} textColor={colors.text as string} />
-            <StatCell label="Max" value={maxStreak} textColor={colors.text as string} />
-          </View>
-        </View>
-
-        {/* ── Guess distribution ─────────────────────────────────────── */}
-        <Text style={styles.sectionHeader}>GUESS DISTRIBUTION</Text>
-        <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={styles.distContainer}>
-            {Array.from({ length: maxGuessesForMode }, (_, i) => {
-              const n = String(i + 1);
-              return (
-                <DistBar
-                  key={n}
-                  num={n}
-                  count={guessCounts[n] ?? 0}
-                  maxCount={maxCount}
-                  textColor={colors.text as string}
-                />
-              );
-            })}
-          </View>
-        </View>
 
         {/* ── Game Mode ──────────────────────────────────────────────── */}
         <Text style={styles.sectionHeader}>GAME MODE</Text>
@@ -145,58 +91,11 @@ export default function SettingsScreen() {
 
       </ScrollView>
 
-      {/* Reset stats confirmation modal */}
-      <Modal visible={confirmVisible} transparent animationType="fade" onRequestClose={() => setConfirmVisible(false)}>
-        <Pressable style={styles.confirmBackdrop} onPress={() => setConfirmVisible(false)}>
-          <View style={[styles.confirmSheet, { backgroundColor: colors.card }]}>
-            <Text style={[styles.confirmTitle, { color: colors.text }]}>Reset all stats?</Text>
-            <Text style={styles.confirmMessage}>This cannot be undone.</Text>
-            <View style={styles.confirmButtons}>
-              <Pressable style={styles.confirmBtn} onPress={() => setConfirmVisible(false)}>
-                <Text style={[styles.confirmBtnText, { color: colors.text }]}>Cancel</Text>
-              </Pressable>
-              <View style={[styles.confirmDivider, { backgroundColor: colors.border }]} />
-              <Pressable style={styles.confirmBtn} onPress={() => { resetStats(); setConfirmVisible(false); }}>
-                <Text style={[styles.confirmBtnText, styles.confirmDestructive]}>Reset</Text>
-              </Pressable>
-            </View>
-          </View>
-        </Pressable>
-      </Modal>
     </SafeAreaView>
   );
 }
 
 // ── Sub-components ──────────────────────────────────────────────────────────
-
-function StatCell({ label, value, textColor }: { label: string; value: number; textColor: string }) {
-  return (
-    <View style={styles.statCell}>
-      <Text style={[styles.statValue, { color: textColor }]}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-    </View>
-  );
-}
-
-function DistBar({ num, count, maxCount, textColor }: {
-  num: string;
-  count: number;
-  maxCount: number;
-  textColor: string;
-}) {
-  const pct = count === 0 ? 10 : Math.round((count / maxCount) * 100);
-  return (
-    <View style={styles.distRow}>
-      <Text style={[styles.distNum, { color: textColor }]}>{num}</Text>
-      <View style={styles.distTrack}>
-        <View style={[styles.distBar, { flex: pct }]}>
-          <Text style={styles.distCount}>{count}</Text>
-        </View>
-        {pct < 100 && <View style={{ flex: 100 - pct }} />}
-      </View>
-    </View>
-  );
-}
 
 function ModeSegment({ label, active, onPress, last }: {
   label: string;
@@ -306,20 +205,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.3,
   },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 26,
-    marginBottom: 6,
-    paddingHorizontal: 16,
-  },
-  sectionHeaderText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#787c7e',
-    letterSpacing: 0.8,
-  },
   sectionHeader: {
     fontSize: 12,
     fontWeight: '600',
@@ -332,61 +217,6 @@ const styles = StyleSheet.create({
   section: {
     borderTopWidth: StyleSheet.hairlineWidth,
     borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  // Stats
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: 18,
-    paddingHorizontal: 8,
-  },
-  statCell: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  statValue: {
-    fontSize: 22,
-    fontWeight: '700',
-  },
-  statLabel: {
-    fontSize: 11,
-    color: '#787c7e',
-    marginTop: 1,
-    textAlign: 'center',
-  },
-  // Distribution
-  distContainer: {
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    gap: 8,
-  },
-  distRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 18,
-  },
-  distNum: {
-    width: 16,
-    fontSize: 12,
-    fontWeight: '600',
-    marginRight: 6,
-  },
-  distTrack: {
-    flex: 1,
-    flexDirection: 'row',
-  },
-  distBar: {
-    backgroundColor: '#6aaa64',
-    height: 16,
-    borderRadius: 2,
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-    paddingRight: 5,
-  },
-  distCount: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '700',
   },
   // Mode segment (compact 6-option row)
   modeSegment: {
@@ -438,54 +268,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#787c7e',
     marginTop: 2,
-  },
-  // Reset confirmation modal
-  confirmBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  confirmSheet: {
-    width: 260,
-    borderRadius: 14,
-    overflow: 'hidden',
-  },
-  confirmTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    textAlign: 'center',
-    paddingTop: 20,
-    paddingHorizontal: 16,
-    paddingBottom: 6,
-  },
-  confirmMessage: {
-    fontSize: 13,
-    color: '#787c7e',
-    textAlign: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-  },
-  confirmButtons: {
-    flexDirection: 'row',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#d3d6da',
-  },
-  confirmBtn: {
-    flex: 1,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  confirmDivider: {
-    width: StyleSheet.hairlineWidth,
-  },
-  confirmBtnText: {
-    fontSize: 17,
-    fontWeight: '400',
-  },
-  confirmDestructive: {
-    color: '#ff3b30',
-    fontWeight: '600',
   },
   versionText: {
     fontSize: 12,

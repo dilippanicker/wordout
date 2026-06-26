@@ -2,14 +2,20 @@ import { Alert, Platform } from 'react-native';
 import { useGameStore } from '@/store/gameStore';
 import { useQuordleStore } from '@/store/quordleStore';
 import { useSettingsStore } from '@/store/settingsStore';
+import { useDailyStore } from '@/store/dailyStore';
 
 export function isGameInProgress(): boolean {
   const { boardCount } = useSettingsStore.getState();
-  if (boardCount === 1) {
-    const { gameStatus, guesses } = useGameStore.getState();
+  if (boardCount > 1) {
+    const { gameStatus, guesses } = useQuordleStore.getState();
     return gameStatus === 'playing' && guesses.length > 0;
   }
-  const { gameStatus, guesses } = useQuordleStore.getState();
+  // Single-board: check whichever sub-mode is active
+  const { activeWordleMode, dailyStatus, dailyGuesses } = useDailyStore.getState();
+  if (activeWordleMode === 'daily') {
+    return dailyStatus === 'playing' && dailyGuesses.length > 0;
+  }
+  const { gameStatus, guesses } = useGameStore.getState();
   return gameStatus === 'playing' && guesses.length > 0;
 }
 
