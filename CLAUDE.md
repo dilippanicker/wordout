@@ -33,19 +33,26 @@
 
 ### Stores — `store/`
 
-**`settingsStore.ts`** — persisted (`wordle-settings`):
-- `language: Language`, `hardMode`, `darkTheme`, `colorBlindMode`
+**`settingsStore.ts`** — persisted (`wordle-settings`, persist `version: 1`):
+- `language: Language`, `difficulty: Difficulty`, `darkTheme`, `colorBlindMode`
+- `Difficulty = 'easy' | 'hard' | 'extreme'` — exported type
+- `maxGuessesForDifficulty(difficulty, boardCount)` — exported function: extreme = `max(3, (5+boardCount)−2)`, otherwise boardCount===1 ? 6 : min(13, 5+boardCount)
+- Zustand persist migration: converts old `hardMode: boolean` → `difficulty` on first load after upgrade
 - `gameMode: 'wordle' | 'quordle'`
 - `boardCount: BoardCount` (1 | 2 | 3 | 4 | 6 | 8, default 4)
 - `BOARD_COUNTS = [1,2,3,4,6,8]`, `BoardCount` type
 - `boardCountName(n)` → `'Wordout' | '2-out' | '3-out' | '4-out' | '6-out' | '8-out'`
 
-**`gameStore.ts`** — Wordout logic (6 guesses, single board):
+**`gameStore.ts`** — Wordout logic (guesses count via `maxGuessesForDifficulty`):
 - Resets only on language change (subscription watches `language` only)
 - `recordResult(won, guessCount, 'wordle')` — modeKey is always `'wordle'`
+- `clearCurrentGuess: () => void` — called after invalid-word shake (950ms delay)
+- `WORD_COUNT_ANSWERS: Record<Language, number>` — exported for settings footer
+- `WORD_COUNT_GUESSES: Record<Language, number>` — exported for settings footer
 
 **`quordleStore.ts`** — multi-board logic:
-- `boardCount: number`, `maxGuesses = min(13, 5 + boardCount)`, `answers: string[]`, `solvedBoards: boolean[]` — all dynamic
+- `boardCount: number`, `maxGuesses = maxGuessesForDifficulty(difficulty, boardCount)`, `answers: string[]`, `solvedBoards: boolean[]` — all dynamic
+- `clearCurrentGuess: () => void`
 - `QuordleGuess.boardResults: LetterResult[][]` — one array per board (not a 4-tuple)
 - `initialState(language, boardCount)` picked at game start via Fisher-Yates shuffle
 - Subscription watches `language` only; `boardCount` changes handled explicitly in `settings.tsx`
@@ -63,21 +70,23 @@
 - `getDailyAnswer(language)` → `ANSWERS[language][dailyIndex % length]`
 - `lastPlayedDate: string`, `dailyStatus: 'available'|'playing'|'completed'`
 - `dailyGuesses: GuessResult[]`, `dailyAnswer: string`, `dailySolved: boolean`, `dailyHardMode: boolean`
+- `dailyDifficulty: Difficulty` — locked at game start, prevents switching to Easy mid-daily for more guesses
 - `activeWordleMode: 'daily'|'practice'` — controls single-board sub-mode
 - `stats: BoardStats` — daily-specific stats (separate from practice stats in statsStore)
 - `checkAndReset()` — resets to 'available' if lastPlayedDate !== today; call on focus
-- `startOrResumeDaily()` — no-op if status !== 'available'; sets playing with today's word
-- `resetDailyForToday()` — restart same-day (same word) with current hardMode setting
+- `startOrResumeDaily()` — no-op if status !== 'available'; sets playing with today's word; locks `dailyDifficulty`
+- `resetDailyForToday()` — restart same-day (same word) with current difficulty setting
 - `resetDailyStats()` — clear daily stats only (called alongside statsStore.resetStats)
+- `clearCurrentGuess: () => void`
 - evaluateGuess + checkHardModeConstraints duplicated here (intentional — can't touch gameStore schema)
 
 ### Abandon guard — `utils/abandon.ts`
 `isGameInProgress()` reads the active store imperatively (`getState()`) — no subscription needed. Checks `activeWordleMode` for single-board: daily → `dailyStatus === 'playing' && dailyGuesses.length > 0`; practice → `gameStore` check; multi-board → `quordleStore` check.  
 `confirmAbandon(onConfirm)` shows `Alert.alert` on Android/iOS, `window.confirm` on web. Called before: ↺ New Game header button, ‹/› mode arrows, language flag toggle, **hard mode toggle (💪/🐣)**.
 
-**Hard mode toggle mid-game**: after abandon confirmed, sets `hardMode` AND calls `newGame()` on the active store (boardCount > 1 → quordleStore; else → gameStore). Does NOT reset dailyStore — daily mode uses `dailyHardMode` locked at game start.
+**Difficulty toggle mid-game**: after abandon confirmed, calls `setDifficulty()` AND calls `newGame()` on the active store (boardCount > 1 → quordleStore; else → gameStore). Does NOT reset dailyStore — daily mode uses `dailyDifficulty` locked at game start.
 
-**Key subscription rule**: `gameStore` and `quordleStore` subscriptions call `newGame()` on `language` change only. Board count changes are handled explicitly in `settings.tsx → handleBoardCountSelect`. Mode cycling (‹›) handled in `index.tsx → cycleTo`.
+**Key subscription rule**: `gameStore` and `quordleStore` subscriptions call `newGame()` on `language` change only. Board count changes (settings.tsx → handleBoardCountSelect) and mode cycling (index.tsx → cycleTo) do NOT call newGame() — game persists across mode switches.
 
 ### Components — `components/`
 
@@ -85,14 +94,15 @@
 - Wordle mode: `guesses?: GuessResult[]` (pre-merged word + results)
 - Quordle mode: `words?: string[]` + `boardResults?: LetterResult[][]` (shared words, per-board colors passed separately)
 - Common: `currentGuess`, `tileSize` (default 60), `shakeKey`, `maxGuesses` (default 6), `solved`, `gameOver`, `answer`, `label`
+- `suppressOverlay?: boolean` (default false) — when true, win/lose overlay is hidden; set from parent's `overlayLocked` state
 - `count` derived from `words.length ?? guesses.length` — drives animation tracking
 - No border on board (removed in v1.0.1 — green solved border looked ugly)
-- Win overlay: `rgba(0,0,0,0.3)` dim + 80px green ✓, fades in dynamically after wave completes — delay = `FLIP_DONE_MS + (count * COLS - 1) * WAVE_STAGGER + 400`; persists on remount
-- Lose overlay: board shakes (3×, 14px, 910ms), red tint flash, then dim + 80px red ✗ + `answer` word; fades in at `FLIP_DONE_MS + 1300ms` after `gameOver` transitions
+- Win overlay: `rgba(0,0,0,0.3)` dim + 80px green ✓; fades in via `useEffect([solved, suppressOverlay])` when `solved && !suppressOverlay`; opacities always initialise to 0
+- Lose overlay: board shakes (3×, 14px, 910ms) + red tint flash (separate from overlay — not gated by suppressOverlay); dim + 80px red ✗ + `answer` word fades in via `useEffect([gameOver, suppressOverlay])` when `gameOver && !solved && !suppressOverlay`
 - Wave animation fires on ALL tiles (left→right, top→bottom, 80ms stagger `WAVE_STAGGER`) when `solved && animatingRow === count - 1`; `animatingRow` guard prevents replay on remount
-- `countRef = useRef(0)` declared immediately after `const count = ...` — lets win `useEffect([solved])` read count without it in deps. Must stay after count declaration (temporal dead zone on web otherwise).
-- Overlay opacities initialised to 1 on mount if board already in end-state (navigation remount safety)
 - **Wordle mode must pass `solved={gameStatus === 'won'}`** — previously missing, was breaking win-row bounce
+
+**Overlay timing pattern** (v1.2.0): `overlayLocked` in index.tsx starts `true` on game end, becomes `false` when end-game popup is dismissed (320ms after). `suppressOverlay={overlayLocked}` passed to all GameBoards. Result: wave → popup → dismiss → per-board ✓/✗ overlay.
 
 **`Tile.tsx`** — `margin: 2` around each tile (so each row = `tileSize + 4` px tall). Color blind: correct=🟧, present=🟦. Absent tile: `dark ? '#3a3a3c' : '#787c7e'` (dark-mode-aware since v1.1.1).
 
@@ -103,8 +113,9 @@
 **`HelpModal.tsx`** — sections: rules, EXAMPLES (3 tiles), MULTI-BOARD MODE, BOARD INDICATORS (5 rows with rendered indicator shapes), HARD MODE (conditional), ICONS. ICONS has two sub-sections "Top bar" and "Bottom strip".
 
 **`BottomStrip.tsx`** — `minHeight: 50` + `paddingBottom: insets.bottom` (safe area), replaces tab bar visually:
-- State 0 pre-game (playing, 0 guesses): "📅 Daily · ∞ Practice · ? Help" tip text (opacity 0.6)
-- State 1 playing (guesses > 0): "Guess N+1 of M [· X solved · Y remaining]" + 📊
+- Props: `difficulty: Difficulty`, `onOpenHelp: () => void` (required since v1.2.0)
+- State 0 pre-game (playing, 0 guesses): tip text (opacity 0.6), tappable → `onOpenHelp()`
+- State 1 playing (guesses > 0): `playingLeft` row with guess count + 💀/💪 badge (when difficulty !== 'easy') + 📊
 - State 2 board just solved (quordle only): "Board X solved in N ✓ | 🏆 Best: M" + 📊
 - State 3 game over practice: Played/Win%/⚡N + share-social-outline icon button + 📊
 - State 3 game over daily: Played/Win%/🔥N + 📊 (no Share — in overlay)
@@ -112,6 +123,7 @@
 - Uses `useSafeAreaInsets` internally — no inset prop needed from parent
 
 **`StatsModal.tsx`** — Modal, close on backdrop tap or × button:
+- ? help icon at left of header (position absolute, left: 12) — opens HelpModal
 - Single-board: Daily|Practice tabs; multi-board: practice only
 - Distribution chart; Reset Stats clears both statsStore AND dailyStore.stats
 
@@ -180,17 +192,22 @@ Solved board always shows ✓ even when it is the active board.
 ```ts
 function handleBoardCountSelect(n: BoardCount) {
   setBoardCount(n);
-  if (n === 1) { setGameMode('wordle'); useGameStore.getState().newGame(); }
-  else         { setGameMode('quordle'); useQuordleStore.getState().newGame(); }
+  if (n === 1) setGameMode('wordle');
+  else         setGameMode('quordle');
   router.navigate('/(tabs)/' as never);
 }
 ```
+Game state is preserved across board count changes (no `newGame()` call — added in v1.2.0).
 Mode segment active state: `(n === 1 && gameMode === 'wordle') || (n > 1 && gameMode === 'quordle' && boardCount === n)`
-Mode segment label: `n === 1 ? 'Wordout' : \`${n}-out\`` — produces "Wordout / 2-out / 3-out / 4-out / 6-out / 8-out". (Was `n === 4 ? 'Quadout' : \`${n}\`` — fixed in v1.0.2.)
+Mode segment label: `n === 1 ? 'Wordout' : \`${n}-out\`` — produces "Wordout / 2-out / 3-out / 4-out / 6-out / 8-out".
+
+### Settings footer (v1.2.0)
+Word count pills (answers + valid words per language), GitHub link, `© 2026 Onglipo Labs · MIT License`, version string (`v1.2.0` on web, `v1.2.0 (build 8)` on Android).
+`WORD_COUNT_ANSWERS[language]` + `WORD_COUNT_GUESSES[language]` imported from gameStore.
 
 ### Per-mode stats display
 `modeKey = gameMode === 'wordle' ? 'wordle' : String(boardCount)`  
-`maxGuessesForMode = gameMode === 'wordle' ? 6 : min(13, 5 + boardCount)`  
+`maxGuessesForMode = maxGuessesForDifficulty(difficulty, boardCount)`  
 Distribution chart renders exactly `maxGuessesForMode` bars.
 
 ### Share format
@@ -242,7 +259,7 @@ SVG: 5 tiles [W][O][R][D][✓] on dark `#121213` background, rounded square. Exp
 
 ### EAS build
 `eas.json` has `development` (internal APK), `preview` (APK), `production` (AAB) profiles.  
-`app.json`: `android.package: "com.dilippanicker.wordout"`, `android.versionCode: 7` (current — see version bumping protocol before building)  
+`app.json`: `android.package: "com.dilippanicker.wordout"`, `android.versionCode: 8` (current — see version bumping protocol before building)  
 Build commands: `eas build --local --profile preview --output wordout.apk` / `--profile production --output wordout.aab`
 
 ---
@@ -301,7 +318,7 @@ Build commands: `eas build --local --profile preview --output wordout.apk` / `--
 - Never trigger or instruct triggering a build without a confirmed version bump.
 - Update `CHANGELOG.md` with the new version entry as part of the same commit as `app.json`.
 
-**Current version:** `1.1.1` (versionCode 7) — last confirmed bump.  
+**Current version:** `1.2.0` (versionCode 8) — last confirmed bump.  
 Update after each confirmed bump so future sessions start from the right baseline.
 
 ### Build pipeline
@@ -320,7 +337,7 @@ Update after each confirmed bump so future sessions start from the right baselin
   - `https://github.com/dilippanicker/wordout/releases/latest/download/wordout.apk`
   - `https://github.com/dilippanicker/wordout/releases/latest/download/wordout.aab`
 
-**Current version:** `1.1.1` (versionCode 7) — code done, not yet built.
+**Current version:** `1.2.0` (versionCode 8) — committed, pushed, build triggered.
 
 ### Play Store setup
 - App created in Google Play Console under publisher "Onglipo"
@@ -338,10 +355,10 @@ Update after each confirmed bump so future sessions start from the right baselin
 - [ ] First manual APK upload via Play Console web UI (required before automation)
 - [ ] Set up GitHub Actions → Play Store automation (service account JSON)
 
-### Nice-to-have (post-1.0)
+### Nice-to-have (post-1.2)
 - Animate board indicator state transitions
-- Daily word mode (deterministic word from date seed)
 - Haptic feedback on correct/wrong guess
+- End-game overlay delay dynamic based on guess count
 
 ---
 
