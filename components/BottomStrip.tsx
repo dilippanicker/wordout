@@ -42,7 +42,7 @@ export function BottomStrip({
 
   const statsIcon = (
     <Pressable onPress={onOpenStats} hitSlop={10} style={styles.statsBtn}>
-      <Ionicons name="bar-chart-outline" size={20} color={GREEN} />
+      <Text style={styles.statsEmoji}>📊</Text>
     </Pressable>
   );
 
@@ -52,9 +52,11 @@ export function BottomStrip({
     // Pre-game tip — shown before first guess
     content = (
       <View style={styles.row}>
-        <Text style={[styles.tipText, { color: textColor }]}>
-          {'📅 Daily  ·  ∞ Practice  ·  ? Help'}
-        </Text>
+        <View style={styles.tipContent}>
+          <Text style={[styles.tipText, { color: textColor }]}>{'Tap '}</Text>
+          <Ionicons name="help-circle-outline" size={16} color={textColor} />
+          <Text style={[styles.tipText, { color: textColor }]}>{' for help and game modes'}</Text>
+        </View>
         {statsIcon}
       </View>
     );
@@ -156,10 +158,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  tipContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    opacity: 0.6,
+  },
   tipText: {
     fontSize: 13,
-    flex: 1,
-    opacity: 0.6,
   },
   guessText: {
     fontSize: 14,
@@ -170,6 +176,9 @@ const styles = StyleSheet.create({
   },
   statsBtn: {
     paddingLeft: 12,
+  },
+  statsEmoji: {
+    fontSize: 20,
   },
   // State 2
   solvedLeft: {
