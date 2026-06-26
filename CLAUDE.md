@@ -71,15 +71,16 @@
 - Common: `currentGuess`, `tileSize` (default 60), `shakeKey`, `maxGuesses` (default 6), `solved`, `gameOver`, `answer`, `label`
 - `count` derived from `words.length ?? guesses.length` — drives animation tracking
 - No border on board (removed in v1.0.1 — green solved border looked ugly)
-- Win overlay: `rgba(0,0,0,0.3)` dim + 80px green ✓, fades in 1500ms after `solved` transitions; persists on remount
-- Lose overlay: board shakes (3×, 14px, 910ms), red tint flash, then dim + 80px red ✗ + `answer` word; fades in ~2050ms after `gameOver` transitions
-- Wave animation fires on ALL tiles (left→right, top→bottom, 50ms stagger) when `solved && animatingRow === count - 1`; `animatingRow` guard prevents replay on remount
+- Win overlay: `rgba(0,0,0,0.3)` dim + 80px green ✓, fades in dynamically after wave completes — delay = `FLIP_DONE_MS + (count * COLS - 1) * WAVE_STAGGER + 400`; persists on remount
+- Lose overlay: board shakes (3×, 14px, 910ms), red tint flash, then dim + 80px red ✗ + `answer` word; fades in at `FLIP_DONE_MS + 1300ms` after `gameOver` transitions
+- Wave animation fires on ALL tiles (left→right, top→bottom, 80ms stagger `WAVE_STAGGER`) when `solved && animatingRow === count - 1`; `animatingRow` guard prevents replay on remount
+- `countRef = useRef(0)` declared immediately after `const count = ...` — lets win `useEffect([solved])` read count without it in deps. Must stay after count declaration (temporal dead zone on web otherwise).
 - Overlay opacities initialised to 1 on mount if board already in end-state (navigation remount safety)
 - **Wordle mode must pass `solved={gameStatus === 'won'}`** — previously missing, was breaking win-row bounce
 
 **`Tile.tsx`** — `margin: 2` around each tile (so each row = `tileSize + 4` px tall). Color blind: correct=🟧, present=🟦.
 
-**`FlipTile.tsx`** — flip animation on guess submission, 150ms stagger per column.
+**`FlipTile.tsx`** — flip animation on guess submission, 180ms stagger per column. Each tile flips in 400ms (200ms front collapse + 200ms back reveal). `Extrapolation.CLAMP` on both `interpolate()` calls prevents back face extrapolating to −180° before flip starts (web black flash fix).
 
 **`Keyboard.tsx`** — key height 60px, row gap 8px. Colors reflect best result per letter across all boards in multi-board mode.
 
@@ -255,7 +256,7 @@ Build commands: `eas build --local --profile preview --output wordout.apk` / `--
 - Never trigger or instruct triggering a build without a confirmed version bump.
 - Update `CHANGELOG.md` with the new version entry as part of the same commit as `app.json`.
 
-**Current version:** `1.0.2` (versionCode 3) — as of last confirmed bump (2026-06-25).  
+**Current version:** `1.0.4` (versionCode 5) — as of last confirmed bump (2026-06-26).  
 Update this line after each confirmed bump so future sessions start from the right baseline.
 
 ### Build pipeline

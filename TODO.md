@@ -1,16 +1,18 @@
 # Wordout — Master TODO
 **Updated: 2026-06-26**
-**Current version: v1.0.3 (build in progress — run 28189682555)**
+**Current version: v1.0.4 (committed, build not yet triggered)**
 
 ---
 
-## 🔴 IMMEDIATE — v1.0.3 Test
+## 🔴 IMMEDIATE — Build & Test v1.0.4
 
+- [ ] Push to remote and trigger GitHub Actions build (Actions tab → Run workflow)
 - [ ] Test on S24 Ultra:
-  - Submit same word twice → "Already guessed" toast + shake (single and multi-board)
-  - Win/lose overlays not regressed
-  - Settings: "Wordout / 2-out / 3-out / 4-out / 6-out / 8-out"
-  - INBOX, ADMIN, DEBUG accepted as valid guesses
+  - Win animation: wave slower (80ms stagger), overlay fades in AFTER wave completes
+  - Lose animation: shake → 400ms pause → ✗ overlay fades in smoothly
+  - No black flash during tile flip on web or Android
+  - Full-screen end-game overlay appears after per-board overlays settle
+  - All v1.0.3 features not regressed (duplicate guess rejection, Settings labels)
 
 ## 🔴 IMMEDIATE — Play Store Submission
 
@@ -72,6 +74,7 @@
 - [ ] GitHub Actions → Play Store auto-publish pipeline
 - [ ] Version number shown in Settings (bottom, muted text)
 - [ ] Word feedback link in help modal (GitHub issues)
+- [ ] End-game overlay delay dynamic based on guess count (currently fixed at 4200ms win / 3200ms lose — feels long on 1-guess wins)
 
 ---
 
@@ -103,6 +106,10 @@
 - ✅ 2026-06-26 v1.0.3: Reject duplicate guesses ("Already guessed" toast + shake)
 - ✅ 2026-06-26 v1.0.3: Production AAB built alongside APK in GitHub Actions
 - ✅ 2026-06-26 v1.0.3: Versioned GitHub Releases (tag from app.json, notes from CHANGELOG.md)
+- ✅ 2026-06-26 v1.0.4: Tile flip slowed (300ms → 400ms), stagger 150ms → 180ms
+- ✅ 2026-06-26 v1.0.4: Win wave stagger 50ms → 80ms, overlay delay dynamic based on guess count
+- ✅ 2026-06-26 v1.0.4: Extrapolation.CLAMP on FlipTile — fixes web black flash
+- ✅ 2026-06-26 v1.0.4: Lose/end-game overlay timing improved
 
 ---
 
