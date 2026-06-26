@@ -1,39 +1,31 @@
 # Wordout — Master TODO
 **Updated: 2026-06-26**
-**Current version: v1.0.4 (committed, build not yet triggered)**
+**Current version: v1.1.1 (code done, NOT yet committed/pushed)**
 
 ---
 
-## 🔴 IMMEDIATE — Build & Test v1.1.0
+## 🔴 IMMEDIATE — Commit & Build v1.1.1
 
-- [ ] Confirm version bump: v1.1.0 (versionCode 6) — pending user confirmation
-- [ ] Push and trigger GitHub Actions build
-- [ ] Test on device:
-  - Daily mode: tap 📅, play a game, check countdown overlay, share
-  - Practice mode: tap ∞, verify game works
-  - ‹/› arrows cycle modes with abandon guard
-  - ↺ new game button works with abandon guard
-  - ⚙ opens settings
-  - 📊 opens StatsModal with correct stats
-  - BottomStrip: State 1 (playing), State 2 (board solved flash), State 3 (game over)
-  - Multi-board State 2 flash on board solve
-  - Daily overlay: stays visible, shows countdown, Share doesn't dismiss
-
-## 🔴 IMMEDIATE — Build & Test v1.0.4
-
-- [ ] Push to remote and trigger GitHub Actions build (Actions tab → Run workflow)
-- [ ] Test on S24 Ultra:
-  - Win animation: wave slower (80ms stagger), overlay fades in AFTER wave completes
-  - Lose animation: shake → 400ms pause → ✗ overlay fades in smoothly
-  - No black flash during tile flip on web or Android
-  - Full-screen end-game overlay appears after per-board overlays settle
-  - All v1.0.3 features not regressed (duplicate guess rejection, Settings labels)
+- [ ] Commit all changes: `git commit -m "fix: v1.1.1 — bug fixes, startup mode, safe area, pre-game tip"`
+- [ ] Push to remote: `git push origin main`
+- [ ] Trigger GitHub Actions build (Actions tab → Run workflow)
+- [ ] Test on device (Samsung S24 Ultra):
+  - First launch: opens Daily mode automatically
+  - Complete daily, kill app, relaunch: opens last-played mode
+  - Hard mode toggle mid-game: abandon confirm → game resets
+  - Bottom strip: pre-game tip before first guess
+  - Bottom strip: not overlapping Android nav bar
+  - Settings ? icon: opens HelpModal
+  - Share icon in bottom strip (share-social-outline)
+  - Share icon in end-game overlay
+  - Mode indicator (📅/∞): green tint on active
+  - Dark mode: absent tiles are dark (#3a3a3c)
 
 ## 🔴 IMMEDIATE — Play Store Submission
 
 - [ ] Feature graphic (1024×500px) — design in claude.ai
 - [ ] Screenshots on S24 Ultra (min 2, recommend 6):
-  - Fresh empty board (Wordout mode)
+  - Fresh empty board (Wordout mode, showing pre-game tip)
   - Mid-game with green/yellow tiles
   - Multi-board mode (4-out) mid-game
   - End-of-game overlay (win)
@@ -51,7 +43,19 @@
 
 ---
 
-## ✅ v1.1 — Completed 2026-06-26
+## ✅ v1.1.1 — Completed 2026-06-26
+
+- ✅ Hard mode toggle mid-game: abandon confirm + new game starts immediately
+- ✅ Share button: share-social-outline icon (BottomStrip + end-game overlay)
+- ✅ Settings screen: ? help icon in header opens HelpModal
+- ✅ HelpModal: 💪/🐣 as separate rows; sun icon for light theme; absent tile dark in dark mode
+- ✅ Mode indicator (📅/∞): green tint background when active
+- ✅ Version string on web: omits build number
+- ✅ Bottom strip: paddingBottom = insets.bottom (fixes Android nav bar overlap)
+- ✅ Startup logic: opens Daily if not yet completed today; otherwise restores last-played mode
+- ✅ Pre-game tip in bottom strip: "📅 Daily · ∞ Practice · ? Help" before first guess
+
+## ✅ v1.1.0 — Completed 2026-06-26
 
 - ✅ Header redesign: left [🇺🇸/🇬🇧 💪/🐣 ↺] | center [‹ mode ›] | right [🌙 ⚙ ?]
 - ✅ Tab bar hidden; mode cycling and new game moved to header
@@ -65,13 +69,10 @@
 
 ## 🟢 v1.2 — Nice to Have
 
-- [ ] Daily word mode (deterministic word from date seed)
 - [ ] Haptic feedback on correct/wrong guess
 - [ ] Animate board indicator state transitions
 - [ ] Sequential ✓ flash across boards before end-game overlay (multi-board all-won)
 - [ ] GitHub Actions → Play Store auto-publish pipeline
-- [ ] Version number shown in Settings (bottom, muted text)
-- [ ] Word feedback link in help modal (GitHub issues)
 - [ ] End-game overlay delay dynamic based on guess count (currently fixed at 4200ms win / 3200ms lose — feels long on 1-guess wins)
 
 ---
@@ -88,26 +89,18 @@
 - ✅ App icon: parchment bg, RAISE/CLOUT easter egg
 - ✅ splash/adaptive-icon background #FFF8EE
 - ✅ GitHub Actions build pipeline
-- ✅ ‹ N › mode switcher in bottom tab bar
 - ✅ Abandon guard (New Game, mode switch, language switch)
 - ✅ Privacy policy at GitHub Pages
 - ✅ Play Store listing text (name, short desc, full desc)
 - ✅ Google Play Console account + identity verified
 - ✅ Package com.dilippanicker.wordout registered
 - ✅ 2026-06-25 v1.0.1: Remove green border from solved boards
-- ✅ 2026-06-25 v1.0.1: Win overlay (dim + ✓ + wave animation)
-- ✅ 2026-06-25 v1.0.1: Lose overlay (shake + red flash + dim + ✗ + answer word)
-- ✅ 2026-06-25 v1.0.1: End-of-game full screen overlay
-- ✅ 2026-06-25 v1.0.2: Fix "Quadout" → "4-out" in Settings
-- ✅ 2026-06-25 v1.0.2: Add INBOX, ADMIN, DEBUG to EN-US and EN-GB wordlists
-- ✅ 2026-06-25 Version bumping protocol added to CLAUDE.md
-- ✅ 2026-06-26 v1.0.3: Reject duplicate guesses ("Already guessed" toast + shake)
-- ✅ 2026-06-26 v1.0.3: Production AAB built alongside APK in GitHub Actions
-- ✅ 2026-06-26 v1.0.3: Versioned GitHub Releases (tag from app.json, notes from CHANGELOG.md)
-- ✅ 2026-06-26 v1.0.4: Tile flip slowed (300ms → 400ms), stagger 150ms → 180ms
-- ✅ 2026-06-26 v1.0.4: Win wave stagger 50ms → 80ms, overlay delay dynamic based on guess count
-- ✅ 2026-06-26 v1.0.4: Extrapolation.CLAMP on FlipTile — fixes web black flash
-- ✅ 2026-06-26 v1.0.4: Lose/end-game overlay timing improved
+- ✅ 2026-06-25 v1.0.1: Win/lose overlays + end-of-game full screen overlay
+- ✅ 2026-06-25 v1.0.2: Fix "Quadout" → "4-out" in Settings + wordlist additions
+- ✅ 2026-06-26 v1.0.3: Reject duplicate guesses; versioned GitHub Releases
+- ✅ 2026-06-26 v1.0.4: Tile flip timing, wave animation, FlipTile CLAMP fix
+- ✅ 2026-06-26 v1.1.0: Daily mode, BottomStrip, StatsModal, header redesign
+- ✅ 2026-06-26 v1.1.1: Bug fix round 1+2, startup logic, safe area, pre-game tip
 
 ---
 

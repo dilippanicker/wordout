@@ -6,6 +6,23 @@ All notable changes to Wordout are documented here.
 
 ---
 
+## [1.1.1] — 2026-06-26
+### Fixed
+- Hard mode toggle mid-game: after abandoning, now starts a new game immediately
+- Share button in bottom strip and end-game overlay uses share-social-outline icon
+- Settings screen: added ? help icon to header
+- HelpModal icons section: 💪/🐣 split into separate rows; sun icon for light theme; bottom strip icons shown in green (active state); absent tile is dark (#3a3a3c) in dark mode
+- Mode indicator icons (📅/∞) now show green tint background when active
+- Version string on web omits build number (was showing "build ---")
+- Bottom strip overlapping Android system nav bar — added bottom safe area inset
+- Startup mode: app opens Daily mode if daily not yet completed today; otherwise restores last-played board mode
+
+### Added
+- Pre-game tip in bottom strip before first guess: "📅 Daily · ∞ Practice · ? Help"
+- First-ever launch defaults to Daily Wordout
+
+---
+
 ## [1.1.0] — 2026-06-26
 ### Added
 - Daily Word mode: date-seeded word (epoch 2026-01-01), one word per day per language, persisted state, separate daily stats

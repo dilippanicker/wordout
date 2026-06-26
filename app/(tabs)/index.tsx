@@ -199,7 +199,7 @@ export default function WordleScreen() {
   const HEADER_H = 50;
   const MSG_H = 44;
   const DOTS_H = 36;
-  const TAB_H = 50;   // BottomStrip height
+  const TAB_H = 50 + insets.bottom;   // BottomStrip content + bottom safe area
   const TILE_GAP = 4;
 
   const totalH = screenH - insets.top - insets.bottom - HEADER_H - MSG_H - TAB_H;
@@ -257,6 +257,20 @@ export default function WordleScreen() {
   useEffect(() => {
     const id = setInterval(() => setCountdown(msToHMS(msUntilMidnight())), 1000);
     return () => clearInterval(id);
+  }, []);
+
+  // Startup: open daily if not yet completed today; otherwise keep last-played mode
+  useEffect(() => {
+    useDailyStore.getState().checkAndReset();
+    const { lastPlayedDate, dailyStatus } = useDailyStore.getState();
+    const d = new Date();
+    const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const dailyDoneToday = lastPlayedDate === today && dailyStatus === 'completed';
+    if (!dailyDoneToday) {
+      setGameMode('wordle');
+      setBoardCount(1);
+      useDailyStore.getState().setActiveWordleMode('daily');
+    }
   }, []);
 
   // Check for new day whenever screen gains focus
@@ -497,7 +511,10 @@ export default function WordleScreen() {
           onPress={() => { handleShare(); if (!isDaily) dismissEndGame(); }}
           {...(noFocus as any)}
         >
-          <Text style={styles.shareButtonText}>{copyConfirmed ? 'Copied! ✓' : 'Share ↗'}</Text>
+          {copyConfirmed
+            ? <Text style={styles.shareButtonText}>Copied! ✓</Text>
+            : <><Text style={styles.shareButtonText}>Share </Text><Ionicons name="share-social-outline" size={16} color="#fff" /></>
+          }
         </Pressable>
       </Pressable>
     </Animated.View>
@@ -530,7 +547,7 @@ export default function WordleScreen() {
               const isActive   = activeBoard === i;
               const greenCount = solved ? 0 : boardCorrectCount(qGuesses, i);
               const hasYellow  = solved ? false : boardHasYellow(qGuesses, i);
-              const squareColor = darkTheme ? '#ffffff' : '#878a8c';
+              const squareColor = '#5BA75A';
               const strokeColor = solved || (!hasYellow && greenCount > 0) ? '#6aaa64'
                 : hasYellow ? '#c9b458' : '#878a8c';
               const fillColor = solved ? '#6aaa64'
@@ -674,18 +691,15 @@ export default function WordleScreen() {
           }}
           accessibilityLabel="Daily mode"
         >
-          <View style={[styles.modeIconSquare, { borderColor: isDaily ? '#5BA75A' : '#878a8c' }]}>
+          <View style={[styles.modeIconSquare, {
+            borderColor: isDaily ? '#5BA75A' : '#878a8c',
+            backgroundColor: isDaily ? 'rgba(91,167,90,0.15)' : 'transparent',
+          }]}>
             <Ionicons name="calendar-outline" size={13} color={isDaily ? '#5BA75A' : '#878a8c'} />
           </View>
         </Pressable>
 
-        <View style={styles.modeIconCenter}>
-          <View style={styles.indicatorWrap}>
-            <View style={[styles.indicatorSquare, { borderColor: '#5BA75A' }]}>
-              <Ionicons name="play" size={10} color="#5BA75A" />
-            </View>
-          </View>
-        </View>
+        <View style={styles.modeIconCenter} />
 
         <Pressable
           {...(noFocus as any)}
@@ -693,10 +707,14 @@ export default function WordleScreen() {
           onPress={() => {
             if (!isDaily) return;
             dailyStore.setActiveWordleMode('practice');
+            useGameStore.getState().newGame();
           }}
           accessibilityLabel="Practice mode"
         >
-          <View style={[styles.modeIconSquare, { borderColor: isDaily ? '#878a8c' : '#5BA75A' }]}>
+          <View style={[styles.modeIconSquare, {
+            borderColor: isDaily ? '#878a8c' : '#5BA75A',
+            backgroundColor: isDaily ? 'transparent' : 'rgba(91,167,90,0.15)',
+          }]}>
             <Ionicons name="infinite-outline" size={13} color={isDaily ? '#878a8c' : '#5BA75A'} />
           </View>
         </Pressable>
@@ -736,6 +754,7 @@ export default function WordleScreen() {
         justSolvedInfo={null}
         practiceStats={practiceStats}
         dailyStats={dailyStats}
+        shareConfirmed={copyConfirmed}
         onShare={handleShare}
         onOpenStats={() => setStatsModalVisible(true)}
         textColor={colors.text as string}
@@ -793,7 +812,19 @@ function renderHeader({
           {...(noFocus as any)}
           hitSlop={12}
           accessibilityLabel={hardMode ? 'Hard mode on — tap to disable' : 'Hard mode off — tap to enable'}
-          onPress={() => setHardMode(!hardMode)}
+          onPress={() => {
+            const newValue = !hardMode;
+            if (isGameInProgress()) {
+              confirmAbandon(() => {
+                setHardMode(newValue);
+                const { boardCount } = useSettingsStore.getState();
+                if (boardCount > 1) useQuordleStore.getState().newGame();
+                else useGameStore.getState().newGame();
+              });
+            } else {
+              setHardMode(newValue);
+            }
+          }}
         >
           <Text style={styles.flagEmoji}>{hardMode ? '💪' : '🐣'}</Text>
         </Pressable>

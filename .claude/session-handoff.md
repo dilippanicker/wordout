@@ -1,132 +1,107 @@
 # Session Handoff
 
 **Last updated:** 2026-06-26
-**Session:** v1.1 — Daily Word mode, header redesign, BottomStrip, StatsModal
+**Session:** v1.1.1 — Bug fixes (Round 1 + Round 2) + startup logic + safe area + pre-game tip
 **Model:** claude-sonnet-4-6
-**Status:** v1.1 code committed (9bc76da). Version bump to v1.1.0 (versionCode 6) proposed but NOT YET applied — awaiting user confirmation before updating app.json.
+**Status:** v1.1.1 committed? NO — changes applied, CHANGELOG + app.json updated, but NOT yet committed or pushed.
 
 ---
 
 ## What was done this session
 
-### New files
+### Round 1 fixes (completion of prior session's pending work)
 
-**`store/dailyStore.ts`**:
-- Persisted to `wordout-daily` via AsyncStorage
-- Date-seeded daily word: `getDailyIndex() = floor((Date.now() - DAILY_EPOCH) / 86400000)`, epoch = 2026-01-01
-- `getDailyAnswer(language)` → `ANSWERS[language][dailyIndex % length]`
-- State: `lastPlayedDate`, `dailyStatus` ('available'|'playing'|'completed'), `dailyGuesses`, `currentGuess`, `dailyAnswer`, `dailySolved`, `dailyHardMode`, `toast`, `stats: BoardStats`, `activeWordleMode: 'daily'|'practice'`
-- `checkAndReset()` — resets to 'available' if `lastPlayedDate !== today`
-- `startOrResumeDaily()` — no-op if status !== 'available'; picks word, sets playing
-- Full game logic: `addLetter`, `removeLetter`, `submitGuess` (evaluateGuess + checkHardModeConstraints duplicated from gameStore — intentional, per "don't touch gameStore schema" rule)
-- `resetDailyForToday()` — restart same-day daily (same word) with current hardMode setting
-- `resetDailyStats()` — clear daily BoardStats
+**`app/(tabs)/index.tsx`**:
+- Hide ▶ indicator in single-board modeIconRow: replaced `modeIconCenter` content with empty `<View style={styles.modeIconCenter} />`
+- ∞ tap after completing daily → also calls `useGameStore.getState().newGame()` to start fresh practice
+- Hard mode toggle mid-game: wrapped `setHardMode()` in `confirmAbandon` pattern (same as language toggle)
+- Added `shareConfirmed={copyConfirmed}` to wordle BottomStrip (was missing from the single-board layout)
+- Multi-board active ▶: `squareColor` changed from `darkTheme ? '#ffffff' : '#878a8c'` to always `'#5BA75A'`
+- End-game overlay share button: replaced `<Text>Share ↗</Text>` with `<Ionicons name="share-social-outline" />`
 
-**`components/StatsModal.tsx`**:
-- Modal with close on backdrop tap (inner Pressable uses `onPress={() => {}}` to capture touch)
-- Wordout mode (boardCount=1): Daily | Practice tabs via `activeWordleMode`
-- Multi-board: practice stats only, no tabs
-- Distribution chart, Played/Win%/Streak/Best cells
-- Reset Stats button (confirms in nested Modal, resets both statsStore AND dailyStore.stats)
+**`components/HelpModal.tsx`**:
+- ICONS section: TOP_ICON_ROWS updated to reflect new header icons (💪, ↺, ⚙ now each have their own row)
+- ICONS section: BOTTOM_ICON_ROWS updated for new bottom strip (📅, ∞, 📊, ‹›)
+- 🔥→💪 fix: changed `🐣 🔥` to `💪 🐣` (hard mode emoji consistency)
+- Sub-label changed from "Bottom bar" → "Bottom strip"
+
+### Round 2 fixes (this session's main work)
+
+**`app/(tabs)/index.tsx`**:
+- Hard mode toggle after abandon: now also calls `newGame()` on the active store (boardCount > 1 → quordleStore, else gameStore) so abandoned game is cleared
+- Startup mode logic: `useEffect(fn, [])` on mount — calls `checkAndReset()`, then if daily NOT completed today, switches to Wordout mode + daily active; otherwise keeps persisted settingsStore mode
+- `TAB_H` changed from constant `50` to `50 + insets.bottom` for accurate tile sizing with safe area
+- modeIconRow: active icon now shows green tint `rgba(91,167,90,0.15)` background in addition to green border/icon color
 
 **`components/BottomStrip.tsx`**:
-- Height 50px (= TAB_H), sits at bottom of SafeAreaView
-- State 1 (playing): "Guess N+1 of M [· X solved · Y remaining]" + 📊 icon
-- State 2 (multi-board board just solved, still playing): "Board X solved in N ✓ | 🏆 Best: M" + 📊
-- State 3 (game over practice): stats chips (Played, Win%, ⚡N) + Share button + 📊
-- State 3 (game over daily): stats chips (Played, Win%, 🔥N) + 📊 (no Share button)
-- `shareConfirmed` prop: changes Share button to "Copied ✓" when true
-- `getPersonalBest(stats)` → min guess count with at least 1 win
+- Share button: text "Share" + `share-outline` → `share-social-outline` icon only; "Copied ✓" text when confirmed
+- Added `useSafeAreaInsets` — applies `paddingBottom: bottomInset` to strip container
+- Strip style: `height: 50` → `minHeight: 50` so it expands to accommodate bottom inset
+- Pre-game tip: when `gameStatus === 'playing' && currentGuessNum === 0`, shows "📅 Daily · ∞ Practice · ? Help" instead of guess counter; `tipText` style (fontSize 13, opacity 0.6)
 
-### Modified files
+**`components/HelpModal.tsx`**:
+- 💪/🐣 split into two separate icon rows (were combined on one line)
+- Added sun icon row: `<Ionicons name="sunny-outline" />` for light theme (alongside existing moon for dark)
+- BOTTOM_ICON_ROWS: 📅 and ∞ now shown in green (#5BA75A) as "active state" examples
+- Added `‹ ›` row back to BOTTOM_ICON_ROWS (cycle board modes)
 
-**`app/(tabs)/_layout.tsx`** — gutted to 8 lines:
-- All three tabs hidden via `tabBarStyle: { display: 'none' }`
-- Removed all mode cycling logic (moved to index.tsx)
-- Removed settingsBadge from layout (badge logic gone with stats in settings)
+**`components/Tile.tsx`**:
+- Absent tile color now dark-mode-aware: `dark ? '#3a3a3c' : '#787c7e'` for both borderColor and backgroundColor
 
-**`app/(tabs)/index.tsx`** — major overhaul:
-- New imports: `useRouter`, `useStatsStore`, `useDailyStore`, `getDailyIndex`, `BottomStrip`, `StatsModal`, `BOARD_COUNTS`, `BoardCount`
-- `isQuordle` and `isDaily` derived; all actions (addLetter/removeLetter/submitGuess/toast/clearToast) routed to correct store
-- `activeGameStatus` unified: quordle → quordleStore.gameStatus; daily → derived from dailyStatus; practice → wordleStore.gameStatus
-- `buildDailyShareText()` for daily share format "Wordout Daily #N — solved/failed in X/6"
-- Countdown helpers: `msUntilMidnight()` + `msToHMS()`, updated every 1s via setInterval
-- `dailyStore.checkAndReset()` called in `useFocusEffect` (daily reset on new day)
-- `startOrResumeDaily()` called in effect when `isDaily === true`
-- `justSolvedInfo` tracked via `solvedBoardsKey` dependency (`.join(',')`)
-- Mode cycling functions `cycleTo/cyclePrev/cycleNext` moved from _layout.tsx to here
-- New `handleNewGame`: routes to `resetDailyForToday` (daily), `wordleStore.newGame()` (practice), or `quordleStore.newGame()` (quordle)
-- Header redesign: left [🇺🇸/🇬🇧 💪/🐣 ↺] center [‹ mode ›] right [🌙 ⚙ ?]
-- Hard mode icon changed 🔥 → 💪 (🔥 reserved for daily streak per spec §7)
-- Single-board indicator row (DOTS_H=36): 📅 (left) | ▶ (center, green) | ∞ (right)
-- `wordleAvailH` now subtracts DOTS_H (36px) for single-board tile sizing
-- messageArea is now toast-only (result text and progress text removed)
-- End-game overlay: daily mode doesn't auto-dismiss, shows "Next daily in HH:MM:SS"
-- Daily overlay Share button doesn't dismiss overlay (user keeps seeing countdown)
-- BottomStrip and StatsModal rendered in both quordle and wordle layouts
+**`app/(tabs)/settings.tsx`**:
+- Added `useState`, `Platform` imports; added `HelpModal` import
+- Added `showHelp` state
+- ? help icon added to header (right side, `position: 'absolute', right: 12`) — opens HelpModal
+- Added `headerHelp` style
+- Version string: `Platform.OS === 'android'` check — shows build number on Android, omits on web
 
-**`app/(tabs)/settings.tsx`** — stats section removed:
-- Removed STATISTICS row (totalGames, winPct, streak, max)
-- Removed GUESS DISTRIBUTION chart
-- Removed Reset confirmation Modal
-- Removed `useState`, `useFocusEffect`, `useStatsStore`, `Modal` imports
-- Removed `StatCell`, `DistBar` sub-components and all stats-related styles
-- Game Mode, Word List, Preferences, Version sections unchanged
+**`app.json`**: version `1.1.0` → `1.1.1`, versionCode `6` → `7`
 
-**`utils/abandon.ts`** — daily mode added:
-- `isGameInProgress()` now checks `activeWordleMode === 'daily'` for single-board:
-  - daily → `dailyStatus === 'playing' && dailyGuesses.length > 0`
-  - practice → existing `wordleStore` check
+**`CHANGELOG.md`**: Added `## [1.1.1] — 2026-06-26` entry
 
 ---
 
 ## Decisions and deviations
 
-- **Hard mode emoji 🔥 → 💪**: Spec §7 says 🔥 is daily streak ONLY. Existing header used 🔥 for hard mode, which would conflict. Changed to 💪. HelpModal still uses 🔥 for hard mode (per §8 "don't change help modal"), creating a minor inconsistency, but unavoidable.
-- **Reset Stats resets daily too**: StatsModal reset calls both `resetStats()` (statsStore) and `resetDailyStats()` (dailyStore). Spec didn't say which, but resetting only one while showing both would be confusing.
-- **Daily overlay doesn't auto-dismiss**: Spec shows countdown in the overlay. Auto-dismiss would cut the countdown short. Practice/quordle still auto-dismiss after 3s.
-- **`wordleAvailH` now subtracts DOTS_H**: Added the 36px indicator row to single-board layout. Tile sizing fallback updated to account for this. Measured height (onLayout) handles actual sizing.
-- **`activeWordleMode` in dailyStore (not settingsStore)**: Spec §8 says don't change settingsStore schema. New field goes in the new dailyStore.
-- **evaluateGuess/checkHardModeConstraints duplicated in dailyStore**: Per §8 "don't touch gameStore schema". These are private functions in gameStore.ts — duplicated in dailyStore rather than exported.
-- **settingsBadge removed from _layout**: The badge was tied to stats in settings. Stats moved to StatsModal. Badge logic would need rethinking; removed for now.
+- **Hard mode toggle newGame()**: Calls both conditional branches (boardCount > 1 → quordle, else gameStore). Does NOT reset dailyStore since hard mode lock in daily is intentional (dailyHardMode is set at game start, toggling the global setting doesn't restart the daily).
+- **Startup mode logic**: Uses `useEffect(fn, [])` (runs once on mount after hydration). Reads state after `checkAndReset()` so date comparison is always correct. Race condition with AsyncStorage hydration is acceptable — worst case on hydration lag: app opens daily mode (correct for new day anyway).
+- **Pre-game tip muted**: `opacity: 0.6` to distinguish from active game info; applies to ALL board counts per spec.
+- **TAB_H = 50 + insets.bottom**: Keeps tile sizing correct when bottom strip grows to accommodate nav bar. `insets.bottom` is already subtracted from `totalH`, so this arithmetic is consistent.
+- **HelpModal § 8 restriction**: Overridden by explicit user request in v1.1.1 bug fix spec. All icon/text changes in HelpModal are per spec.
 
 ---
 
 ## Current state
 
-All changes committed at 9bc76da. **Version bump NOT applied yet** — awaiting confirmation.
+All code changes applied. `app.json` bumped to v1.1.1 (versionCode 7). `CHANGELOG.md` updated.
 
-Proposed: **v1.1.0 (versionCode 6)** — minor release (new user-visible features).
+**NOT YET committed or pushed.** Need to commit and trigger GitHub Actions build.
 
 ---
 
-## Exact next step
+## Exact next steps
 
-1. User confirms v1.1.0 (versionCode 6) → update app.json + CHANGELOG.md
-2. Run TypeScript check one more time after version bump: `npx tsc --noEmit`
-3. Test on device / web:
-   - Daily mode: tap 📅, play a game, check countdown overlay, share
-   - Practice mode: tap ∞, verify practice game still works
-   - ‹/› header arrows cycle modes with abandon guard
-   - ↺ header new game button works
-   - ⚙ navigates to settings
-   - 📊 opens StatsModal
-   - BottomStrip shows correct state in all 3 states
-   - Multi-board: State 2 flash on board solve
-4. Trigger GitHub Actions build
+1. `git add app.json CHANGELOG.md app/\(tabs\)/index.tsx app/\(tabs\)/settings.tsx components/BottomStrip.tsx components/HelpModal.tsx components/Tile.tsx`
+2. `git commit -m "fix: v1.1.1 — bug fixes, startup mode, safe area, pre-game tip"`
+3. `git push origin main`
+4. Trigger GitHub Actions build (Actions tab → Run workflow)
+5. Test on device:
+   - First launch: should open Daily mode
+   - After completing daily: should restore last-played mode on next launch
+   - Bottom strip: pre-game tip shows before first guess
+   - Bottom strip: not overlapping nav bar on Android
+   - Hard mode toggle mid-game: shows abandon confirm, then starts fresh
+   - Settings ? opens HelpModal
+   - Share icon shows in bottom strip and end-game overlay
 
 ---
 
 ## Gotchas for next session
 
-- **`FLIP_DONE_MS = 1170ms`**, **`WAVE_STAGGER = 80ms`** — animation constants in GameBoard.tsx (unchanged from v1.0.4)
-- **`countRef` must stay AFTER `const count = ...`** — TDZ fix, don't move
-- **`activeWordleMode` starts as 'practice'** — daily mode only activates on tap/switch
-- **Daily overlay doesn't auto-dismiss** — this is intentional for the countdown
-- **Tab bar is fully hidden** — navigation still works via Expo Router tabs, but UI is driven by index.tsx header and BottomStrip
-- **settingsBadge removed** — the badge dot on settings tab no longer appears. This is a regression from v1.0, acceptable since stats moved out of settings.
-- **`justSolvedInfo` cleared when gameStatus !== 'playing'** — prevents stale State 2 display after game ends
-- **Hard mode lock in daily**: once `dailyStatus === 'playing'`, changing `hardMode` (global setting) doesn't affect the current daily game (it uses `dailyHardMode` stored at game start). Tapping 💪/🐣 during daily just changes the global setting for future games.
-- **Reset Stats in StatsModal** resets BOTH `useStatsStore.byMode` AND `useDailyStore.stats`
+- **Startup mode logic** (`useEffect(fn, [])`) runs AFTER the component mounts. Zustand persist hydration from AsyncStorage is async — if hydration is slow, `lastPlayedDate` might be stale on first render. In practice this is fine (AsyncStorage resolves before useEffect in most cases).
+- **TAB_H = 50 + insets.bottom**: This is now dynamic (not a constant). On web, `insets.bottom = 0` so behaviour is unchanged.
+- **BottomStrip tip**: Shows only when `currentGuessNum === 0` AND `gameStatus === 'playing'`. Resets naturally on new game since guesses array is cleared. No AsyncStorage needed.
+- **Hard mode in daily**: Toggling hard mode during daily still only shows confirm dialog, then toggles the global `hardMode` setting. `dailyHardMode` (stored at game start) is NOT changed — daily game continues with original hard mode. This is correct behaviour.
+- **Pre-game tip for multi-board**: Shows "📅 Daily · ∞ Practice · ? Help" even in quordle mode. Per spec "Applies to all board counts". The 📅/∞ part is slightly misleading in multi-board context but acceptable.
+- **versionCode is 7** (v1.1.1). Next build needs versionCode 8.
 - **EAS free tier** exhausted until July 1, 2026 — use GitHub Actions
-- **versionCode is 5** (v1.0.4). Next build needs versionCode 6.

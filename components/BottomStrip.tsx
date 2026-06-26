@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { BoardStats } from '@/store/statsStore';
 
@@ -32,6 +33,7 @@ export function BottomStrip({
   shareConfirmed, onShare, onOpenStats,
   textColor, backgroundColor, borderColor,
 }: Props) {
+  const { bottom: bottomInset } = useSafeAreaInsets();
   const isGameOver = gameStatus === 'won' || gameStatus === 'lost';
   const stats = (isDaily && !isQuordle) ? dailyStats : practiceStats;
   const streak = stats.currentStreak;
@@ -46,7 +48,17 @@ export function BottomStrip({
 
   let content: ReactNode;
 
-  if (isGameOver) {
+  if (gameStatus === 'playing' && currentGuessNum === 0) {
+    // Pre-game tip — shown before first guess
+    content = (
+      <View style={styles.row}>
+        <Text style={[styles.tipText, { color: textColor }]}>
+          {'📅 Daily  ·  ∞ Practice  ·  ? Help'}
+        </Text>
+        {statsIcon}
+      </View>
+    );
+  } else if (isGameOver) {
     // State 3 — game over
     const winPct = stats.totalGames > 0 ? Math.round((stats.wins / stats.totalGames) * 100) : 0;
     const streakEmoji = isDaily ? '🔥' : '⚡';
@@ -61,8 +73,10 @@ export function BottomStrip({
           </View>
           {!isDaily && (
             <Pressable onPress={onShare} style={styles.shareBtn} hitSlop={8}>
-              <Text style={styles.shareText}>{shareConfirmed ? 'Copied ✓' : 'Share'}</Text>
-              {!shareConfirmed && <Ionicons name="share-outline" size={14} color="#fff" />}
+              {shareConfirmed
+                ? <Text style={styles.shareText}>Copied ✓</Text>
+                : <Ionicons name="share-social-outline" size={18} color="#fff" />
+              }
             </Pressable>
           )}
         </View>
@@ -107,7 +121,7 @@ export function BottomStrip({
   }
 
   return (
-    <View style={[styles.strip, { backgroundColor, borderTopColor: borderColor }]}>
+    <View style={[styles.strip, { backgroundColor, borderTopColor: borderColor, paddingBottom: bottomInset }]}>
       {content}
     </View>
   );
@@ -131,15 +145,21 @@ function getPersonalBest(stats: BoardStats): number | null {
 
 const styles = StyleSheet.create({
   strip: {
-    height: 50,
+    minHeight: 50,
     borderTopWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 16,
+    paddingTop: 0,
     justifyContent: 'center',
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  tipText: {
+    fontSize: 13,
+    flex: 1,
+    opacity: 0.6,
   },
   guessText: {
     fontSize: 14,

@@ -1,4 +1,5 @@
-import { View, Text, Switch, Pressable, StyleSheet, ScrollView } from 'react-native';
+import { useState } from 'react';
+import { View, Text, Switch, Pressable, StyleSheet, ScrollView, Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme, useRouter } from 'expo-router';
@@ -6,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSettingsStore, Language, BOARD_COUNTS, BoardCount } from '@/store/settingsStore';
 import { useGameStore } from '@/store/gameStore';
 import { useQuordleStore } from '@/store/quordleStore';
+import { HelpModal } from '@/components/HelpModal';
 
 export default function SettingsScreen() {
   const { dark, colors } = useTheme();
@@ -19,6 +21,7 @@ export default function SettingsScreen() {
     gameMode, setGameMode,
     boardCount, setBoardCount,
   } = useSettingsStore();
+  const [showHelp, setShowHelp] = useState(false);
 
   const containerBg = dark ? colors.background : '#f6f7f8';
 
@@ -49,6 +52,14 @@ export default function SettingsScreen() {
         <View style={styles.headerTitleWrapper} pointerEvents="none">
           <Text style={[styles.headerTitle, { color: colors.text }]}>Settings</Text>
         </View>
+        <Pressable
+          style={styles.headerHelp}
+          onPress={() => setShowHelp(true)}
+          hitSlop={12}
+          accessibilityLabel="How to play"
+        >
+          <Ionicons name="help-circle-outline" size={22} color="#878a8c" />
+        </Pressable>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 12 }}>
@@ -86,11 +97,15 @@ export default function SettingsScreen() {
 
         {/* ── Version ───────────────────────────────────────────────── */}
         <Text style={styles.versionText}>
-          Wordout v{Constants.expoConfig?.version ?? '—'} (build {Constants.expoConfig?.android?.versionCode ?? '—'})
+          {Platform.OS === 'android'
+            ? `Wordout v${Constants.expoConfig?.version ?? '—'} (build ${Constants.expoConfig?.android?.versionCode ?? '—'})`
+            : `Wordout v${Constants.expoConfig?.version ?? '—'}`
+          }
         </Text>
 
       </ScrollView>
 
+      <HelpModal visible={showHelp} onClose={() => setShowHelp(false)} hardMode={hardMode} />
     </SafeAreaView>
   );
 }
@@ -194,6 +209,13 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     paddingHorizontal: 4,
+  },
+  headerHelp: {
+    position: 'absolute',
+    right: 12,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
   },
   headerTitleWrapper: {
     ...StyleSheet.absoluteFill,

@@ -27,7 +27,7 @@ function tileColors(status: TileStatus, dark: boolean, colorBlind: boolean) {
       return { borderColor: c, backgroundColor: c };
     }
     case 'absent':
-      return { borderColor: '#787c7e', backgroundColor: '#787c7e' };
+      return { borderColor: dark ? '#3a3a3c' : '#787c7e', backgroundColor: dark ? '#3a3a3c' : '#787c7e' };
   }
 }
 

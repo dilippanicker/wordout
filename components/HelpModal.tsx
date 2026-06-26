@@ -102,12 +102,28 @@ const TOP_ICON_ROWS: IconRowDef[] = [
     text: 'Switch between American and British English',
   },
   {
-    renderIcon: () => <Text style={styles.flagPair}>🐣 🔥</Text>,
-    text: 'Easy / hard mode — revealed hints must be used in all future guesses',
+    renderIcon: () => <Text style={styles.flagPair}>🐣</Text>,
+    text: 'Easy mode — no constraints on future guesses',
+  },
+  {
+    renderIcon: () => <Text style={styles.flagPair}>💪</Text>,
+    text: 'Hard mode — revealed hints must be used in all future guesses',
+  },
+  {
+    renderIcon: () => <Ionicons name="refresh-outline" size={18} color="#878a8c" />,
+    text: 'New game — abandon the current game and start fresh',
   },
   {
     renderIcon: () => <Ionicons name="moon-outline" size={18} color="#878a8c" />,
-    text: 'Toggle dark / light theme',
+    text: 'Dark theme',
+  },
+  {
+    renderIcon: () => <Ionicons name="sunny-outline" size={18} color="#878a8c" />,
+    text: 'Light theme',
+  },
+  {
+    renderIcon: () => <Ionicons name="settings-outline" size={18} color="#878a8c" />,
+    text: 'Settings',
   },
   {
     renderIcon: () => <Ionicons name="help-circle-outline" size={18} color="#878a8c" />,
@@ -117,16 +133,20 @@ const TOP_ICON_ROWS: IconRowDef[] = [
 
 const BOTTOM_ICON_ROWS: IconRowDef[] = [
   {
-    renderIcon: () => <Ionicons name="refresh-outline" size={18} color="#878a8c" />,
-    text: 'Start a new game, abandoning the current one',
+    renderIcon: () => <Ionicons name="calendar-outline" size={18} color="#5BA75A" />,
+    text: 'Daily word — one new puzzle per day (green when active)',
+  },
+  {
+    renderIcon: () => <Ionicons name="infinite-outline" size={18} color="#5BA75A" />,
+    text: 'Practice mode — unlimited games (green when active)',
+  },
+  {
+    renderIcon: () => <Ionicons name="bar-chart-outline" size={18} color="#878a8c" />,
+    text: 'Statistics — view scores and guess distribution',
   },
   {
     renderIcon: () => <Text style={styles.arrowPair}>‹ ›</Text>,
     text: 'Cycle through board modes (1, 2, 3, 4, 6, 8 boards)',
-  },
-  {
-    renderIcon: () => <Ionicons name="settings-outline" size={18} color="#878a8c" />,
-    text: 'Settings',
   },
 ];
 
@@ -214,7 +234,7 @@ export function HelpModal({ visible, onClose }: HelpModalProps) {
               </View>
             ))}
 
-            <Text style={[styles.subLabel, { color: colors.text, marginTop: 10 }]}>Bottom bar</Text>
+            <Text style={[styles.subLabel, { color: colors.text, marginTop: 10 }]}>Bottom strip</Text>
             {BOTTOM_ICON_ROWS.map(({ renderIcon, text }, i) => (
               <View key={i} style={styles.iconRow}>
                 <View style={styles.iconCell}>{renderIcon()}</View>

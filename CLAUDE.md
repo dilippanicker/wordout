@@ -73,7 +73,9 @@
 
 ### Abandon guard — `utils/abandon.ts`
 `isGameInProgress()` reads the active store imperatively (`getState()`) — no subscription needed. Checks `activeWordleMode` for single-board: daily → `dailyStatus === 'playing' && dailyGuesses.length > 0`; practice → `gameStore` check; multi-board → `quordleStore` check.  
-`confirmAbandon(onConfirm)` shows `Alert.alert` on Android/iOS, `window.confirm` on web. Called before: ↺ New Game header button, ‹/› mode arrows, language flag toggle.
+`confirmAbandon(onConfirm)` shows `Alert.alert` on Android/iOS, `window.confirm` on web. Called before: ↺ New Game header button, ‹/› mode arrows, language flag toggle, **hard mode toggle (💪/🐣)**.
+
+**Hard mode toggle mid-game**: after abandon confirmed, sets `hardMode` AND calls `newGame()` on the active store (boardCount > 1 → quordleStore; else → gameStore). Does NOT reset dailyStore — daily mode uses `dailyHardMode` locked at game start.
 
 **Key subscription rule**: `gameStore` and `quordleStore` subscriptions call `newGame()` on `language` change only. Board count changes are handled explicitly in `settings.tsx → handleBoardCountSelect`. Mode cycling (‹›) handled in `index.tsx → cycleTo`.
 
@@ -92,20 +94,22 @@
 - Overlay opacities initialised to 1 on mount if board already in end-state (navigation remount safety)
 - **Wordle mode must pass `solved={gameStatus === 'won'}`** — previously missing, was breaking win-row bounce
 
-**`Tile.tsx`** — `margin: 2` around each tile (so each row = `tileSize + 4` px tall). Color blind: correct=🟧, present=🟦.
+**`Tile.tsx`** — `margin: 2` around each tile (so each row = `tileSize + 4` px tall). Color blind: correct=🟧, present=🟦. Absent tile: `dark ? '#3a3a3c' : '#787c7e'` (dark-mode-aware since v1.1.1).
 
 **`FlipTile.tsx`** — flip animation on guess submission, 180ms stagger per column. Each tile flips in 400ms (200ms front collapse + 200ms back reveal). `Extrapolation.CLAMP` on both `interpolate()` calls prevents back face extrapolating to −180° before flip starts (web black flash fix).
 
 **`Keyboard.tsx`** — key height 60px, row gap 8px. Colors reflect best result per letter across all boards in multi-board mode.
 
-**`HelpModal.tsx`** — sections: rules, EXAMPLES (3 tiles), MULTI-BOARD MODE, BOARD INDICATORS (5 rows with rendered indicator shapes), HARD MODE (conditional), ICONS (5 entries). Do NOT change this file (spec §8).
+**`HelpModal.tsx`** — sections: rules, EXAMPLES (3 tiles), MULTI-BOARD MODE, BOARD INDICATORS (5 rows with rendered indicator shapes), HARD MODE (conditional), ICONS. ICONS has two sub-sections "Top bar" and "Bottom strip".
 
-**`BottomStrip.tsx`** — height 50px (= TAB_H), replaces tab bar visually:
-- State 1 playing: "Guess N+1 of M [· X solved · Y remaining]" + 📊
+**`BottomStrip.tsx`** — `minHeight: 50` + `paddingBottom: insets.bottom` (safe area), replaces tab bar visually:
+- State 0 pre-game (playing, 0 guesses): "📅 Daily · ∞ Practice · ? Help" tip text (opacity 0.6)
+- State 1 playing (guesses > 0): "Guess N+1 of M [· X solved · Y remaining]" + 📊
 - State 2 board just solved (quordle only): "Board X solved in N ✓ | 🏆 Best: M" + 📊
-- State 3 game over practice: Played/Win%/⚡N + Share button + 📊
+- State 3 game over practice: Played/Win%/⚡N + share-social-outline icon button + 📊
 - State 3 game over daily: Played/Win%/🔥N + 📊 (no Share — in overlay)
 - 📊 opens StatsModal; ⚡/🔥 green (#5BA75A) when >0, grey (#888780) when 0
+- Uses `useSafeAreaInsets` internally — no inset prop needed from parent
 
 **`StatsModal.tsx`** — Modal, close on backdrop tap or × button:
 - Single-board: Daily|Practice tabs; multi-board: practice only
@@ -129,11 +133,11 @@ const wordleTileSize = Math.max(44, Math.min(88,
 ### Multi-board tile sizing
 ```tsx
 // Fixed heights consumed outside the board scroll area
-const KBD_H = 210;   // 3×60px rows + 2×8px rowGap + 6px paddingBottom
-const HEADER_H = 50; // game header (measured on device)
-const DOTS_H = 36;   // board indicator row
-const MSG_H = 36;    // message / result area
-const TAB_H = 50;    // tab bar (useWindowDimensions returns full screen height)
+const KBD_H = 210;                    // 3×60px rows + 2×8px rowGap + 6px paddingBottom
+const HEADER_H = 50;                  // game header (measured on device)
+const DOTS_H = 36;                    // board indicator row
+const MSG_H = 36;                     // message / result area
+const TAB_H = 50 + insets.bottom;     // BottomStrip content + bottom safe area (dynamic!)
 
 const qAvailH = screenH - insets.top - insets.bottom - HEADER_H - DOTS_H - MSG_H - KBD_H - TAB_H;
 const qTileSize = Math.max(20, Math.min(74,
@@ -150,7 +154,7 @@ Shown above the swipeable boards (hidden for single-board modes). Each indicator
 
 | Shape | State |
 |---|---|
-| Grey square + ▶ | Current board (not solved) |
+| Green square + ▶ | Current board (not solved) — always green (#5BA75A) since v1.1.1 |
 | Grey circle outline | No guesses or all-grey results |
 | Green circle outline + green number | N correct-position letters found, no yellows |
 | Yellow circle outline + theme fill + green number | Yellows also found; number if greens > 0 |
@@ -161,7 +165,7 @@ Solved board always shows ✓ even when it is the active board.
 `boardCorrectCount(qGuesses, boardIndex)` — counts unique column positions marked `'correct'` via a `Set` (range 0–5).  
 `boardHasYellow(qGuesses, boardIndex)` — returns `true` if any result is `'present'`.
 
-Dark mode: square stroke + play icon use `'#ffffff'`; yellow-circle fill uses `colors.background`.
+`squareColor` for active board indicator is always `'#5BA75A'` (was previously theme-dependent).
 
 ### Swipeable multi-board layout
 - `ScrollView` with `pagingEnabled` + `horizontal`; each page `width: screenW`
@@ -205,6 +209,20 @@ Three-layer approach:
 ### Header layout
 Custom 44px header — 3-section flex row: `iconGroupLeft` (flex:1), `headerTitleWrapper` (flex:1, centered), `iconGroupRight` (flex:1). Title occupies middle third regardless of icon count.
 
+### Startup mode logic (v1.1.1)
+On app mount (`useEffect(fn, [])` in `index.tsx`):
+1. `useDailyStore.getState().checkAndReset()` — ensures daily state is current for today
+2. Read `lastPlayedDate` + `dailyStatus` from store
+3. Compute today as `YYYY-MM-DD` string
+4. If `lastPlayedDate !== today` OR `dailyStatus !== 'completed'` → switch to Wordout mode + daily active
+5. Otherwise → keep whatever `settingsStore` has persisted (last-played boardCount/gameMode)
+
+**First-ever launch**: `lastPlayedDate = ''`, so condition is true → opens Daily mode.
+
+### Settings screen (v1.1.1)
+- Has ? help icon (right side of header, `position: absolute, right: 12`) — uses `showHelp` state
+- Version string: `Platform.OS === 'android'` check — shows `(build N)` on Android only, plain version on web
+
 ### Guess distribution bars
 Use `flex: pct` + `flex: 100-pct` spacer (not `width: '%'`) — percentage widths are unreliable in RN flex containers.
 
@@ -224,7 +242,7 @@ SVG: 5 tiles [W][O][R][D][✓] on dark `#121213` background, rounded square. Exp
 
 ### EAS build
 `eas.json` has `development` (internal APK), `preview` (APK), `production` (AAB) profiles.  
-`app.json`: `android.package: "com.dilippanicker.wordout"`, `android.versionCode: 4` (current — see version bumping protocol before building)  
+`app.json`: `android.package: "com.dilippanicker.wordout"`, `android.versionCode: 7` (current — see version bumping protocol before building)  
 Build commands: `eas build --local --profile preview --output wordout.apk` / `--profile production --output wordout.aab`
 
 ---
@@ -283,7 +301,7 @@ Build commands: `eas build --local --profile preview --output wordout.apk` / `--
 - Never trigger or instruct triggering a build without a confirmed version bump.
 - Update `CHANGELOG.md` with the new version entry as part of the same commit as `app.json`.
 
-**Current version:** `1.1.0` (versionCode 6) — last confirmed bump.  
+**Current version:** `1.1.1` (versionCode 7) — last confirmed bump.  
 Update after each confirmed bump so future sessions start from the right baseline.
 
 ### Build pipeline
@@ -302,7 +320,7 @@ Update after each confirmed bump so future sessions start from the right baselin
   - `https://github.com/dilippanicker/wordout/releases/latest/download/wordout.apk`
   - `https://github.com/dilippanicker/wordout/releases/latest/download/wordout.aab`
 
-**Current version:** `1.0.3` (versionCode 4) — build in progress (run 28189682555).
+**Current version:** `1.1.1` (versionCode 7) — code done, not yet built.
 
 ### Play Store setup
 - App created in Google Play Console under publisher "Onglipo"
