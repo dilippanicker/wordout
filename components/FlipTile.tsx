@@ -6,6 +6,7 @@ import Animated, {
   withTiming,
   withDelay,
   interpolate,
+  Extrapolation,
   Easing,
 } from 'react-native-reanimated';
 import { Tile, TileStatus } from './Tile';
@@ -20,7 +21,7 @@ interface FlipTileProps {
 }
 
 // Each half of the flip (front collapse + back open)
-const HALF_DURATION = 150;
+const HALF_DURATION = 200;
 
 export function FlipTile({ letter, status, delay = 0, size = 60, tileWidth, tileHeight }: FlipTileProps) {
   const progress = useSharedValue(0);
@@ -34,7 +35,7 @@ export function FlipTile({ letter, status, delay = 0, size = 60, tileWidth, tile
 
   // Front face: filled tile that rotates to 90° and disappears at midpoint
   const frontStyle = useAnimatedStyle(() => {
-    const angle = interpolate(progress.value, [0, 0.5], [0, 90]);
+    const angle = interpolate(progress.value, [0, 0.5], [0, 90], Extrapolation.CLAMP);
     return {
       transform: [{ perspective: 1200 }, { rotateY: `${angle}deg` }],
       opacity: progress.value < 0.5 ? 1 : 0,
@@ -43,7 +44,7 @@ export function FlipTile({ letter, status, delay = 0, size = 60, tileWidth, tile
 
   // Back face: coloured tile that arrives from -90° starting at midpoint
   const backStyle = useAnimatedStyle(() => {
-    const angle = interpolate(progress.value, [0.5, 1], [-90, 0]);
+    const angle = interpolate(progress.value, [0.5, 1], [-90, 0], Extrapolation.CLAMP);
     return {
       transform: [{ perspective: 1200 }, { rotateY: `${angle}deg` }],
       opacity: progress.value >= 0.5 ? 1 : 0,

@@ -267,8 +267,9 @@ export default function WordleScreen() {
 
     if (gameStatus !== 'playing' && prev === 'playing') {
       // Show overlay after per-board animations finish.
-      // Won: ~1800ms (after wave + ✓ overlay appear); Lost: ~2500ms (after shake + ✗ overlay appear).
-      const delay = gameStatus === 'won' ? 1800 : 2500;
+      // Won: 4200ms (wave with 80ms stagger + ✓ overlay settle, worst case 6 guesses)
+      // Lost: 3200ms (shake + ✗ overlay fully faded in)
+      const delay = gameStatus === 'won' ? 4200 : 3200;
       endGameTimerRef.current = setTimeout(() => {
         setEndGameVisible(true);
         endGameOpacity.value = withTiming(1, { duration: 300 });

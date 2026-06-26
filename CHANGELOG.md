@@ -4,6 +4,15 @@ All notable changes to Wordout are documented here.
 
 ## [Unreleased]
 
+## [1.0.4] — 2026-06-26
+### Fixed
+- Tile flip animation slowed down (300ms → 400ms per tile) and stagger increased (150ms → 180ms) for a more deliberate, satisfying feel
+- Win wave stagger increased (50ms → 80ms per tile) so the wave completes before the ✓ overlay appears
+- Win overlay now delays dynamically based on guess count — no longer appears while tiles are still bouncing
+- Lose overlay delay increased slightly (190ms → 400ms settle after shake ends)
+- End-of-game full-screen overlay delayed to give per-board ✓/✗ overlays time to settle (win: 1800ms → 4200ms, lose: 2500ms → 3200ms)
+- Extrapolation.CLAMP added to FlipTile interpolations, fixing black flash on web caused by back face extrapolating to −180° before flip starts
+
 ## [1.0.3] — 2026-06-26
 ### Fixed
 - Duplicate guesses now rejected with "Already guessed" toast (both single and multi-board modes)

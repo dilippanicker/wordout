@@ -13,9 +13,11 @@ import { FlipTile } from './FlipTile';
 import { GuessResult, LetterResult } from '@/store/gameStore';
 
 const COLS = 5;
-const STAGGER = 150; // ms between each tile flip
+const STAGGER = 180; // ms between each tile flip
 // Time (ms) after submit until the last tile's flip finishes + small buffer.
-const FLIP_DONE_MS = STAGGER * (COLS - 1) + 350;
+// Last tile starts at STAGGER * (COLS-1) = 720ms, flip takes 400ms → done at 1120ms + 50ms buffer.
+const FLIP_DONE_MS = STAGGER * (COLS - 1) + 450;
+const WAVE_STAGGER = 80; // ms between each tile in the win wave
 
 // Wraps one tile; bounces up-then-spring-back with a per-tile delay.
 function BounceTile({ delay, children }: { delay: number; children: React.ReactNode }) {
@@ -132,8 +134,8 @@ export function GameBoard({
           withDelay(400, withTiming(0, { duration: 500 })),
         ),
       );
-      // Lose overlay fades in once shake finishes.
-      loseOverlayOpacity.value = withDelay(FLIP_DONE_MS + 1100, withTiming(1, { duration: 400 }));
+      // Lose overlay fades in once shake finishes (400ms settle after shake ends).
+      loseOverlayOpacity.value = withDelay(FLIP_DONE_MS + 1300, withTiming(1, { duration: 400 }));
     }
     if (!gameOver && prev) {
       loseOverlayOpacity.value = 0;
@@ -147,7 +149,9 @@ export function GameBoard({
     const prev = prevSolvedRef.current;
     prevSolvedRef.current = solved;
     if (solved && !prev) {
-      winOverlayOpacity.value = withDelay(1500, withTiming(1, { duration: 400 }));
+      // Wait until the last wave tile starts bouncing, then 400ms settle before fade-in.
+      const waveLastTileDelay = FLIP_DONE_MS + (countRef.current * COLS - 1) * WAVE_STAGGER;
+      winOverlayOpacity.value = withDelay(waveLastTileDelay + 400, withTiming(1, { duration: 400 }));
     }
     if (!solved && prev) {
       winOverlayOpacity.value = 0;
@@ -161,6 +165,10 @@ export function GameBoard({
 
   // Normalise to a row count, independent of which API is used.
   const count = words != null ? words.length : (guesses?.length ?? 0);
+
+  // Always-current count ref — lets the solved effect read count without depending on it.
+  const countRef = useRef(0);
+  countRef.current = count;
 
   const [animatingRow, setAnimatingRow] = useState(-1);
   const prevCount = useRef(count);
@@ -204,7 +212,7 @@ export function GameBoard({
       return (
         <View key={row} style={styles.row}>
           {tiles.map((tile, col) => (
-            <BounceTile key={col} delay={FLIP_DONE_MS + (row * COLS + col) * 50}>{tile}</BounceTile>
+            <BounceTile key={col} delay={FLIP_DONE_MS + (row * COLS + col) * WAVE_STAGGER}>{tile}</BounceTile>
           ))}
         </View>
       );
