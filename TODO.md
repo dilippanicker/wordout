@@ -4,6 +4,21 @@
 
 ---
 
+## 🔴 IMMEDIATE — Build & Test v1.1.0
+
+- [ ] Confirm version bump: v1.1.0 (versionCode 6) — pending user confirmation
+- [ ] Push and trigger GitHub Actions build
+- [ ] Test on device:
+  - Daily mode: tap 📅, play a game, check countdown overlay, share
+  - Practice mode: tap ∞, verify game works
+  - ‹/› arrows cycle modes with abandon guard
+  - ↺ new game button works with abandon guard
+  - ⚙ opens settings
+  - 📊 opens StatsModal with correct stats
+  - BottomStrip: State 1 (playing), State 2 (board solved flash), State 3 (game over)
+  - Multi-board State 2 flash on board solve
+  - Daily overlay: stays visible, shows countdown, Share doesn't dismiss
+
 ## 🔴 IMMEDIATE — Build & Test v1.0.4
 
 - [ ] Push to remote and trigger GitHub Actions build (Actions tab → Run workflow)
@@ -36,32 +51,15 @@
 
 ---
 
-## 🟡 v1.1 — Header + Bottom Strip + Stats
+## ✅ v1.1 — Completed 2026-06-26
 
-### Header redesign
-- [ ] Move ↺ New Game to top left cluster: 🇬🇧 🐣 ↺
-- [ ] Replace static title with ‹ 3-out › mode switcher in centre
-- [ ] Move ⚙ Settings to top right cluster: 🌙 ⚙ ?
-- [ ] Remove entire bottom TabBar component
-
-### Bottom strip (replaces tab bar)
-- [ ] State 1 (in game): "Guess 4 of 6" / "Guess 4 of 9 · 1 solved · 3 remaining"
-- [ ] State 2 (board solved flash): "Board 2 solved in 4 ✓  |  🏆 Best: 3" — until next guess
-- [ ] State 3 (game over): "Played: 24  Won: 18  ⚡5  Share ↗"
-- [ ] ⚡ green (#5BA75A) when streak > 0, grey (#888780) when 0
-- [ ] 📊 icon right-aligned on strip in ALL states — opens stats modal on tap
-
-### Stats modal
-- [ ] Full stats for current mode (moved from Settings)
-- [ ] Guess distribution bar chart
-- [ ] Played / Won % / Current streak / Best streak
-- [ ] Close on tap outside or × button
-- [ ] Remove stats section from Settings screen entirely
-
-### Emoji convention (enforce throughout)
-- [ ] 🔥 hard mode only
-- [ ] ⚡ streak (green when >0, grey when 0)
-- [ ] 🏆 personal best only
+- ✅ Header redesign: left [🇺🇸/🇬🇧 💪/🐣 ↺] | center [‹ mode ›] | right [🌙 ⚙ ?]
+- ✅ Tab bar hidden; mode cycling and new game moved to header
+- ✅ BottomStrip: 3 states (playing/board-solved/game-over) + 📊 stats icon
+- ✅ StatsModal: Daily|Practice tabs, distribution chart, reset stats
+- ✅ Stats removed from Settings screen
+- ✅ Daily Word mode with countdown overlay
+- ✅ Emoji convention: 🔥 daily streak, ⚡ practice streak, 🏆 personal best
 
 ---
 

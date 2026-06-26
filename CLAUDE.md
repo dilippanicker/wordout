@@ -57,11 +57,25 @@
 - `emptyBoardStats()` exported for default value
 - `recordResult(won, guessCount, modeKey)`, `clearSettingsBadge`, `resetStats` (clears all modes)
 
-### Abandon guard — `utils/abandon.ts`
-`isGameInProgress()` reads the active store imperatively (`getState()`) — no subscription needed. Returns true when `gameStatus === 'playing' && guesses.length > 0`.  
-`confirmAbandon(onConfirm)` shows `Alert.alert` on Android/iOS, `window.confirm` on web. Called before: New Game tab, ‹ › mode arrows, language flag toggle.
+**`dailyStore.ts`** — persisted (`wordout-daily`), NEW in v1.1:
+- `DAILY_EPOCH = new Date('2026-01-01').getTime()` — Daily #1
+- `getDailyIndex()` → `floor((Date.now() - DAILY_EPOCH) / 86400000)`
+- `getDailyAnswer(language)` → `ANSWERS[language][dailyIndex % length]`
+- `lastPlayedDate: string`, `dailyStatus: 'available'|'playing'|'completed'`
+- `dailyGuesses: GuessResult[]`, `dailyAnswer: string`, `dailySolved: boolean`, `dailyHardMode: boolean`
+- `activeWordleMode: 'daily'|'practice'` — controls single-board sub-mode
+- `stats: BoardStats` — daily-specific stats (separate from practice stats in statsStore)
+- `checkAndReset()` — resets to 'available' if lastPlayedDate !== today; call on focus
+- `startOrResumeDaily()` — no-op if status !== 'available'; sets playing with today's word
+- `resetDailyForToday()` — restart same-day (same word) with current hardMode setting
+- `resetDailyStats()` — clear daily stats only (called alongside statsStore.resetStats)
+- evaluateGuess + checkHardModeConstraints duplicated here (intentional — can't touch gameStore schema)
 
-**Key subscription rule**: `gameStore` and `quordleStore` subscriptions call `newGame()` on `language` change only. Board count changes are handled explicitly in `settings.tsx → handleBoardCountSelect`.
+### Abandon guard — `utils/abandon.ts`
+`isGameInProgress()` reads the active store imperatively (`getState()`) — no subscription needed. Checks `activeWordleMode` for single-board: daily → `dailyStatus === 'playing' && dailyGuesses.length > 0`; practice → `gameStore` check; multi-board → `quordleStore` check.  
+`confirmAbandon(onConfirm)` shows `Alert.alert` on Android/iOS, `window.confirm` on web. Called before: ↺ New Game header button, ‹/› mode arrows, language flag toggle.
+
+**Key subscription rule**: `gameStore` and `quordleStore` subscriptions call `newGame()` on `language` change only. Board count changes are handled explicitly in `settings.tsx → handleBoardCountSelect`. Mode cycling (‹›) handled in `index.tsx → cycleTo`.
 
 ### Components — `components/`
 
@@ -84,19 +98,32 @@
 
 **`Keyboard.tsx`** — key height 60px, row gap 8px. Colors reflect best result per letter across all boards in multi-board mode.
 
-**`HelpModal.tsx`** — sections: rules, EXAMPLES (3 tiles), MULTI-BOARD MODE, BOARD INDICATORS (5 rows with rendered indicator shapes), HARD MODE (conditional), ICONS (5 entries).
+**`HelpModal.tsx`** — sections: rules, EXAMPLES (3 tiles), MULTI-BOARD MODE, BOARD INDICATORS (5 rows with rendered indicator shapes), HARD MODE (conditional), ICONS (5 entries). Do NOT change this file (spec §8).
+
+**`BottomStrip.tsx`** — height 50px (= TAB_H), replaces tab bar visually:
+- State 1 playing: "Guess N+1 of M [· X solved · Y remaining]" + 📊
+- State 2 board just solved (quordle only): "Board X solved in N ✓ | 🏆 Best: M" + 📊
+- State 3 game over practice: Played/Win%/⚡N + Share button + 📊
+- State 3 game over daily: Played/Win%/🔥N + 📊 (no Share — in overlay)
+- 📊 opens StatsModal; ⚡/🔥 green (#5BA75A) when >0, grey (#888780) when 0
+
+**`StatsModal.tsx`** — Modal, close on backdrop tap or × button:
+- Single-board: Daily|Practice tabs; multi-board: practice only
+- Distribution chart; Reset Stats clears both statsStore AND dailyStore.stats
 
 ---
 
 ## Key implementation details
 
 ### Wordout tile sizing (dynamic)
-Single-board layout has no dot row, so DOTS_H is not subtracted.
+Single-board layout now HAS a 36px DOTS_H row (📅 ▶ ∞ indicator row), so DOTS_H IS subtracted.
 ```tsx
-const wordleAvailH = screenH - insets.top - insets.bottom - HEADER_H - MSG_H - KBD_H - TAB_H;
-const wordleTileSize = Math.max(44, Math.min(74,
-  Math.min(Math.floor(wordleAvailH / 6) - 4, Math.floor((screenW - 16) / 5) - 4)
+// totalH = screenH - insets.top - insets.bottom - HEADER_H - MSG_H - TAB_H
+const wordleAvailH = totalH - KBD_H - DOTS_H;
+const wordleTileSize = Math.max(44, Math.min(88,
+  Math.min(Math.floor(wordleMeasuredH / 6) - 4, Math.floor((screenW - 16) / 5) - 4)
 ));
+// wordleMeasuredH comes from onLayout on boardArea; falls back to wordleAvailH before first layout
 ```
 
 ### Multi-board tile sizing
@@ -256,8 +283,9 @@ Build commands: `eas build --local --profile preview --output wordout.apk` / `--
 - Never trigger or instruct triggering a build without a confirmed version bump.
 - Update `CHANGELOG.md` with the new version entry as part of the same commit as `app.json`.
 
-**Current version:** `1.0.4` (versionCode 5) — as of last confirmed bump (2026-06-26).  
-Update this line after each confirmed bump so future sessions start from the right baseline.
+**Current version:** `1.0.4` (versionCode 5) — last confirmed bump.  
+**Pending:** `1.1.0` (versionCode 6) proposed, awaiting user confirmation.  
+Update after each confirmed bump so future sessions start from the right baseline.
 
 ### Build pipeline
 **EAS:** Free tier exhausted (15/15 used). Resets July 1, 2026.  

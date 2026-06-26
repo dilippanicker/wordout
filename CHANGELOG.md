@@ -4,6 +4,23 @@ All notable changes to Wordout are documented here.
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-06-26
+### Added
+- Daily Word mode: date-seeded word (epoch 2026-01-01), one word per day per language, persisted state, separate daily stats
+- Daily mode end-of-game overlay: countdown "Next daily in HH:MM:SS" to midnight; does not auto-dismiss
+- Daily share format: "Wordout Daily #N — solved in X/6" + emoji grid
+- 📅/∞ mode icons in single-board indicator row to switch between Daily and Practice sub-modes
+- BottomStrip replaces tab bar: shows guess count (playing), board-solved flash (multi-board), and compact stats + share (game over)
+- StatsModal: opened via 📊 icon; Daily|Practice tabs for Wordout; guess distribution; reset stats (clears both practice and daily)
+
+### Changed
+- Header redesigned: left [🇺🇸/🇬🇧 💪/🐣 ↺], center [‹ mode ›], right [🌙 ⚙ ?]
+- Mode cycling (‹›) and New Game (↺) moved from tab bar to header
+- Tab bar hidden entirely; navigation structure preserved via Expo Router
+- Hard mode icon changed 🔥 → 💪 to free 🔥 for daily streak emoji convention
+- Stats section removed from Settings screen (moved to StatsModal)
+- Emoji convention enforced in new UI: 🔥 daily streak, ⚡ practice streak, 🏆 personal best
+
 ## [1.0.4] — 2026-06-26
 ### Fixed
 - Tile flip animation slowed down (300ms → 400ms per tile) and stagger increased (150ms → 180ms) for a more deliberate, satisfying feel
