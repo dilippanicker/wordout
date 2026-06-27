@@ -6,13 +6,16 @@
 
 ## 🔴 IMMEDIATE — Build & Play Store
 
-- [ ] Test on device (Samsung S24 Ultra) — verify v1.2.2 changes:
+- [ ] Test on device (Samsung S24 Ultra) — verify v1.2.2 + post-test bug fixes:
   - BottomStrip playing: "⏳ N tries left · ? for help"
   - BottomStrip game-over: "N played · M% win · ⚡ S 📊"
-  - Mode icon row shows label "Practice · Easy" / "Today's · Easy" under active icon
+  - Mode icon row label "Today's · Easy" / "Practice · Easy" appears under active icon (not top-left)
+  - Settings mode change → back → board shows correct new mode immediately
+  - Difficulty icon tap after daily completed shows lock toast (does NOT cycle)
+  - Daily win overlay auto-dismisses after 3 seconds
+  - Practice lose overlay shows ? icon and ↺ New Game button
   - Practice overlay shows ↺ New Game button; daily overlay shows countdown only
   - Tapping ↺ New Game on completed daily shows toast (board not reset)
-  - Difficulty change mid-completed-daily shows toast (not alert)
   - Settings footer: no word count pills
   - Help modal: 🔥/⚡ streak entries visible at bottom of icons section
   - Arrow cycling ◄ ► immediately shows new board count game
@@ -37,6 +40,14 @@
 - [ ] Update GitHub Actions workflow to auto-upload to internal track
 
 ---
+
+## ✅ v1.2.2 post-test fixes — Completed 2026-06-28
+
+- ✅ B1 (post-test): "Today's · Easy" label position on Android — always-rendered with opacity toggle
+- ✅ B2 (post-test): Board doesn't refresh on Settings mode change — added newGame() call
+- ✅ B3 (post-test): Difficulty icon cycles on completed daily — added lock in handleDifficultyToggle
+- ✅ B4 (post-test): Daily win overlay auto-dismiss not firing — removed isDailyRef guard
+- ✅ B5 (post-test): Lose overlay missing ↺ New Game and ? icons — restructured overlay layout
 
 ## ✅ v1.2.2 — Completed 2026-06-28
 

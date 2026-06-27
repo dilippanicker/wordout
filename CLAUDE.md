@@ -107,6 +107,13 @@
 - `suppressOverlay={overlayLocked}` passed to all GameBoards
 - Result: wave → popup → dismiss → per-board ✓/✗ overlay
 - "Continue →" button removed in v1.2.2 (was `boardOverlayDismissed` state)
+- **All modes auto-dismiss** after 3s (post-test fix — daily previously stayed until tapped; `isDailyRef` removed)
+
+**End-game overlay structure** (post-test fix for B5): Two-section layout inside `endGamePressable`:
+1. `endGameHelpRow` — full-width `View` with `alignItems: 'flex-end'`; contains `?` help Pressable at right edge
+2. `endGameContent` — `flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14`; contains emoji, message, word, buttons
+`endGamePressable` now uses `flexDirection: 'column'` only (no `justifyContent: 'center'` at top level).
+The `?` button is NO LONGER `position: 'absolute'` — it's a normal flex child. This prevents Android rendering issues where absolute children of an absoluteFill Pressable sometimes don't render.
 
 **B7 — per-board overlay timing via timestamps** (v1.2.2): `GameBoard` uses two refs to track when `solved`/`gameOver` first became true:
 - `solvedTimestampRef = useRef(solved ? 0 : -1)` — 0 = already solved on mount (remount case), -1 = not yet solved
@@ -175,7 +182,7 @@ const qTileSize = Math.max(20, Math.min(74,
 Each tile row is `tileSize + 4` px tall (2px margin each side from Tile style). `useWindowDimensions().height` returns full screen height — TAB_H must be subtracted explicitly because the tab bar is outside the SafeAreaView. Tiles shrink to 20px minimum on small screens or high board counts.
 
 ### Mode indicator row (single-board)
-Row height `WORD_DOTS_H = 44` (was 36). Each mode icon (📅/▶/∞) is wrapped in a `modeIconWithLabel` container. When a mode is active, a `modeLabel` text (9px, green #5BA75A) shows below the icon: "Today's · Easy" (daily) or "Practice · Easy" (practice). Label includes difficulty capitalized. Layout: `modeIconRow` flex row, each icon 30×30 hit target.
+Row height `WORD_DOTS_H = 44` (was 36). Each mode icon (📅/▶/∞) is wrapped in a `modeIconWithLabel` container. A `modeLabel` text (9px, green #5BA75A) sits below each icon: "Today's · Easy" (daily) or "Practice · Easy" (practice). **Both labels always render** — inactive label uses `opacity: 0` rather than conditional rendering. This prevents Android layout recalculation (which caused the label to appear top-left above the board). Both `modeIconWithLabel` containers are always 37px tall (24px icon + 2px gap + 11px label), centering consistently within the 44px row. Label includes difficulty capitalized. Layout: `modeIconRow` flex row, each icon 30×30 hit target.
 
 ### Board progress indicators
 Shown above the swipeable boards (hidden for single-board modes). Each indicator is a 30×30 hit target wrapping a 24×24 shape, 2px stroke.
@@ -208,13 +215,16 @@ Solved board always shows ✓ even when it is the active board.
 ```ts
 function handleBoardCountSelect(n: BoardCount) {
   setBoardCount(n);
-  if (n === 1) setGameMode('wordle');
-  else         setGameMode('quordle');
-  // no router.navigate — stays on Settings screen (v1.2.1)
+  if (n === 1) {
+    setGameMode('wordle');
+  } else {
+    setGameMode('quordle');
+    useQuordleStore.getState().newGame(); // sync board to new count immediately
+  }
 }
 ```
-Game state is preserved across board count changes (no `newGame()` call — added in v1.2.0).
-Navigation away on mode change was removed in v1.2.1 (B2 fix).
+Switching to quordle mode calls `newGame()` to immediately sync the board display (same as arrow-cycling fix). Navigation away on mode change was removed in v1.2.1 (B2 fix).  
+Mode segment active state: `(n === 1 && gameMode === 'wordle') || (n > 1 && gameMode === 'quordle' && boardCount === n)`
 Mode segment active state: `(n === 1 && gameMode === 'wordle') || (n > 1 && gameMode === 'quordle' && boardCount === n)`
 Mode segment label: `n === 1 ? 'Wordout' : \`${n}-out\`` — produces "Wordout / 2-out / 3-out / 4-out / 6-out / 8-out".
 
@@ -226,7 +236,9 @@ Word count pills removed in v1.2.2 (E5). `WORD_COUNT_ANSWERS` / `WORD_COUNT_GUES
 `SafeAreaView edges={['top', 'bottom']}` — both edges required so the custom 44px header doesn't overlap the status bar/notch. The header sits inside the SafeAreaView (not positioned outside it).
 
 ### Difficulty lock for daily (v1.2.2)
-`handleDifficultyChange()` in settings.tsx calls `useDailyStore.getState()` imperatively (not a hook — safe in event handler). If `dailyStatus === 'completed' || (dailyStatus === 'playing' && dailyGuesses.length > 0)`, calls `showDiffLockToast()` (inline toast, 3s auto-dismiss) and returns. Shows "Daily solved! Next word in HH:MM:SS" (or similar). Uses `useRef` + `setTimeout` for auto-dismiss — no `Alert.alert` (broken on RN Web).
+Two places enforce the lock:
+- **Settings screen**: `handleDifficultyChange()` in settings.tsx calls `useDailyStore.getState()` imperatively. If `dailyStatus === 'completed' || (dailyStatus === 'playing' && dailyGuesses.length > 0)`, calls `showDiffLockToast()` (inline toast, 3s auto-dismiss). Uses `useRef` + `setTimeout` — no `Alert.alert` (broken on RN Web).
+- **Header difficulty icon**: `handleDifficultyToggle()` in index.tsx (post-test fix). Same lock check using `useDailyStore.getState()`. If locked, calls `showSystemToast('Daily locked — next word in HH:MM:SS')` and returns. Only applies when `!isQuordle` (quordle has no daily concept). `renderHeader` receives `onDifficultyToggle` prop instead of inlining the logic.
 
 ### Header arrows (v1.2.1)
 ‹ › boxed chevrons replaced with CSS border-trick solid triangles:

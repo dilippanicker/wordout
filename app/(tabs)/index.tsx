@@ -264,9 +264,6 @@ export default function WordleScreen() {
   const systemToastStyle = useAnimatedStyle(() => ({ opacity: systemToastOpacity.value }));
   const scrollRef = useRef<ScrollView>(null);
   const prevSolvedBoardsRef = useRef<boolean[]>([]);
-  const isDailyRef = useRef(isDaily);
-  isDailyRef.current = isDaily;
-
   // Countdown updates every second (only used in daily overlay display)
   useEffect(() => {
     const id = setInterval(() => setCountdown(msToHMS(msUntilMidnight())), 1000);
@@ -361,6 +358,30 @@ export default function WordleScreen() {
     cycleTo(BOARD_COUNTS[(idx + 1) % BOARD_COUNTS.length]);
   }
 
+  function handleDifficultyToggle() {
+    // B3: block difficulty cycle when daily is completed or in-progress
+    if (!isQuordle) {
+      const { dailyStatus, dailyGuesses } = useDailyStore.getState();
+      const dailyLocked = dailyStatus === 'completed' || (dailyStatus === 'playing' && dailyGuesses.length > 0);
+      if (dailyLocked) {
+        showSystemToast(`Daily locked — next word in ${msToHMS(msUntilMidnight())}`);
+        return;
+      }
+    }
+    const idx = DIFFICULTY_CYCLE.indexOf(difficulty);
+    const next = DIFFICULTY_CYCLE[(idx + 1) % DIFFICULTY_CYCLE.length];
+    if (isGameInProgress()) {
+      confirmAbandon(() => {
+        setDifficulty(next);
+        const { boardCount } = useSettingsStore.getState();
+        if (boardCount > 1) useQuordleStore.getState().newGame();
+        else useGameStore.getState().newGame();
+      });
+    } else {
+      setDifficulty(next);
+    }
+  }
+
   function handleNewGame() {
     // B2: completed daily — show toast instead of resetting
     if (isDaily && dailyStore.dailyStatus === 'completed') {
@@ -414,10 +435,7 @@ export default function WordleScreen() {
       endGameTimerRef.current = setTimeout(() => {
         setEndGameVisible(true);
         endGameOpacity.value = withTiming(1, { duration: 300 });
-        // Daily overlay stays until tapped; practice/quordle auto-dismiss after 3s.
-        if (!isDailyRef.current) {
-          endGameTimerRef.current = setTimeout(dismissEndGame, 3000);
-        }
+        endGameTimerRef.current = setTimeout(dismissEndGame, 3000);
       }, delay);
     }
 
@@ -551,48 +569,52 @@ export default function WordleScreen() {
         onPress={dismissEndGame}
         {...(noFocus as any)}
       >
-        <Pressable
-          style={styles.endGameHelpBtn}
-          onPress={(e) => { e.stopPropagation?.(); setShowHelp(true); }}
-          {...(noFocus as any)}
-        >
-          <Ionicons name="help-circle-outline" size={24} color="rgba(255,255,255,0.7)" />
-        </Pressable>
-        <Text style={styles.endGameEmoji}>{endEmoji}</Text>
-        <Text style={styles.endGameMessage}>{endMessage}</Text>
-        {endWordsNode}
-        {endSolveCount ? <Text style={styles.endSolveCount}>{endSolveCount}</Text> : null}
-        {isDaily && (
-          <>
-            <Text style={styles.endCountdownLabel}>Next daily in</Text>
-            <Text style={styles.endCountdownValue}>{countdown}</Text>
-          </>
-        )}
-        <Pressable
-          style={styles.shareButton}
-          onPress={() => { handleShare(); if (!isDaily) dismissEndGame(); }}
-          {...(noFocus as any)}
-        >
-          {copyConfirmed
-            ? <Text style={styles.shareButtonText}>Copied! ✓</Text>
-            : <View style={styles.shareButtonInner}>
-                <Text style={styles.shareButtonText}>Share</Text>
-                <Ionicons name="share-social-outline" size={16} color="#fff" />
-              </View>
-          }
-        </Pressable>
-        {!isDaily && (
+        <View style={styles.endGameHelpRow}>
           <Pressable
-            style={styles.newGameButton}
-            onPress={handleNewGame}
+            style={styles.endGameHelpBtn}
+            onPress={(e) => { e.stopPropagation?.(); setShowHelp(true); }}
             {...(noFocus as any)}
           >
-            <View style={styles.newGameButtonInner}>
-              <Ionicons name="refresh-outline" size={16} color="#fff" />
-              <Text style={styles.newGameButtonText}>New Game</Text>
-            </View>
+            <Ionicons name="help-circle-outline" size={24} color="rgba(255,255,255,0.7)" />
           </Pressable>
-        )}
+        </View>
+        <View style={styles.endGameContent}>
+          <Text style={styles.endGameEmoji}>{endEmoji}</Text>
+          <Text style={styles.endGameMessage}>{endMessage}</Text>
+          {endWordsNode}
+          {endSolveCount ? <Text style={styles.endSolveCount}>{endSolveCount}</Text> : null}
+          {isDaily && (
+            <>
+              <Text style={styles.endCountdownLabel}>Next daily in</Text>
+              <Text style={styles.endCountdownValue}>{countdown}</Text>
+            </>
+          )}
+          <Pressable
+            style={styles.shareButton}
+            onPress={() => { handleShare(); if (!isDaily) dismissEndGame(); }}
+            {...(noFocus as any)}
+          >
+            {copyConfirmed
+              ? <Text style={styles.shareButtonText}>Copied! ✓</Text>
+              : <View style={styles.shareButtonInner}>
+                  <Text style={styles.shareButtonText}>Share</Text>
+                  <Ionicons name="share-social-outline" size={16} color="#fff" />
+                </View>
+            }
+          </Pressable>
+          {!isDaily && (
+            <Pressable
+              style={styles.newGameButton}
+              onPress={handleNewGame}
+              {...(noFocus as any)}
+            >
+              <View style={styles.newGameButtonInner}>
+                <Ionicons name="refresh-outline" size={16} color="#fff" />
+                <Text style={styles.newGameButtonText}>New Game</Text>
+              </View>
+            </Pressable>
+          )}
+        </View>
       </Pressable>
     </Animated.View>
   ) : null;
@@ -616,6 +638,7 @@ export default function WordleScreen() {
           colors, setShowHelp, title: boardCountName(boardCount),
           onNewGame: handleNewGame, onCyclePrev: cyclePrev, onCycleNext: cycleNext,
           onSettings: () => router.navigate('/(tabs)/settings' as never),
+          onDifficultyToggle: handleDifficultyToggle,
         })}
 
         {/* Board progress indicators */}
@@ -759,6 +782,7 @@ export default function WordleScreen() {
         colors, setShowHelp, title: 'Wordout',
         onNewGame: handleNewGame, onCyclePrev: cyclePrev, onCycleNext: cycleNext,
         onSettings: () => router.navigate('/(tabs)/settings' as never),
+        onDifficultyToggle: handleDifficultyToggle,
       })}
 
       {/* Daily 📅 / Practice ∞ row with active-mode label */}
@@ -779,11 +803,9 @@ export default function WordleScreen() {
             }]}>
               <Ionicons name="calendar-outline" size={13} color={isDaily ? '#5BA75A' : '#878a8c'} />
             </View>
-            {isDaily && (
-              <Text style={styles.modeLabel}>
-                {`Today's · ${dailyStore.dailyDifficulty.charAt(0).toUpperCase() + dailyStore.dailyDifficulty.slice(1)}`}
-              </Text>
-            )}
+            <Text style={[styles.modeLabel, { opacity: isDaily ? 1 : 0 }]}>
+              {`Today's · ${dailyStore.dailyDifficulty.charAt(0).toUpperCase() + dailyStore.dailyDifficulty.slice(1)}`}
+            </Text>
           </View>
         </Pressable>
 
@@ -805,11 +827,9 @@ export default function WordleScreen() {
             }]}>
               <Ionicons name="infinite-outline" size={13} color={isDaily ? '#878a8c' : '#5BA75A'} />
             </View>
-            {!isDaily && (
-              <Text style={styles.modeLabel}>
-                {`Practice · ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}`}
-              </Text>
-            )}
+            <Text style={[styles.modeLabel, { opacity: isDaily ? 0 : 1 }]}>
+              {`Practice · ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}`}
+            </Text>
           </View>
         </Pressable>
       </View>
@@ -883,6 +903,7 @@ interface HeaderProps {
   onCyclePrev: () => void;
   onCycleNext: () => void;
   onSettings: () => void;
+  onDifficultyToggle: () => void;
 }
 
 const DIFFICULTY_CYCLE: import('@/store/settingsStore').Difficulty[] = ['easy', 'hard', 'extreme'];
@@ -890,7 +911,7 @@ const DIFFICULTY_EMOJI: Record<string, string> = { easy: '🐣', hard: '💪', e
 
 function renderHeader({
   language, setLanguage, difficulty, setDifficulty, darkTheme, setDarkTheme,
-  colors, setShowHelp, title, onNewGame, onCyclePrev, onCycleNext, onSettings,
+  colors, setShowHelp, title, onNewGame, onCyclePrev, onCycleNext, onSettings, onDifficultyToggle,
 }: HeaderProps) {
   return (
     <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
@@ -913,20 +934,7 @@ function renderHeader({
           {...(noFocus as any)}
           hitSlop={12}
           accessibilityLabel={`Difficulty: ${difficulty} — tap to cycle`}
-          onPress={() => {
-            const idx = DIFFICULTY_CYCLE.indexOf(difficulty);
-            const next = DIFFICULTY_CYCLE[(idx + 1) % DIFFICULTY_CYCLE.length];
-            if (isGameInProgress()) {
-              confirmAbandon(() => {
-                setDifficulty(next);
-                const { boardCount } = useSettingsStore.getState();
-                if (boardCount > 1) useQuordleStore.getState().newGame();
-                else useGameStore.getState().newGame();
-              });
-            } else {
-              setDifficulty(next);
-            }
-          }}
+          onPress={onDifficultyToggle}
         >
           <Text style={styles.flagEmoji}>{DIFFICULTY_EMOJI[difficulty]}</Text>
         </Pressable>
@@ -1164,14 +1172,23 @@ const styles = StyleSheet.create({
   endGamePressable: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.75)',
+    flexDirection: 'column',
+  },
+  endGameContent: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 14,
+    paddingHorizontal: 24,
+    paddingBottom: 24,
+  },
+  endGameHelpRow: {
+    width: '100%',
+    alignItems: 'flex-end',
+    paddingRight: 8,
+    marginBottom: -8,
   },
   endGameHelpBtn: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
     padding: 8,
   },
   endGameEmoji: {

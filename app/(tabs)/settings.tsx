@@ -6,6 +6,7 @@ import { useTheme, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSettingsStore, Language, BOARD_COUNTS, BoardCount, Difficulty, maxGuessesForDifficulty } from '@/store/settingsStore';
 import { useDailyStore } from '@/store/dailyStore';
+import { useQuordleStore } from '@/store/quordleStore';
 import { HelpModal } from '@/components/HelpModal';
 
 export default function SettingsScreen() {
@@ -46,9 +47,12 @@ export default function SettingsScreen() {
 
   function handleBoardCountSelect(n: BoardCount) {
     setBoardCount(n);
-    if (n === 1) setGameMode('wordle');
-    else setGameMode('quordle');
-    // B2: stay on Settings — do not navigate away
+    if (n === 1) {
+      setGameMode('wordle');
+    } else {
+      setGameMode('quordle');
+      useQuordleStore.getState().newGame(); // sync board to new count immediately
+    }
   }
 
   function handleDifficultyChange(d: Difficulty) {

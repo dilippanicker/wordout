@@ -4,81 +4,58 @@
 
 ### Files modified
 
-**`app/(tabs)/index.tsx`** — Many changes:
-- **B1**: Added ↺ New Game button to practice/quordle end-game overlay (`newGameButton` style, `!isDaily` guard)
-- **B2**: `handleNewGame()` now checks `dailyStore.dailyStatus === 'completed'` first; shows `systemToast` "Daily solved! Next word in HH:MM:SS" and returns without resetting
-- **B3**: Added new `useEffect([isQuordle, isDaily])` that clears any showing overlay and syncs `prevGameStatusRef.current = activeGameStatus` on mode change, preventing stale status transitions from re-firing the end-game popup
-- **B6**: Removed `useGameStore.getState().newGame()` from the practice mode icon button (was unintentionally clearing the practice board on every switch from daily → practice)
-- **B10**: `cycleTo()` now calls `useQuordleStore.getState().newGame()` when `n > 1`, so switching board count immediately syncs quordleStore.boardCount with the new mode
-- **E1**: Removed `setTimeout(clearCurrentGuess, 950)` from the toast effect — invalid words stay in the input row after shake
-- **E3**: Added `useStatsStore` + `emptyBoardStats` import; computes `gameStats` object `{ played, winPct, streak, streakEmoji }` for the active mode; passes to both BottomStrip renders
-- **E4**: Added `modeIconWithLabel` container + `modeLabel` text (9px green) inside each mode pressable; only shows under the active icon; `WORD_DOTS_H = 44` for single-board (was 36); `modeIconRow` height → 44
-- Added `systemToast` state + `systemToastOpacity` shared value + second `Animated.View` in messageArea for system-level toasts
-- Added `showSystemToast(msg)` helper function
-- Removed unused `clearCurrentGuess` binding and `modeKey` variable
+**`app/(tabs)/index.tsx`** — 5 bugs fixed:
 
-**`components/BottomStrip.tsx`** — State redesign:
-- Added `GameStats` interface + `gameStats: GameStats` required prop
-- **E2**: State 1 (playing > 0 guesses) changed from "Guess N+1 of M" to "⏳ N tries left · ? for help" (singular "1 try left")
-- **E3**: State 3 (game over) changed from "🎯 Solved in X of N / 🎲 Unlucky" to stats row: "{N} played · {M}% win · {emoji} {streak}"
-- **B8**: Removed `multiInfo` (`${solvedCount} solved · ${remaining} remaining`) from state 1
+- **B1 (label position)**: Changed conditional rendering of "Today's · Easy" / "Practice · Easy" labels to always-rendered with `opacity: 1/0`. Prevents Android layout recalculation that caused the label to appear top-left above the board instead of under its icon. Both `modeIconWithLabel` containers now have consistent height (24px icon + 2px gap + 11px label = 37px) at all times.
 
-**`components/GameBoard.tsx`** — B7 overlay timing:
-- Added `solvedTimestampRef` and `lostTimestampRef` (initialized to 0 if already in that state on mount = remount, -1 if not yet)
-- Added two effects to track when solved/gameOver first becomes true
-- Modified win overlay effect: if `elapsed < waveDuration`, uses `withDelay(waveDuration - elapsed, withTiming(1))` for smooth post-wave appearance; else immediate show (popup dismiss, remount)
-- Modified lose overlay effect: same pattern with `shakeDuration = FLIP_DONE_MS + 7*130 + 300 = ~2380ms`
+- **B3 (difficulty lock)**: Extracted the difficulty toggle handler out of `renderHeader` (where it had no access to daily state) into a new `handleDifficultyToggle()` function in `WordleScreen`. Added daily lock check: if `!isQuordle && (dailyStatus === 'completed' || dailyStatus === 'playing' && dailyGuesses.length > 0)`, shows system toast "Daily locked — next word in HH:MM:SS" and returns. Added `onDifficultyToggle: () => void` to `HeaderProps`; `renderHeader` now calls the prop instead of inline logic.
 
-**`components/HelpModal.tsx`** — B13: Added 🔥/⚡ streak explanation entries to `BOTTOM_ICON_ROWS`
+- **B4 (auto-dismiss)**: Removed `if (!isDailyRef.current)` guard from auto-dismiss timer. All modes (daily, practice, quordle) now auto-dismiss the end-game overlay after 3 seconds. Removed the now-unused `isDailyRef` ref entirely.
 
-**`app/(tabs)/settings.tsx`** — B5, E5:
-- B5: Replaced `Alert.alert` with local `diffLockToast` state + `showDiffLockToast()` helper (3s auto-dismiss). Shows "Daily solved! Next word in HH:MM:SS"
-- E5: Removed word count pills (`pillRow`, `pill`, `pillText`) from footer; removed `WORD_COUNT_ANSWERS/WORD_COUNT_GUESSES` import
-- Added `toastContainer` / `toastPill` / `toastText` styles
-- Changed import: removed `Alert`, added `useRef`
+- **B5 (? and ↺ in lose overlay)**: Restructured end-game overlay. The `?` help button was previously `position: 'absolute'` inside the `endGamePressable` — moved it into a `endGameHelpRow` View (full-width, `alignItems: 'flex-end'`) as a normal flex child. Added `endGameContent` View wrapping the main content (emoji, message, word, buttons) with `flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14`. `endGamePressable` now uses `flexDirection: 'column'` without `justifyContent: 'center'` (the inner `endGameContent` handles centering). This guarantees both `?` and `↺` always render in the flex tree regardless of platform/mode.
 
-**`app.json`** — Bumped `version: "1.2.2"`, `versionCode: 10`
+**`app/(tabs)/settings.tsx`** — B2 fixed:
+
+- **B2 (board refresh on Settings mode change)**: Added `useQuordleStore` import. In `handleBoardCountSelect`, when switching to quordle mode (`n > 1`), now calls `useQuordleStore.getState().newGame()` immediately after `setGameMode('quordle')` — same pattern as the B10 arrow-cycling fix from the previous session. This syncs the board display to the new board count when returning from Settings.
 
 ---
 
 ## Decisions & deviations
 
-- **B3 approach**: Used a separate `useEffect([isQuordle, isDaily])` to sync `prevGameStatusRef` on mode change, rather than tracking mode in the existing effect. This is cleaner and avoids the race condition where status and mode both change in the same render.
-- **B7 approach**: Used `Date.now()` timestamps stored in refs to distinguish "first solve" (add delay) from "popup dismissed" or "remount" (immediate show). `solvedTimestampRef = useRef(solved ? 0 : -1)` — 0 means already solved on mount (immediate show via elapsed=Infinity).
-- **B10**: `cycleTo()` always calls `quordleStore.newGame()` when `n > 1`. This is safe because the abandon guard fires first for in-progress games.
-- **E3 stats**: `gameStats` is now a required prop on BottomStrip. The parent always computes it via `useStatsStore` (or `dailyStore.stats` for daily mode).
-- **E4 height**: `WORD_DOTS_H = 44` replaces `DOTS_H = 36` for single-board tile calculation. Multi-board still uses `DOTS_H = 36`. Mode icon row height changed from 36 → 44 to accommodate the label.
-- **The `[Unreleased]` CHANGELOG section** (RV1-RV4 from last session) merged into v1.2.2 since they share the same version tag.
+- **B4 — Daily auto-dismiss changed from "stays until tapped" to "3s auto-dismiss"**: Original design had daily overlay stay indefinitely. Task spec says "the 5-second auto-dismiss timer is not firing" — but there never was a 5s timer; the task also says "Reduce to 3 seconds while fixing." Decision: remove the `!isDailyRef.current` guard and use the same 3s timer for all modes. Daily users can still tap to dismiss early.
+
+- **B5 — Root cause unclear**: Code analysis couldn't identify why `position: 'absolute'` on the `?` button would fail specifically for practice lose (not win). Chose a structural fix (remove absolute positioning, use flex layout) rather than a targeted patch — this is more reliable across platforms.
+
+- **B3 — `onDifficultyToggle` prop added to `renderHeader`**: The `renderHeader` function couldn't access `showSystemToast` or `isQuordle` in its closure. Added a single prop to pass the handler in. This is a clean pattern vs. threading multiple values through the existing props.
 
 ---
 
 ## Current state
 
-All 9 bugs (B1, B2, B3, B5, B6, B7, B8, B10, B13) and 5 enhancements (E1, E2, E3, E4, E5) are implemented. TypeScript clean. App renders correctly (verified via screenshot). Version is 1.2.2 (versionCode 10).
+All 5 bugs (B1, B2, B3, B4, B5) are implemented. TypeScript compiles cleanly (only pre-existing `new-game.tsx` error remains). No runtime testing done this session — device test still pending.
 
 ---
 
 ## Exact next steps
 
-1. **Device test** on Samsung S24 Ultra — verify this session's changes:
-   - BottomStrip: "⏳ N tries left · ? for help" while playing
-   - BottomStrip: "N played · M% win · ⚡ S 📊" after game ends
-   - Mode icon row shows "Practice · Easy" / "Today's · Easy" label
-   - Practice overlay shows ↺ New Game button; daily overlay shows countdown only
-   - Tapping ↺ New Game on completed daily shows toast (no board reset)
-   - Difficulty change on completed daily shows toast (not alert)
-   - Settings footer: no word count pills
-   - Help modal: 🔥/⚡ streak entries at bottom
-   - Arrow cycling ◄ ► immediately shows new board count game
-   - Practice board persists when switching to daily and back
+1. **Device test** on Samsung S24 Ultra — verify this session's fixes:
+   - "Today's · Easy" label appears directly under 📅 icon (not top-left)
+   - Settings mode change → back → board shows correct new mode
+   - Difficulty icon tap after daily completed shows "Daily locked — next word in HH:MM:SS" toast (does NOT cycle)
+   - Daily win overlay auto-dismisses after 3 seconds
+   - Practice lose overlay shows ? help icon (top-right row) and ↺ New Game button
 2. **Build APK**: `bash build-and-deploy.sh`
 
 ---
 
 ## Gotchas
 
-- **`WORD_DOTS_H = 44` vs `DOTS_H = 36`**: Single-board now uses `WORD_DOTS_H = 44` in tile sizing; multi-board still uses `DOTS_H = 36`. CLAUDE.md updated accordingly.
-- **B3 mode-dismiss on mount**: The `useEffect([isQuordle, isDaily])` runs on initial mount too, which is fine (clears nothing, syncs ref to current status). But if the initial render has a completed game, the overlay doesn't show on mount — correct since `prevGameStatusRef` is initialized to `activeGameStatus` so the status-change effect sees no transition.
-- **B10 + B6 interaction**: `cycleTo(1)` (back to Wordout) does NOT call `wordleStore.newGame()` — practice game stays. `cycleTo(n > 1)` calls `quordleStore.newGame()` — quordle board resets to the new board count. This is the intended behavior.
-- **E1 implication**: After E1, users must manually backspace invalid words. The `clearCurrentGuess` binding was removed from index.tsx since it was only used for auto-clear.
-- **BottomStrip gameStats pre-game**: Even in state 0 (pre-game), `gameStats` is computed but not displayed. First game will show "0 played · 0% win · ⚡ 0" in state 3 after game ends — that's correct since no history yet.
+- **B1 layout with always-rendered labels**: Both mode labels now always take up vertical space (11px + 2px gap). The `modeIconRow` height is 44px; total content is 37px. Inactive label has `opacity: 0` — it takes space but is invisible. On Android, this consistent height prevents the layout jump that caused the label to escape the container.
+
+- **B5 overlay structure change**: `endGamePressable` no longer has `alignItems: 'center'` or `justifyContent: 'center'` at top level — these moved to `endGameContent`. If anything in the overlay seems misaligned, check `endGameContent` flex properties. The `endGameHelpRow` sits above `endGameContent` in the column.
+
+- **B4 daily timer**: `isDailyRef` was removed entirely since it's no longer used. If daily-specific auto-dismiss behaviour is ever needed again, re-introduce this ref.
+
+- **B3 quordle mode**: Difficulty lock check only runs when `!isQuordle` — quordle mode has no daily concept so locking makes no sense there.
+
+- **Settings B2 guard**: `handleBoardCountSelect` now calls `newGame()` whenever switching to quordle. This means switching from 4-out to 6-out in Settings also resets the quordle board. This matches the behaviour of the arrow-cycling fix (which always reset on quordle switch).
