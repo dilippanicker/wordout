@@ -2,7 +2,7 @@
 
 All notable changes to Wordout are documented here.
 
-## [Unreleased] — post-test fixes within v1.2.2
+## [1.2.3] — 2026-06-28
 ### Fixed
 - B1: "Today's · Easy" label on Android now appears under 📅 icon (was top-left above board) — always-rendered with opacity toggle prevents Android layout recalculation
 - B2: Settings mode change now immediately refreshes board on return — calls `newGame()` when switching to quordle (same as arrow-cycling fix)
