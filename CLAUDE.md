@@ -102,7 +102,11 @@
 - Wave animation fires on ALL tiles (left→right, top→bottom, 80ms stagger `WAVE_STAGGER`) when `solved && animatingRow === count - 1`; `animatingRow` guard prevents replay on remount
 - **Wordle mode must pass `solved={gameStatus === 'won'}`** — previously missing, was breaking win-row bounce
 
-**Overlay timing pattern** (v1.2.0): `overlayLocked` in index.tsx starts `true` on game end, becomes `false` when end-game popup is dismissed (320ms after). `suppressOverlay={overlayLocked}` passed to all GameBoards. Result: wave → popup → dismiss → per-board ✓/✗ overlay.
+**Overlay timing pattern** (v1.2.1): Two suppression booleans in index.tsx:
+- `overlayLocked` — true while end-game popup is visible (all boards suppressed together); false 320ms after popup dismissed
+- `boardOverlayDismissed` — true after user presses "Continue →" button; hides ✓/✗ overlays without resetting game; resets to false on new game
+- `suppressOverlay={overlayLocked || boardOverlayDismissed}` passed to all GameBoards
+- Result: wave → popup → dismiss → per-board ✓/✗ overlay → Continue → bare board
 
 **`Tile.tsx`** — `margin: 2` around each tile (so each row = `tileSize + 4` px tall). Color blind: correct=🟧, present=🟦. Absent tile: `dark ? '#3a3a3c' : '#787c7e'` (dark-mode-aware since v1.1.1).
 
@@ -114,8 +118,8 @@
 
 **`BottomStrip.tsx`** — `minHeight: 50` + `paddingBottom: insets.bottom` (safe area), replaces tab bar visually:
 - Props: `difficulty: Difficulty`, `onOpenHelp: () => void` (required since v1.2.0)
-- State 0 pre-game (playing, 0 guesses): tip text (opacity 0.6), tappable → `onOpenHelp()`
-- State 1 playing (guesses > 0): `playingLeft` row with guess count + 💀/💪 badge (when difficulty !== 'easy') + 📊
+- State 0 pre-game (playing, 0 guesses): "? for help" in green (#5BA75A), tappable → `onOpenHelp()`
+- State 1 playing (guesses > 0): "Guess N of M · ? for help" — "? for help" is green and tappable; multi-board solved info inserted before "· ?"; 💀/💪 badge if difficulty !== 'easy'; + 📊
 - State 2 board just solved (quordle only): "Board X solved in N ✓ | 🏆 Best: M" + 📊
 - State 3 game over practice: Played/Win%/⚡N + share-social-outline icon button + 📊
 - State 3 game over daily: Played/Win%/🔥N + 📊 (no Share — in overlay)
@@ -124,6 +128,7 @@
 
 **`StatsModal.tsx`** — Modal, close on backdrop tap or × button:
 - ? help icon at left of header (position absolute, left: 12) — opens HelpModal
+- Header title: "STATISTICS · Wordout" / "STATISTICS · 4-out" etc. (`boardCountName(boardCount)` appended)
 - Single-board: Daily|Practice tabs; multi-board: practice only
 - Distribution chart; Reset Stats clears both statsStore AND dailyStore.stats
 
@@ -194,16 +199,30 @@ function handleBoardCountSelect(n: BoardCount) {
   setBoardCount(n);
   if (n === 1) setGameMode('wordle');
   else         setGameMode('quordle');
-  router.navigate('/(tabs)/' as never);
+  // no router.navigate — stays on Settings screen (v1.2.1)
 }
 ```
 Game state is preserved across board count changes (no `newGame()` call — added in v1.2.0).
+Navigation away on mode change was removed in v1.2.1 (B2 fix).
 Mode segment active state: `(n === 1 && gameMode === 'wordle') || (n > 1 && gameMode === 'quordle' && boardCount === n)`
 Mode segment label: `n === 1 ? 'Wordout' : \`${n}-out\`` — produces "Wordout / 2-out / 3-out / 4-out / 6-out / 8-out".
 
 ### Settings footer (v1.2.0)
-Word count pills (answers + valid words per language), GitHub link, `© 2026 Onglipo Labs · MIT License`, version string (`v1.2.0` on web, `v1.2.0 (build 8)` on Android).
+Word count pills (answers + valid words per language), GitHub link, `© 2026 Onglipo Labs · MIT License`, version string (`v1.2.1` on web, `v1.2.1 (build 9)` on Android).
 `WORD_COUNT_ANSWERS[language]` + `WORD_COUNT_GUESSES[language]` imported from gameStore.
+
+### Settings safe area (v1.2.1)
+`SafeAreaView edges={['top', 'bottom']}` — both edges required so the custom 44px header doesn't overlap the status bar/notch. The header sits inside the SafeAreaView (not positioned outside it).
+
+### Difficulty lock for daily (v1.2.1)
+`handleDifficultyChange()` in settings.tsx calls `useDailyStore.getState()` imperatively (not a hook — safe in event handler). If `dailyStatus === 'playing' && dailyGuesses.length > 0`, shows `Alert.alert('Daily game in progress — difficulty locked')` and returns. Note: `Alert.alert` with one string arg is a no-op on web but the guard still blocks the change.
+
+### Header arrows (v1.2.1)
+‹ › boxed chevrons replaced with CSS border-trick solid triangles:
+- Left: `{ width:0, height:0, borderTopWidth:8, borderBottomWidth:8, borderRightWidth:12, borderTop/BottomColor:'transparent', borderRightColor:'#aaa' }`
+- Right: mirror with `borderLeftWidth:12, borderLeftColor:'#aaa'`
+- Pressable `hitSlop={10}` is essential — Views have 0 width/height
+- No SVG library needed
 
 ### Per-mode stats display
 `modeKey = gameMode === 'wordle' ? 'wordle' : String(boardCount)`  
@@ -318,7 +337,7 @@ Build commands: `eas build --local --profile preview --output wordout.apk` / `--
 - Never trigger or instruct triggering a build without a confirmed version bump.
 - Update `CHANGELOG.md` with the new version entry as part of the same commit as `app.json`.
 
-**Current version:** `1.2.0` (versionCode 8) — last confirmed bump.  
+**Current version:** `1.2.1` (versionCode 9) — code complete, uncommitted.  
 Update after each confirmed bump so future sessions start from the right baseline.
 
 ### Build pipeline
@@ -337,7 +356,7 @@ Update after each confirmed bump so future sessions start from the right baselin
   - `https://github.com/dilippanicker/wordout/releases/latest/download/wordout.apk`
   - `https://github.com/dilippanicker/wordout/releases/latest/download/wordout.aab`
 
-**Current version:** `1.2.0` (versionCode 8) — committed, pushed, build triggered.
+**Current version:** `1.2.1` (versionCode 9) — code complete, uncommitted. Commit + push + trigger build next session.
 
 ### Play Store setup
 - App created in Google Play Console under publisher "Onglipo"
@@ -359,6 +378,7 @@ Update after each confirmed bump so future sessions start from the right baselin
 - Animate board indicator state transitions
 - Haptic feedback on correct/wrong guess
 - End-game overlay delay dynamic based on guess count
+- HelpModal: update HARD MODE section to mention Extreme mode constraints
 
 ---
 

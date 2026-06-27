@@ -1,9 +1,9 @@
 # Session Handoff
 
 **Last updated:** 2026-06-27
-**Session:** v1.2.0 — Extreme mode + 13 fixes
+**Session:** v1.2.1 — 6 bug fixes + 6 enhancements
 **Model:** claude-sonnet-4-6
-**Status:** v1.2.0 committed and pushed. Build triggered via GitHub Actions (manual).
+**Status:** v1.2.1 code complete, uncommitted. TypeScript clean (only pre-existing new-game.tsx error).
 
 ---
 
@@ -11,130 +11,82 @@
 
 ### Files modified
 
-**`store/settingsStore.ts`**:
-- `hardMode: boolean` / `setHardMode` replaced by `difficulty: Difficulty` / `setDifficulty`
-- `Difficulty = 'easy' | 'hard' | 'extreme'` exported
-- `maxGuessesForDifficulty(difficulty, boardCount)` exported — extreme = `max(3, (5+boardCount)−2)`, otherwise boardCount===1 ? 6 : min(13, 5+boardCount)
-- Zustand persist migration: `version: 1`, `migrate()` converts old `hardMode: boolean` → `difficulty`
-
-**`store/gameStore.ts`**:
-- Added `clearCurrentGuess: () => void` action
-- `submitGuess` reads `difficulty` from settings and calls `maxGuessesForDifficulty(difficulty, 1)`
-- Hard mode check: `if (difficulty === 'hard')` (was `if (hardMode)`)
-- Exported `WORD_COUNT_ANSWERS` and `WORD_COUNT_GUESSES` (Record<Language, number>) for settings footer
-
-**`store/quordleStore.ts`**:
-- Added `clearCurrentGuess: () => void` action
-- `initialState` reads `difficulty` from settings and computes `maxGuesses = maxGuessesForDifficulty(difficulty, boardCount)`
-- Hard mode check: `if (difficulty === 'hard')`
-
-**`store/dailyStore.ts`**:
-- Added `dailyDifficulty: Difficulty` field (default `'easy'`) — locked at daily game start
-- Added `clearCurrentGuess: () => void` action
-- `startOrResumeDaily`: sets `dailyHardMode: difficulty === 'hard'`, `dailyDifficulty: difficulty`
-- `submitGuess`: `maxGuesses = maxGuessesForDifficulty(dailyDifficulty, 1)` — uses locked difficulty
-- `resetDailyForToday` similarly uses locked `dailyDifficulty`
-
-**`components/GameBoard.tsx`**:
-- Added `suppressOverlay?: boolean` prop (default false)
-- Overlay opacities always initialize to 0 (was: 1 on mount if already in end-state)
-- Removed `countRef` and old delayed win overlay animation
-- Win overlay effect: `useEffect([solved, suppressOverlay])` — fades in immediately when `solved && !suppressOverlay`
-- Lose overlay effect: `useEffect([gameOver, suppressOverlay])` — fades in when `gameOver && !solved && !suppressOverlay`
-- Shake + red tint effect unchanged (not gated by suppressOverlay)
-
-**`components/BottomStrip.tsx`**:
-- Added `difficulty: Difficulty` prop and `onOpenHelp: () => void` prop
-- Pre-game tip wrapped in `Pressable` calling `onOpenHelp`; icon changed to `help-circle` (solid)
-- State 1: added `diffEmoji` badge (💀 or 💪) when difficulty !== 'easy', inside `playingLeft` wrapper
-- Streak alignment fix: `lineHeight: 18, includeFontPadding: false` on `streakEmoji` and `streakNum`
-- Share button: changed `flex: 1` to `flexShrink: 1` on `guessText`
-
-**`components/StatsModal.tsx`**:
-- Added HelpModal import
-- Added `showHelp` state, `difficulty` from `useSettingsStore()`
-- ? help icon at left of header (position absolute, left: 12)
-- `<HelpModal visible={showHelp} onClose={...} difficulty={difficulty} />` added before reset confirmation
+**`app/(tabs)/settings.tsx`**:
+- B1: `SafeAreaView edges={['top', 'bottom']}` (was `['bottom']`) — fixes status bar overlap
+- B2: Removed `router.navigate('/(tabs)/' as never)` from `handleBoardCountSelect` — user stays on Settings after mode change
+- B3: Added `handleDifficultyChange()` which calls `useDailyStore.getState()` imperatively; if `dailyStatus === 'playing' && dailyGuesses.length > 0`, shows `Alert.alert('Daily game in progress — difficulty locked')` and returns without changing difficulty. DifficultyRow now calls `handleDifficultyChange` instead of `setDifficulty` directly.
+- Imports: added `Alert` from react-native, `useDailyStore` from dailyStore
 
 **`components/HelpModal.tsx`**:
-- `difficulty: Difficulty` prop replaces `hardMode: boolean`
+- B5: Added 💀 Extreme mode row to `TOP_ICON_ROWS` (after 💪 Hard mode row): "Extreme mode — limited guesses, count depends on board count"
+- B6: `IndicatorSquare` — border and play icon colour changed from `#878a8c` to `#5BA75A` (matches actual game indicator)
+- B6: `BOTTOM_ICON_ROWS` — `bar-chart-outline` Ionicons replaced with `📊` emoji (matches actual BottomStrip which uses emoji not icon)
+- B6: `BOTTOM_ICON_ROWS` — arrow pair `‹ ›` text replaced with CSS border-trick triangle pair (matches new E4 header arrows)
+- E5: Feedback prompt text changed from "Missing a word or think a word shouldn't be an answer?" → "Missing or wrong word?"
+- Styles added: `statsEmoji`, `trianglePair`, `triangleLeft`, `triangleRight`; `arrowPair` style removed
 
 **`app/(tabs)/index.tsx`**:
-- `hardMode, setHardMode` → `difficulty, setDifficulty`
-- `overlayLocked` state: true on game end, false when popup dismissed or new game
-- `clearCurrentGuess` composite action routes to active store
-- Toast effect: auto-clears guess after 950ms on 'Not in word list' / 'Already guessed'
-- `dismissEndGame`: `setTimeout(() => { setEndGameVisible(false); setOverlayLocked(false); }, 320)`
-- End-game status effect: `setOverlayLocked(true)` on game end, `setOverlayLocked(false)` on new game
-- GameBoards: `suppressOverlay={overlayLocked}` + `maxGuesses={maxGuessesForDifficulty(difficulty, 1)}`
-- BottomStrips: `difficulty={difficulty}` + `onOpenHelp={() => setShowHelp(true)}`
-- `cycleTo()` no longer calls `newGame()` — game persists on mode switch
-- ‹/› arrows wrapped in `cycleArrowBox` style (22×22, 1.5px border, #878a8c)
-- DIFFICULTY_CYCLE = ['easy','hard','extreme'], DIFFICULTY_EMOJI = {easy:'🐣', hard:'💪', extreme:'💀'}
-- Difficulty header button cycles through DIFFICULTY_CYCLE with abandon guard
-- `BOARD_PAGE_PAD = 12` subtracted from tile height calculation (2-out clipping fix)
-- Share button in overlay: `shareButtonInner` View with text + icon side by side
-- End-game overlay: ? help icon (top right, `endGameHelpBtn`)
-- All HelpModal calls: `difficulty={difficulty}`
+- B4: Quordle layout `renderHeader` title changed from `boardCountName(bc)` (quordleStore.boardCount) to `boardCountName(boardCount)` (settingsStore.boardCount) — title now updates immediately on ‹ › press even without newGame()
+- E1: Added `endSolveCount` variable (string | null) — computed when `activeGameStatus === 'won'` for all three modes (daily, practice, quordle). Shows "Solved in X/N tries {emoji}" below the answer word in end-game overlay. Difficulty emoji (`DIFFICULTY_EMOJI[difficulty]`) used; daily uses `dailyStore.dailyDifficulty`.
+- E2: Added `boardOverlayDismissed: boolean` state (default false). `suppressOverlay` on all GameBoards now `overlayLocked || boardOverlayDismissed`. "Continue →" button (green text) rendered between toast area and Keyboard when `activeGameStatus !== 'playing' && !endGameVisible && !boardOverlayDismissed`. Pressing it sets `boardOverlayDismissed = true`, hiding ✓/✗ overlays. Reset to false when game returns to 'playing' state.
+- E4: `cycleArrowBox` + `cycleArrowText` styles replaced with `triangleLeft` + `triangleRight` CSS border-trick styles. Pressable wrappers now contain `<View style={styles.triangleLeft} />` / `<View style={styles.triangleRight} />`. No external SVG dependency needed. `hitSlop` bumped from 8 to 10 (since 0-size views need more hit area).
+- Styles added: `endSolveCount`, `continueBtnRow`, `continueBtn`, `continueBtnText`, `triangleLeft`, `triangleRight`
+- Styles removed: `cycleArrowBox`, `cycleArrowText`
 
-**`app/(tabs)/settings.tsx`**:
-- `difficulty, setDifficulty` replaces `hardMode, setHardMode`
-- `handleBoardCountSelect`: no longer calls `newGame()` — just sets mode
-- `useQuordleStore` import removed (no longer needed)
-- Difficulty section: `DifficultyRow` component (radio buttons) replaces Hard Mode SwitchRow
-- All SwitchRow calls: `textColor={colors.text as string}` (fixes blue/link color on iOS)
-- Footer section added: word count pills, GitHub link, credits, version string
-- `WORD_COUNT_ANSWERS` / `WORD_COUNT_GUESSES` imported from gameStore
+**`components/BottomStrip.tsx`**:
+- E6 pre-game state: replaced "Tap ? for help and game modes" (with inline Ionicons icon) with just "? for help" in green (#5BA75A). No more `opacity: 0.6`. `tipContent` no longer `flexDirection: 'row'`.
+- E6 playing state: guess text now appends ` · ` + `<Text style={styles.helpLink} onPress={onOpenHelp}>? for help</Text>` inline. Multi-board solved info still shown between guess count and "? for help".
+- Added `helpLink` style: `{ fontSize: 13, fontWeight: '600', color: GREEN }`. Removed `tipText` style.
 
-**`app.json`**: version `1.1.1` → `1.2.0`, versionCode `7` → `8`
-**`CHANGELOG.md`**: `## [1.2.0] — 2026-06-27` entry added
+**`components/StatsModal.tsx`**:
+- E3: Imported `boardCountName` from settingsStore. Title changed from `"STATISTICS"` to `"STATISTICS · {boardCountName(boardCount)}"` — shows "STATISTICS · Wordout", "STATISTICS · 4-out" etc.
+
+**`app.json`**: version `1.2.0` → `1.2.1`, versionCode `8` → `9`
+**`CHANGELOG.md`**: `## [1.2.1] — 2026-06-27` entry added
+**`TODO.md`**: v1.2.1 section added with all 12 items marked ✅
 
 ---
 
 ## Decisions and deviations
 
-- **`suppressOverlay` approach**: Rather than computing exact wave-completion delay, `overlayLocked` in index.tsx is a clean boolean: true when game ends, false when popup dismissed (320ms after tap or auto-dismiss). Each GameBoard's overlay effects respond immediately to the prop change — no timer math in GameBoard itself.
-- **Daily no-reanimate**: Overlay always starts at 0. On remount of a completed daily, `solved=true` and `suppressOverlay=false` (no active game-over timer) → 400ms fade-in. Not truly "instant static" but visually fine and avoids extra complexity.
-- **`dailyDifficulty` locked**: Prevents cheating — switching to Easy mid-daily to get more guesses doesn't work. Practice mode reads `difficulty` dynamically from settingsStore.
-- **Mode switch no longer calls newGame**: Item 6 spec. Game state persists when using ‹›, board count select, or tab cycling. Only explicit "New Game" (↺) and language change reset game.
-- **`BOARD_PAGE_PAD = 12`**: boardPage has `paddingTop: 8, paddingBottom: 4` = 12px not previously subtracted from tile height formula, causing last row clipping in 2-out on web.
+- **B4 title source**: Used `settingsStore.boardCount` for header title in quordle layout, not `quordleStore.boardCount`. This means the header shows the user-selected mode even if the preserved game has a different board count. Consistent with the spirit of "game persists but selected mode updates."
+- **E2 placement**: Continue button placed between messageArea/toast and the keyboard, shown as a green text link. Chosen over BottomStrip integration to avoid cramping State 3 stats. Resets on next new game.
+- **E4 implementation**: Used CSS border-trick triangles instead of react-native-svg (not in project). Dimensions match SVG polygon spec: borderTop/Bottom=8, borderLeft/Right=12. hitSlop=10 compensates for 0-size View.
+- **E6 pre-game**: Removed the `opacity: 0.6` from the pre-game strip (was on `tipContent`). The green text is self-evidently interactive and doesn't need dimming.
+- **B3 alert style**: Used `Alert.alert` (single string arg) — works on Android/iOS. Web: Alert.alert is a no-op on web but the check still blocks the change. Acceptable since daily mode is primarily mobile.
 
 ---
 
 ## Current state
 
-All 14 spec items implemented. TypeScript clean (only pre-existing new-game.tsx error). Committed as `a51dacb`, pushed to origin/main. GitHub Actions build triggered manually — takes ~45 min.
+All 12 items (B1–B6, E1–E6) implemented. TypeScript clean (only pre-existing new-game.tsx error). **Changes are uncommitted.** No device test done yet.
 
 ---
 
 ## Exact next steps
 
-1. **Wait for GitHub Actions build** (~45 min) — download wordout.apk from release v1.2.0
-2. **Test on device** (Samsung S24 Ultra):
-   - Extreme mode: ≤ 3 guesses for 1-board, ≤ 6 for 4-out
-   - ‹ › arrows show as grey squares
-   - Pre-game tip tappable → opens HelpModal
-   - Mode switch (‹›, Settings board count) preserves in-progress game
-   - Invalid word: guess auto-clears after ~950ms
-   - End-game overlay timing: wave → popup → dismiss → per-board ✓/✗
-   - Returning to completed daily: static ✓ (no re-animation)
-   - StatsModal: ? help icon opens HelpModal
-   - Share button alignment in BottomStrip State 3
-   - Streak emoji/number alignment in BottomStrip State 3
-   - Settings footer: word count pills, GitHub link, version
-   - Dark Theme label: plain text (not blue/link)
-3. **Play Store submission** (after device test passes):
-   - Feature graphic (1024×500)
-   - Screenshots
-   - Play Console setup (content rating, data safety)
-   - First manual APK upload
+1. **Commit v1.2.1**: `git add` all 8 changed source files + app.json + CHANGELOG.md + TODO.md, then commit
+2. **Push and trigger build**: push to origin/main, go to GitHub Actions tab → trigger build-apk.yml manually
+3. **Device test on Samsung S24 Ultra** (verify all 12 changes work):
+   - Settings safe area: no status bar overlap
+   - Settings mode change: stays on Settings
+   - Daily difficulty lock: alert shown if daily in progress
+   - Header arrows: solid grey triangles (no box)
+   - Header label updates on ‹ ›
+   - Help screen: 💀 Extreme row visible; indicator square green; 📊 emoji; triangle arrows
+   - Win overlay: "Solved in X/N tries {emoji}" shows below answer
+   - Continue button: appears after end-game popup, hides ✓/✗ on press
+   - Stats modal header: shows mode name
+   - Bottom strip: "? for help" pre-game in green; "Guess N of M · ? for help" playing
+4. **Play Store submission** after device test passes
 
 ---
 
 ## Gotchas for next session
 
-- **`difficulty` persist migration**: settingsStore `version: 1` — existing installs get migrated from `hardMode: boolean` on first load. If migration ever needs revision, bump to `version: 2`.
-- **`dailyDifficulty` in dailyStore**: NOT migrated (new field, defaults to `'easy'`). Users mid-daily from pre-1.2.0 will have `dailyDifficulty = 'easy'` which is safe/correct.
-- **overlay timing on multi-board**: `overlayLocked` = true when ANY board changes from playing to won/lost. The per-board ✓/✗ overlays (via `suppressOverlay`) are all gated together. This means if board 1 wins, overlayLocked=true, and board 2's overlay is also suppressed until popup dismisses. This is intentional and correct.
-- **EAS free tier**: Resets July 1, 2026 (4 days away). Can switch back to `eas build --local` after reset.
-- **versionCode is 8** (v1.2.0). Next build needs versionCode 9.
+- **`boardOverlayDismissed` vs `overlayLocked`**: two separate booleans for two separate suppression concerns. `overlayLocked = true` during end-game popup (all boards suppressed together). `boardOverlayDismissed = true` after user presses Continue (user-initiated permanent hide until next game). Both OR'd into `suppressOverlay`.
+- **B4 quordle title**: quordle layout uses `boardCount` (settingsStore) for the title but `bc` (quordleStore.boardCount) for the actual board rendering. This is intentional — the game preserves old bc for rendered boards; the title reflects the selected mode. If this feels confusing in testing, consider showing the game bc in the title instead.
+- **E4 hitSlop**: CSS triangle Views have `width: 0, height: 0` — the Pressable's `hitSlop={10}` is the only way to make them tappable. Don't reduce this.
+- **EAS free tier**: Resets July 1, 2026 (4 days away). Can use `eas build --local` after reset. GitHub Actions is the current primary build method.
+- **versionCode is 9** (v1.2.1). Next build needs versionCode 10.
+- **package.json / package-lock.json** are modified (likely from npm install during the session). Include in commit if appropriate; they shouldn't contain intentional changes from this session's work.

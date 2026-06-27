@@ -249,8 +249,10 @@ export default function WordleScreen() {
   const [statsModalVisible, setStatsModalVisible] = useState(false);
   const [justSolvedInfo, setJustSolvedInfo] = useState<{ boardNum: number; guessCount: number } | null>(null);
   const [countdown, setCountdown] = useState(() => msToHMS(msUntilMidnight()));
-  // Item 11: per-board overlays suppressed until end-game popup is dismissed
+  // Per-board overlays suppressed until end-game popup is dismissed
   const [overlayLocked, setOverlayLocked] = useState(false);
+  // E2: user can dismiss ✓/✗ board overlays via Continue button
+  const [boardOverlayDismissed, setBoardOverlayDismissed] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   const prevSolvedBoardsRef = useRef<boolean[]>([]);
   const isDailyRef = useRef(isDaily);
@@ -384,6 +386,7 @@ export default function WordleScreen() {
 
     if (activeGameStatus === 'playing') {
       setOverlayLocked(false);
+      setBoardOverlayDismissed(false);
       if (endGameTimerRef.current) { clearTimeout(endGameTimerRef.current); endGameTimerRef.current = null; }
       setEndGameVisible(false);
       endGameOpacity.value = 0;
@@ -398,16 +401,25 @@ export default function WordleScreen() {
   let endEmoji = '';
   let endMessage = '';
   let endWordsNode: React.ReactNode = null;
+  let endSolveCount: string | null = null;
 
   if (activeGameStatus !== 'playing') {
     if (isDaily) {
       endEmoji = activeGameStatus === 'won' ? '🎉' : '😢';
       endMessage = activeGameStatus === 'won' ? 'Solved!' : 'Better luck next time';
       endWordsNode = <Text style={styles.endWordText}>{dailyStore.dailyAnswer}</Text>;
+      if (activeGameStatus === 'won') {
+        const maxG = maxGuessesForDifficulty(dailyStore.dailyDifficulty, 1);
+        endSolveCount = `Solved in ${dailyStore.dailyGuesses.length}/${maxG} tries ${DIFFICULTY_EMOJI[dailyStore.dailyDifficulty]}`;
+      }
     } else if (!isQuordle) {
       endEmoji = activeGameStatus === 'won' ? '🎉' : '😢';
       endMessage = activeGameStatus === 'won' ? 'Solved!' : 'Better luck next time';
       endWordsNode = <Text style={styles.endWordText}>{wordleStore.answer}</Text>;
+      if (activeGameStatus === 'won') {
+        const maxG = maxGuessesForDifficulty(difficulty, 1);
+        endSolveCount = `Solved in ${wordleStore.guesses.length}/${maxG} tries ${DIFFICULTY_EMOJI[difficulty]}`;
+      }
     } else {
       const { answers, solvedBoards, boardCount: bc } = quordleStore;
       const solvedCount = solvedBoards.filter(Boolean).length;
@@ -415,6 +427,7 @@ export default function WordleScreen() {
         endEmoji = '🎉';
         endMessage = bc === 1 ? 'Solved!' : 'You got them all!';
         endWordsNode = <Text style={styles.endWordText}>{answers.join('  ')}</Text>;
+        endSolveCount = `Solved in ${quordleStore.guesses.length}/${quordleStore.maxGuesses} tries ${DIFFICULTY_EMOJI[difficulty]}`;
       } else {
         const isPartial = solvedCount > 0;
         endEmoji = isPartial ? '😅' : '😢';
@@ -520,6 +533,7 @@ export default function WordleScreen() {
         <Text style={styles.endGameEmoji}>{endEmoji}</Text>
         <Text style={styles.endGameMessage}>{endMessage}</Text>
         {endWordsNode}
+        {endSolveCount ? <Text style={styles.endSolveCount}>{endSolveCount}</Text> : null}
         {isDaily && (
           <>
             <Text style={styles.endCountdownLabel}>Next daily in</Text>
@@ -559,7 +573,7 @@ export default function WordleScreen() {
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
         {renderHeader({
           language, setLanguage, difficulty, setDifficulty, darkTheme, setDarkTheme,
-          colors, setShowHelp, title: boardCountName(bc),
+          colors, setShowHelp, title: boardCountName(boardCount),
           onNewGame: handleNewGame, onCyclePrev: cyclePrev, onCycleNext: cycleNext,
           onSettings: () => router.navigate('/(tabs)/settings' as never),
         })}
@@ -643,7 +657,7 @@ export default function WordleScreen() {
                   gameOver={activeGameStatus === 'lost' && !isSolved}
                   answer={quordleStore.answers[i]}
                   shakeKey={shakeKey}
-                  suppressOverlay={overlayLocked}
+                  suppressOverlay={overlayLocked || boardOverlayDismissed}
                 />
               </BoardPage>
             );
@@ -658,6 +672,14 @@ export default function WordleScreen() {
             </View>
           </Animated.View>
         </View>
+
+        {activeGameStatus !== 'playing' && !endGameVisible && !boardOverlayDismissed && (
+          <View style={styles.continueBtnRow}>
+            <Pressable style={styles.continueBtn} onPress={() => setBoardOverlayDismissed(true)} {...(noFocus as any)}>
+              <Text style={styles.continueBtnText}>Continue →</Text>
+            </Pressable>
+          </View>
+        )}
 
         <Keyboard onKey={handleKey} keyStatuses={qKeyStatuses} keyHeight={keyHeight} />
 
@@ -770,6 +792,14 @@ export default function WordleScreen() {
         </Animated.View>
       </View>
 
+      {activeGameStatus !== 'playing' && !endGameVisible && !boardOverlayDismissed && (
+        <View style={styles.continueBtnRow}>
+          <Pressable style={styles.continueBtn} onPress={() => setBoardOverlayDismissed(true)} {...(noFocus as any)}>
+            <Text style={styles.continueBtnText}>Continue →</Text>
+          </Pressable>
+        </View>
+      )}
+
       <Keyboard onKey={handleKey} keyStatuses={keyStatuses} keyHeight={keyHeight} />
 
       <BottomStrip
@@ -873,18 +903,14 @@ function renderHeader({
         </Pressable>
       </View>
 
-      {/* Center: ‹ mode › */}
+      {/* Center: ◀ mode ▶ */}
       <View style={styles.headerTitleWrapper}>
-        <Pressable {...(noFocus as any)} onPress={onCyclePrev} hitSlop={8} style={styles.cycleArrow}>
-          <View style={styles.cycleArrowBox}>
-            <Text style={styles.cycleArrowText}>‹</Text>
-          </View>
+        <Pressable {...(noFocus as any)} onPress={onCyclePrev} hitSlop={10} style={styles.cycleArrow}>
+          <View style={styles.triangleLeft} />
         </Pressable>
         <Text style={[styles.headerTitle, { color: colors.text }]}>{title}</Text>
-        <Pressable {...(noFocus as any)} onPress={onCycleNext} hitSlop={8} style={styles.cycleArrow}>
-          <View style={styles.cycleArrowBox}>
-            <Text style={styles.cycleArrowText}>›</Text>
-          </View>
+        <Pressable {...(noFocus as any)} onPress={onCycleNext} hitSlop={10} style={styles.cycleArrow}>
+          <View style={styles.triangleRight} />
         </Pressable>
       </View>
 
@@ -954,22 +980,29 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   cycleArrow: {
-    paddingHorizontal: 2,
+    paddingHorizontal: 4,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cycleArrowBox: {
-    width: 22,
-    height: 22,
-    borderWidth: 1.5,
-    borderColor: '#878a8c',
-    alignItems: 'center',
-    justifyContent: 'center',
+  triangleLeft: {
+    width: 0,
+    height: 0,
+    borderTopWidth: 8,
+    borderBottomWidth: 8,
+    borderRightWidth: 12,
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+    borderRightColor: '#aaa',
   },
-  cycleArrowText: {
-    fontSize: 18,
-    color: '#878a8c',
-    lineHeight: 22,
+  triangleRight: {
+    width: 0,
+    height: 0,
+    borderTopWidth: 8,
+    borderBottomWidth: 8,
+    borderLeftWidth: 12,
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+    borderLeftColor: '#aaa',
   },
   headerTitle: {
     fontSize: 15,
@@ -1109,6 +1142,12 @@ const styles = StyleSheet.create({
     letterSpacing: 3,
     textAlign: 'center',
   },
+  endSolveCount: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 15,
+    fontWeight: '500',
+    marginTop: -4,
+  },
   endWordRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -1132,6 +1171,19 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
     letterSpacing: 2,
     marginTop: -8,
+  },
+  continueBtnRow: {
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  continueBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+  },
+  continueBtnText: {
+    color: '#5BA75A',
+    fontSize: 14,
+    fontWeight: '600',
   },
   shareButton: {
     marginTop: 4,

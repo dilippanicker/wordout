@@ -52,13 +52,11 @@ export function BottomStrip({
   let content: ReactNode;
 
   if (gameStatus === 'playing' && currentGuessNum === 0) {
-    // Pre-game tip — shown before first guess
+    // Pre-game: show only "? for help" in green
     content = (
       <View style={styles.row}>
         <Pressable style={styles.tipContent} onPress={onOpenHelp} hitSlop={6}>
-          <Text style={[styles.tipText, { color: textColor }]}>{'Tap '}</Text>
-          <Ionicons name="help-circle" size={16} color={textColor} />
-          <Text style={[styles.tipText, { color: textColor }]}>{' for help and game modes'}</Text>
+          <Text style={[styles.helpLink]}>? for help</Text>
         </Pressable>
         {statsIcon}
       </View>
@@ -107,9 +105,10 @@ export function BottomStrip({
       </View>
     );
   } else {
-    // State 1 — playing
+    // State 1 — playing: "Guess N of M · ? for help"
     const remaining = boardCount - solvedCount;
     const diffEmoji = difficulty === 'extreme' ? '💀' : difficulty === 'hard' ? '💪' : null;
+    const multiInfo = isQuordle && solvedCount > 0 ? `  ·  ${solvedCount} solved  ·  ${remaining} remaining` : '';
     content = (
       <View style={styles.row}>
         <View style={styles.playingLeft}>
@@ -118,9 +117,9 @@ export function BottomStrip({
             <Text style={styles.guessNum}>{currentGuessNum + 1}</Text>
             {' of '}
             <Text style={styles.guessNum}>{maxGuesses}</Text>
-            {isQuordle && solvedCount > 0
-              ? `  ·  ${solvedCount} solved  ·  ${remaining} remaining`
-              : null}
+            {multiInfo}
+            {' · '}
+            <Text style={styles.helpLink} onPress={onOpenHelp}>? for help</Text>
           </Text>
           {diffEmoji ? <Text style={styles.diffBadge}>{diffEmoji}</Text> : null}
         </View>
@@ -169,10 +168,11 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    opacity: 0.6,
   },
-  tipText: {
+  helpLink: {
     fontSize: 13,
+    fontWeight: '600',
+    color: GREEN,
   },
   playingLeft: {
     flex: 1,

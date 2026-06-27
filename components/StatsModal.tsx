@@ -4,7 +4,7 @@ import { useTheme } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useStatsStore, emptyBoardStats, BoardStats } from '@/store/statsStore';
 import { useDailyStore } from '@/store/dailyStore';
-import { useSettingsStore } from '@/store/settingsStore';
+import { useSettingsStore, boardCountName } from '@/store/settingsStore';
 import { HelpModal } from './HelpModal';
 
 interface Props {
@@ -37,7 +37,7 @@ export function StatsModal({ visible, onClose }: Props) {
             <Pressable style={styles.helpBtn} onPress={() => setShowHelp(true)} hitSlop={12}>
               <Ionicons name="help-circle-outline" size={20} color="#878a8c" />
             </Pressable>
-            <Text style={[styles.title, { color: colors.text }]}>STATISTICS</Text>
+            <Text style={[styles.title, { color: colors.text }]}>STATISTICS · {boardCountName(boardCount)}</Text>
             <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={12}>
               <Ionicons name="close" size={20} color={colors.text as string} />
             </Pressable>

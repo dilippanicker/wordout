@@ -6,6 +6,29 @@ All notable changes to Wordout are documented here.
 
 ---
 
+## [1.2.1] — 2026-06-27
+### Added
+- Win overlay: "Solved in X/N tries 💪" line below the answer word (correct difficulty emoji shown)
+- Continue button: after end-game popup dismisses, a green "Continue →" link hides the ✓/✗ board overlays
+- Stats modal header now shows current mode: "STATISTICS · Wordout", "STATISTICS · 4-out" etc.
+- Help screen: Extreme mode 💀 entry added to top bar icon list
+
+### Changed
+- Header ‹ › arrows replaced with solid filled triangles (grey #aaa, no box wrapper)
+- Bottom strip: pre-game shows "? for help" in green; playing shows "Guess N of M · ? for help" (green ? for help)
+- Help screen: board indicator square now matches actual colour (green #5BA75A)
+- Help screen: statistics icon updated from bar-chart outline to 📊 emoji (matches actual strip)
+- Help screen: arrow pair updated to solid triangles matching new header arrows
+- Help screen: feedback prompt shortened to "Missing or wrong word?"
+
+### Fixed
+- B1: Settings screen safe area — top edge now accounts for status bar/notch
+- B2: Settings mode change no longer navigates away; user stays on Settings screen
+- B3: Difficulty change blocked while daily game is in progress (alert: "Daily game in progress — difficulty locked")
+- B4: Header mode label now updates immediately when using ‹ › arrows
+
+---
+
 ## [1.2.0] — 2026-06-27
 ### Added
 - Extreme mode (💀): third difficulty level with reduced guesses — `max(3, (5+boardCount)−2)` — shown in BottomStrip State 1

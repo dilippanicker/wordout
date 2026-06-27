@@ -1,25 +1,24 @@
 # Wordout — Master TODO
 **Updated: 2026-06-27**
-**Current version: v1.2.0 (committed, pushed, build triggered)**
+**Current version: v1.2.1 (uncommitted — commit + push + trigger build next)**
 
 ---
 
-## 🔴 IMMEDIATE — Test & Play Store
+## 🔴 IMMEDIATE — Commit, Build & Play Store
 
-- [ ] Wait for GitHub Actions build (~45 min) — v1.2.0 APK at releases/latest
-- [ ] Test on device (Samsung S24 Ultra):
-  - Extreme mode: ≤ 3 guesses for 1-board; ≤ 6 for 4-out; reduced for other counts
-  - ‹ › arrows styled as grey squares
-  - Pre-game tip tappable → opens HelpModal
-  - Mode switch (‹›, Settings board count) preserves in-progress game
-  - Invalid word: guess auto-clears after ~950ms
-  - End-game overlay timing: wave → popup → dismiss → per-board ✓/✗
-  - Returning to completed daily: static ✓ (no re-animation)
-  - StatsModal: ? help icon opens HelpModal
-  - Share button alignment in BottomStrip State 3
-  - Streak emoji/number alignment in BottomStrip State 3
-  - Settings footer: word count pills, GitHub link, version
-  - Dark Theme label: plain text (not blue/link)
+- [ ] Commit v1.2.1 (all 8 changed source files + app.json + CHANGELOG.md + TODO.md)
+- [ ] Push to origin/main → trigger GitHub Actions build manually
+- [ ] Test on device (Samsung S24 Ultra) — verify all v1.2.1 changes:
+  - Settings safe area: no status bar/notch overlap
+  - Settings mode change stays on Settings (no navigation away)
+  - Daily difficulty lock: alert if daily in progress
+  - Header arrows: solid grey triangles, no box wrapper
+  - Header label updates immediately on ‹ › press
+  - Help screen: 💀 Extreme mode row; green indicator square; 📊 emoji; triangle arrows
+  - Win overlay: "Solved in X/N tries {emoji}" below answer word
+  - Continue button: appears after end-game popup, hides ✓/✗ on press
+  - Stats modal header: "STATISTICS · Wordout" / "STATISTICS · 4-out" etc.
+  - Bottom strip: "? for help" in green pre-game; "Guess N of M · ? for help" while playing
 - [ ] Feature graphic (1024×500px) — design in claude.ai
 - [ ] Screenshots on S24 Ultra (min 2, recommend 6):
   - Fresh empty board (Wordout mode, showing pre-game tip)
@@ -39,6 +38,21 @@
 - [ ] Update GitHub Actions workflow to auto-upload to internal track
 
 ---
+
+## ✅ v1.2.1 — Completed 2026-06-27
+
+- ✅ B1: Settings safe area top inset (status bar / notch)
+- ✅ B2: Settings mode change stays on Settings (no navigation)
+- ✅ B3: Difficulty lock when daily game in progress (alert shown)
+- ✅ B4: Header mode label updates on ‹ › arrow press
+- ✅ B5: Help screen: Extreme mode 💀 entry added
+- ✅ B6: Help screen icons match actual colours (green indicator square, 📊 emoji, solid triangles)
+- ✅ E1: Win overlay shows "Solved in X/N tries {emoji}"
+- ✅ E2: Continue button hides ✓/✗ board overlays after end-game popup
+- ✅ E3: Stats modal header shows mode name ("STATISTICS · Wordout" etc.)
+- ✅ E4: Header ‹ › replaced with solid filled triangles (grey #aaa)
+- ✅ E5: Help screen feedback prompt shortened to "Missing or wrong word?"
+- ✅ E6: Bottom strip: single combined line "Guess N of M · ? for help" (green)
 
 ## ✅ v1.2.0 — Completed 2026-06-27
 

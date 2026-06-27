@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { View, Text, Switch, Pressable, StyleSheet, ScrollView, Platform, Linking } from 'react-native';
+import { View, Text, Switch, Pressable, StyleSheet, ScrollView, Platform, Linking, Alert } from 'react-native';
 import Constants from 'expo-constants';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSettingsStore, Language, BOARD_COUNTS, BoardCount, Difficulty, maxGuessesForDifficulty } from '@/store/settingsStore';
 import { WORD_COUNT_ANSWERS, WORD_COUNT_GUESSES } from '@/store/gameStore';
+import { useDailyStore } from '@/store/dailyStore';
 import { HelpModal } from '@/components/HelpModal';
 
 export default function SettingsScreen() {
@@ -28,11 +29,20 @@ export default function SettingsScreen() {
     setBoardCount(n);
     if (n === 1) setGameMode('wordle');
     else setGameMode('quordle');
-    router.navigate('/(tabs)/' as never);
+    // B2: stay on Settings — do not navigate away
+  }
+
+  function handleDifficultyChange(d: Difficulty) {
+    const { dailyStatus, dailyGuesses } = useDailyStore.getState();
+    if (dailyStatus === 'playing' && dailyGuesses.length > 0) {
+      Alert.alert('Daily game in progress — difficulty locked');
+      return;
+    }
+    setDifficulty(d);
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: containerBg }]} edges={['bottom']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: containerBg }]} edges={['top', 'bottom']}>
       {/* Settings navigation header */}
       <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <Pressable
@@ -83,7 +93,7 @@ export default function SettingsScreen() {
         {/* ── Difficulty ────────────────────────────────────────────── */}
         <Text style={styles.sectionHeader}>DIFFICULTY</Text>
         <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <DifficultyRow value={difficulty} onChange={setDifficulty} boardCount={boardCount} />
+          <DifficultyRow value={difficulty} onChange={handleDifficultyChange} boardCount={boardCount} />
         </View>
 
         {/* ── Preferences ───────────────────────────────────────────── */}

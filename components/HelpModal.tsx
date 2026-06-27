@@ -35,7 +35,7 @@ const EXAMPLE_CLOUT: ExTile[] = [
 function IndicatorSquare() {
   return (
     <View style={indStyles.square}>
-      <Ionicons name="play" size={9} color="#878a8c" />
+      <Ionicons name="play" size={9} color="#5BA75A" />
     </View>
   );
 }
@@ -112,6 +112,10 @@ const TOP_ICON_ROWS: IconRowDef[] = [
     text: 'Hard mode — revealed hints must be used in all future guesses',
   },
   {
+    renderIcon: () => <Text style={styles.flagPair}>💀</Text>,
+    text: 'Extreme mode — limited guesses, count depends on board count',
+  },
+  {
     renderIcon: () => <Ionicons name="refresh-outline" size={18} color="#878a8c" />,
     text: 'New game — abandon the current game and start fresh',
   },
@@ -143,11 +147,16 @@ const BOTTOM_ICON_ROWS: IconRowDef[] = [
     text: 'Practice mode — unlimited games (green when active)',
   },
   {
-    renderIcon: () => <Ionicons name="bar-chart-outline" size={18} color="#878a8c" />,
+    renderIcon: () => <Text style={styles.statsEmoji}>📊</Text>,
     text: 'Statistics — view scores and guess distribution',
   },
   {
-    renderIcon: () => <Text style={styles.arrowPair}>‹ ›</Text>,
+    renderIcon: () => (
+      <View style={styles.trianglePair}>
+        <View style={styles.triangleLeft} />
+        <View style={styles.triangleRight} />
+      </View>
+    ),
     text: 'Cycle through board modes (1, 2, 3, 4, 6, 8 boards)',
   },
 ];
@@ -246,7 +255,7 @@ export function HelpModal({ visible, onClose, difficulty }: HelpModalProps) {
 
             {/* ── FOOTER ──────────────────────────────────────────── */}
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <Text style={styles.feedbackPrompt}>Missing a word or think a word shouldn't be an answer?</Text>
+            <Text style={styles.feedbackPrompt}>Missing or wrong word?</Text>
             <Pressable
               onPress={() => Linking.openURL('https://github.com/dilippanicker/wordout/issues')}
               hitSlop={8}
@@ -275,7 +284,7 @@ const indStyles = StyleSheet.create({
     width: 20,
     height: 20,
     borderWidth: 2,
-    borderColor: '#878a8c',
+    borderColor: '#5BA75A',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -404,10 +413,34 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 20,
   },
-  arrowPair: {
-    fontSize: 17,
-    color: '#878a8c',
-    lineHeight: 22,
+  statsEmoji: {
+    fontSize: 16,
+    lineHeight: 20,
+  },
+  trianglePair: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  triangleLeft: {
+    width: 0,
+    height: 0,
+    borderTopWidth: 8,
+    borderBottomWidth: 8,
+    borderRightWidth: 12,
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+    borderRightColor: '#aaa',
+  },
+  triangleRight: {
+    width: 0,
+    height: 0,
+    borderTopWidth: 8,
+    borderBottomWidth: 8,
+    borderLeftWidth: 12,
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+    borderLeftColor: '#aaa',
   },
   feedbackPrompt: {
     fontSize: 13,
