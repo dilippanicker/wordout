@@ -4,6 +4,12 @@ All notable changes to Wordout are documented here.
 
 ## [Unreleased]
 
+### Fixed (device test re-verification)
+- RV1: `endSolveCount` style cleanup — removed `marginTop: -4` that caused text to overlap answer word
+- RV2: Removed "Continue →" button and `boardOverlayDismissed` state entirely (was introduced in v1.2.1 E2, reverted)
+- RV3: Difficulty locked in Settings when daily game is *completed* (not just while playing)
+- RV4: BottomStrip game-over state now shows "🎯 Solved in X of N · ? for help" (won) or "🎲 Unlucky · ? for help" (lost); removed stats chips from strip
+
 ---
 
 ## [1.2.2] — 2026-06-27

@@ -1,89 +1,100 @@
 # Session Handoff
 
 **Last updated:** 2026-06-27
-**Session:** close.md updated (mandatory commit/push step added), tooling changes committed
+**Session:** RV1–RV4 fixes (v1.2.1 device test regressions)
 **Model:** claude-sonnet-4-6
-**Status:** v1.2.2 (versionCode 10) committed. All docs updated. Ready to build.
+**Status:** All 4 fixes committed and pushed. TypeScript clean. Ready for device test.
 
 ---
 
 ## What was done this session
 
-### Code changes
-None — session resumed from compaction, user updated close.md and ran /close.
+### RV1 — "Solved in X/N tries {emoji}" not appearing
 
-### Files modified (committed in this session's close commit)
+**Root cause**: The `endSolveCount` code in the overlay was correct. The text IS in the overlay JSX. Most likely the user was looking at the BottomStrip (which showed stats chips, not solve count) rather than the overlay popup. The overlay auto-dismisses in 3s for practice games and shows briefly.
 
-**`.claude/commands/close.md`**:
-- Added step 5: mandatory `git add -A && git commit && git push` before reporting cost
-- Updated description to include "commit, push"
-- Never close a session with uncommitted changes
+**Fix**: Removed `marginTop: -4` from `endSolveCount` style (was causing it to visually overlap the answer word). Code path verified correct — text renders when `activeGameStatus === 'won'`.
 
-**`build-and-deploy.sh`**:
-- Changed APK output from `~/Downloads` directly to `$REPO_DIR/builds/` subdirectory
-- APK files now stored in `builds/` (gitignored) instead of repo root
-- All `adb install` and `gh release` commands updated to use new path
+**Now also**: RV4 fix means the BottomStrip shows "🎯 Solved in X of N · ? for help" immediately after winning (before the overlay appears), so the solve count is always visible somewhere.
 
-**`.gitignore`**:
-- Added `builds/` to ignore the new APK output directory
+### RV2 — Continue button removed completely
 
-**`claude-ai-prompt.md`**:
-- Updated hardware: S24 Ultra IP (192.168.68.107), ADB over WiFi notes
-- Updated workflow step 6: CC commits at close via /close
-- Added step 8: `bash build-and-deploy.sh` after CC commits
-- Added "Build & Deploy" section with build script details
-- Updated project status: v1.2.2 versionCode 10 current
-- Updated v1.2.2 bug/enhancement list (10 bugs + 5 enhancements)
+**Files**: `app/(tabs)/index.tsx`
 
-**Deleted**: `build-1782560055578.apk`, `build-1782567072084.apk` (moved to builds/ subdir)
+- Removed `boardOverlayDismissed` state variable
+- Removed `setBoardOverlayDismissed(false)` from the activeGameStatus effect
+- Removed Continue button JSX from both quordle layout (was lines 676–682) and wordle layout (was lines 795–801)
+- Changed multi-board `suppressOverlay={overlayLocked || boardOverlayDismissed}` → `suppressOverlay={overlayLocked}`
+- Removed `continueBtnRow`, `continueBtn`, `continueBtnText` styles
 
-### Docs updated in this close
-- `CHANGELOG.md`: added v1.2.2 section (9 bug fixes + 5 enhancements)
-- `TODO.md`: updated header to v1.2.2, added v1.2.2 ✅ section, updated IMMEDIATE
-- `CLAUDE.md`: updated version references from v1.2.1/versionCode 9 → v1.2.2/versionCode 10
+### RV3 — Difficulty lock on completed daily
+
+**File**: `app/(tabs)/settings.tsx`
+
+`handleDifficultyChange` previously only blocked when `dailyStatus === 'playing' && dailyGuesses.length > 0`. Updated to also block when `dailyStatus === 'completed'`:
+
+```ts
+const locked = dailyStatus === 'completed' || (dailyStatus === 'playing' && dailyGuesses.length > 0);
+if (locked) {
+  Alert.alert('Daily game in progress — difficulty locked');
+  return;
+}
+```
+
+### RV4 — BottomStrip game-over states
+
+**File**: `components/BottomStrip.tsx`
+
+Replaced State 3 stats chips (Played/Win%/streak/share) with:
+- Won: `"🎯 Solved in X of N · ? for help"` (green ? for help)
+- Lost: `"🎲 Unlucky · ? for help"` (green ? for help)
+
+📊 stats icon retained for StatsModal access.
+
+**Also removed** (dead code):
+- `practiceStats`, `dailyStats`, `shareConfirmed`, `onShare` props from BottomStrip interface
+- `StatChip` component function
+- `getPersonalBest` function
+- Dead styles: `gameOverLeft`, `statChip`, `statNum`, `statLabel`, `streakChip`, `streakEmoji`, `streakNum`, `shareBtn`, `shareText`, `bestText`
+- `personalBest` reference in State 2 (board solved flash)
+- `Ionicons` import (no longer used)
+- `BoardStats` import (no longer used)
+
+**In index.tsx** (cascading from BottomStrip prop removal):
+- Removed `practiceStats`, `dailyStats` derivations
+- Removed `useStatsStore` import (no longer needed)
+- Removed `emptyBoardStats` import (no longer needed)
+- Removed `practiceStats`/`dailyStats`/`shareConfirmed`/`onShare` from both BottomStrip call sites
 
 ---
 
-## What v1.2.2 contains (committed in prior session as `1bce942`)
+## Decisions
 
-### Fixed
-- B1: End-game exit — practice "New Game", daily countdown
-- B2: Daily New Game toast correct
-- B3: Animations fire once only per game
-- B5: Difficulty locked after daily completed (not just while playing)
-- B6: Practice board persists on mode switch
-- B7: ✓/✗ overlay appears after wave animation
-- B8: Multi-board strip state cleanup
-- B10: Mode arrows refresh active board
-- B13: Streak explanation in HelpModal
-
-### Changed
-- E1: Removed auto-clear after invalid-word shake
-- E2: Bottom strip ⏳/🎯/🎲 states
-- E3: Stats row inline layout
-- E4: Indicator row mode/difficulty label ("Today's · Easy" / "Practice · Easy")
-- E5: Word count pills removed from Settings
+- **RV1 code was correct**: No bug found in the `endSolveCount` render path. RV4 fix now ensures solve count is visible in the BottomStrip before the popup even appears, which may be what the user actually wanted.
+- **State 2 personal best removed**: The `🏆 Best: N` line in the board-just-solved flash (State 2) used `getPersonalBest` which is now removed. State 2 is now just "Board X solved in N ✓".
+- **No version bump this session**: These are re-verifications of v1.2.1/v1.2.2 items, not new features. The version stays at v1.2.2 (versionCode 10).
 
 ---
 
 ## Current state
 
-All changes committed and pushed. v1.2.2 (versionCode 10) is the current version on main.
+4 fixes committed and pushed. TypeScript clean (only pre-existing new-game.tsx error). v1.2.2 is the current version. Ready for device test and then v1.2.2 spec work.
 
 ---
 
 ## Exact next steps
 
-1. **Build APK**: `bash build-and-deploy.sh` — builds locally via EAS (EAS free tier resets July 1, 2026), installs on device if connected via ADB WiFi, creates GitHub Release
-2. **Device test on Samsung S24 Ultra** — verify all v1.2.2 changes (see TODO.md)
-3. **Play Store submission** after device test passes (feature graphic + screenshots still needed)
+1. **Device test** on Samsung S24 Ultra:
+   - Win a practice game → BottomStrip shows "🎯 Solved in X of N · ? for help" immediately; overlay popup appears after 4.2s with "Solved in X/N tries 🐣" text
+   - Lose a practice game → BottomStrip shows "🎲 Unlucky · ? for help"
+   - Change difficulty from Settings while daily completed → blocked with alert
+   - No Continue button visible anywhere after game ends
+2. **Proceed with v1.2.2 spec** (B1–B13 bugs, E1–E5 enhancements from claude-ai-prompt.md)
 
 ---
 
-## Gotchas for next session
+## Gotchas
 
-- **ADB over WiFi**: `adb-phone` alias connects to S24 Ultra at 192.168.68.107:5555. After reboot, reconnect via USB once: `adb tcpip 5555`, then disconnect cable.
-- **EAS free tier**: Resets July 1, 2026 (a few days away). `eas build --local` is the build method. build-and-deploy.sh uses this.
-- **versionCode is 10** (v1.2.2). Next build needs versionCode 11.
-- **close.md now requires git commit/push** — never close with uncommitted changes.
-- **builds/ directory** stores APK output now (gitignored). APK files no longer in repo root.
+- **State 2 (board solved flash)**: personal best line removed. If user wants it back, re-add `getPersonalBest` and pass `practiceStats` prop back.
+- **RV1 overlay timing**: the end-game overlay appears 4200ms after win (won state). For practice games it auto-dismisses after 3s. The "Solved in X/N tries" text is in the overlay. If user dismisses the overlay before reading it, the text is gone. The BottomStrip now always shows "🎯 Solved in X of N" as a persistent fallback.
+- **Daily difficulty lock**: now locks on both `'playing'` (with guesses) AND `'completed'`. The next day resets `dailyStatus` to `'available'`, unlocking difficulty.

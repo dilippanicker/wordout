@@ -6,15 +6,11 @@
 
 ## 🔴 IMMEDIATE — Build & Play Store
 
-- [ ] Test v1.2.2 on device (Samsung S24 Ultra) — verify all changes:
-  - End-game exit: practice → New Game button; daily → countdown
-  - Animations fire once only per game
-  - ✓/✗ overlay appears after wave animation
-  - Indicator row label: "Today's · Easy" / "Practice · Easy"
-  - Bottom strip: ⏳/🎯/🎲 states correct
-  - Stats row inline layout
-  - Settings footer: no word count pills
-  - Help screen: streak explanation present
+- [ ] Test on device (Samsung S24 Ultra) — verify RV fixes:
+  - RV1: Win popup shows "Solved in X/N tries 🐣"; BottomStrip shows "🎯 Solved in X of N · ? for help"
+  - RV2: No Continue button visible after game ends
+  - RV3: Difficulty locked in Settings when daily completed (alert shown)
+  - RV4: BottomStrip shows 🎯/🎲 after win/loss
 - [ ] Build APK: `bash build-and-deploy.sh`
 - [ ] Feature graphic (1024×500px) — design in claude.ai
 - [ ] Screenshots on S24 Ultra (min 2, recommend 6):

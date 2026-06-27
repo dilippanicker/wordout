@@ -19,7 +19,6 @@ import { StatsModal } from '@/components/StatsModal';
 import { useGameStore, GuessResult, LetterResult } from '@/store/gameStore';
 import { useQuordleStore, QuordleGuess } from '@/store/quordleStore';
 import { useSettingsStore, boardCountName, BOARD_COUNTS, BoardCount, maxGuessesForDifficulty } from '@/store/settingsStore';
-import { useStatsStore, emptyBoardStats } from '@/store/statsStore';
 import { useDailyStore, getDailyIndex } from '@/store/dailyStore';
 import { isGameInProgress, confirmAbandon } from '@/utils/abandon';
 import { TileStatus } from '@/components/Tile';
@@ -189,7 +188,6 @@ export default function WordleScreen() {
     gameMode, setGameMode,
     boardCount, setBoardCount,
   } = useSettingsStore();
-  const { byMode: statsByMode } = useStatsStore();
   const { colors } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -236,12 +234,6 @@ export default function WordleScreen() {
   const clearToast         = isQuordle ? quordleStore.clearToast         : isDaily ? dailyStore.clearToast         : wordleStore.clearToast;
   const clearCurrentGuess  = isQuordle ? quordleStore.clearCurrentGuess  : isDaily ? dailyStore.clearCurrentGuess  : wordleStore.clearCurrentGuess;
 
-  // Stats for BottomStrip
-  const practiceStats = isQuordle
-    ? (statsByMode[String(boardCount)] ?? emptyBoardStats())
-    : (statsByMode['wordle'] ?? emptyBoardStats());
-  const dailyStats = dailyStore.stats;
-
   // UI state
   const [showHelp, setShowHelp] = useState(false);
   const [copyConfirmed, setCopyConfirmed] = useState(false);
@@ -251,8 +243,6 @@ export default function WordleScreen() {
   const [countdown, setCountdown] = useState(() => msToHMS(msUntilMidnight()));
   // Per-board overlays suppressed until end-game popup is dismissed
   const [overlayLocked, setOverlayLocked] = useState(false);
-  // E2: user can dismiss ✓/✗ board overlays via Continue button
-  const [boardOverlayDismissed, setBoardOverlayDismissed] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   const prevSolvedBoardsRef = useRef<boolean[]>([]);
   const isDailyRef = useRef(isDaily);
@@ -386,7 +376,6 @@ export default function WordleScreen() {
 
     if (activeGameStatus === 'playing') {
       setOverlayLocked(false);
-      setBoardOverlayDismissed(false);
       if (endGameTimerRef.current) { clearTimeout(endGameTimerRef.current); endGameTimerRef.current = null; }
       setEndGameVisible(false);
       endGameOpacity.value = 0;
@@ -657,7 +646,7 @@ export default function WordleScreen() {
                   gameOver={activeGameStatus === 'lost' && !isSolved}
                   answer={quordleStore.answers[i]}
                   shakeKey={shakeKey}
-                  suppressOverlay={overlayLocked || boardOverlayDismissed}
+                  suppressOverlay={overlayLocked}
                 />
               </BoardPage>
             );
@@ -673,14 +662,6 @@ export default function WordleScreen() {
           </Animated.View>
         </View>
 
-        {activeGameStatus !== 'playing' && !endGameVisible && !boardOverlayDismissed && (
-          <View style={styles.continueBtnRow}>
-            <Pressable style={styles.continueBtn} onPress={() => setBoardOverlayDismissed(true)} {...(noFocus as any)}>
-              <Text style={styles.continueBtnText}>Continue →</Text>
-            </Pressable>
-          </View>
-        )}
-
         <Keyboard onKey={handleKey} keyStatuses={qKeyStatuses} keyHeight={keyHeight} />
 
         <BottomStrip
@@ -693,10 +674,6 @@ export default function WordleScreen() {
           solvedCount={solvedCount}
           difficulty={difficulty}
           justSolvedInfo={justSolvedInfo}
-          practiceStats={practiceStats}
-          dailyStats={dailyStats}
-          shareConfirmed={copyConfirmed}
-          onShare={handleShare}
           onOpenStats={() => setStatsModalVisible(true)}
           onOpenHelp={() => setShowHelp(true)}
           textColor={colors.text as string}
@@ -792,14 +769,6 @@ export default function WordleScreen() {
         </Animated.View>
       </View>
 
-      {activeGameStatus !== 'playing' && !endGameVisible && !boardOverlayDismissed && (
-        <View style={styles.continueBtnRow}>
-          <Pressable style={styles.continueBtn} onPress={() => setBoardOverlayDismissed(true)} {...(noFocus as any)}>
-            <Text style={styles.continueBtnText}>Continue →</Text>
-          </Pressable>
-        </View>
-      )}
-
       <Keyboard onKey={handleKey} keyStatuses={keyStatuses} keyHeight={keyHeight} />
 
       <BottomStrip
@@ -812,10 +781,6 @@ export default function WordleScreen() {
         solvedCount={activeGameStatus === 'won' ? 1 : 0}
         difficulty={difficulty}
         justSolvedInfo={null}
-        practiceStats={practiceStats}
-        dailyStats={dailyStats}
-        shareConfirmed={copyConfirmed}
-        onShare={handleShare}
         onOpenStats={() => setStatsModalVisible(true)}
         onOpenHelp={() => setShowHelp(true)}
         textColor={colors.text as string}
@@ -1146,7 +1111,6 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.85)',
     fontSize: 15,
     fontWeight: '500',
-    marginTop: -4,
   },
   endWordRow: {
     flexDirection: 'row',
@@ -1171,19 +1135,6 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
     letterSpacing: 2,
     marginTop: -8,
-  },
-  continueBtnRow: {
-    alignItems: 'center',
-    paddingVertical: 4,
-  },
-  continueBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-  },
-  continueBtnText: {
-    color: '#5BA75A',
-    fontSize: 14,
-    fontWeight: '600',
   },
   shareButton: {
     marginTop: 4,

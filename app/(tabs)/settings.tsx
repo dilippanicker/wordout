@@ -34,7 +34,8 @@ export default function SettingsScreen() {
 
   function handleDifficultyChange(d: Difficulty) {
     const { dailyStatus, dailyGuesses } = useDailyStore.getState();
-    if (dailyStatus === 'playing' && dailyGuesses.length > 0) {
+    const locked = dailyStatus === 'completed' || (dailyStatus === 'playing' && dailyGuesses.length > 0);
+    if (locked) {
       Alert.alert('Daily game in progress — difficulty locked');
       return;
     }
