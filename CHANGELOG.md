@@ -2,37 +2,30 @@
 
 All notable changes to Wordout are documented here.
 
-## [Unreleased]
-
-### Fixed (device test re-verification)
-- RV1: `endSolveCount` style cleanup — removed `marginTop: -4` that caused text to overlap answer word
-- RV2: Removed "Continue →" button and `boardOverlayDismissed` state entirely (was introduced in v1.2.1 E2, reverted)
-- RV3: Difficulty locked in Settings when daily game is *completed* (not just while playing)
-- RV4: BottomStrip game-over state now shows "🎯 Solved in X of N · ? for help" (won) or "🎲 Unlucky · ? for help" (lost); removed stats chips from strip
-
----
-
-## [1.2.2] — 2026-06-27
+## [1.2.2] — 2026-06-28
 ### Added
 - Indicator row label: "Today's · Easy" (daily) or "Practice · Easy" (practice) under active mode icon
-- Streak explanation added to help screen
+- Streak explanation (🔥/⚡) added to HelpModal icon section
 
 ### Changed
-- Bottom strip states redesigned: ⏳ N tries left · ? for help / 🎯 Solved in X of N / 🎲 Unlucky
-- Stats row uses inline layout
+- Bottom strip state 1 (playing): "⏳ N tries left · ? for help" (replaces "Guess N of M")
+- Bottom strip state 3 (game over): stats row "N played · M% win · ⚡/🔥 S" (replaces chip layout)
+- Removed multi-board solved count from playing state (was "X solved · Y remaining")
 - Word count pills removed from Settings footer
 - Removed auto-clear of current guess after invalid-word shake (user backspaces manually)
 - Removed "Continue →" button introduced in v1.2.1 (simplified flow)
+- Difficulty lock in Settings: applies when daily is *completed* (not just while playing); shows inline toast instead of native Alert
+- RV1: End-game overlay — removed `marginTop: -4` on solve-count text that caused overlap with answer word
 
 ### Fixed
-- B1: End-game overlay exit — practice shows "New Game", daily shows countdown
-- B2: Daily mode "New Game" button toast message correct
-- B3: Win/lose animations fire only once per game (no replay on re-render)
-- B5: Difficulty locked after daily game completed (not just while playing)
-- B6: Practice game board persists correctly on mode switch
-- B7: ✓/✗ board overlay now appears after wave animation completes
-- B8: Multi-board bottom strip state cleanup
-- B10: Mode arrows (‹ ›) refresh active board on press
+- B1: End-game overlay — practice shows "↺ New Game" button; daily shows countdown to next word
+- B2: Daily "New Game" tapped when daily completed now shows correct toast instead of resetting board
+- B3: Win/lose animations fire only once per game — mode switch no longer re-triggers end-game popup
+- B5: Difficulty locked after daily game *completed* (was only blocked while playing)
+- B6: Practice game board persists correctly when switching to daily and back
+- B7: ✓/✗ board overlay appears after wave/shake animation completes (timestamp-based delay)
+- B8: Multi-board bottom strip no longer shows "X solved · Y remaining" during play
+- B10: Mode arrows (‹ ›) now immediately start a game with the correct board count
 - B13: Streak explanation added to HelpModal
 
 ---

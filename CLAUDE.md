@@ -46,9 +46,9 @@
 **`gameStore.ts`** — Wordout logic (guesses count via `maxGuessesForDifficulty`):
 - Resets only on language change (subscription watches `language` only)
 - `recordResult(won, guessCount, 'wordle')` — modeKey is always `'wordle'`
-- `clearCurrentGuess: () => void` — called after invalid-word shake (950ms delay)
-- `WORD_COUNT_ANSWERS: Record<Language, number>` — exported for settings footer
-- `WORD_COUNT_GUESSES: Record<Language, number>` — exported for settings footer
+- `clearCurrentGuess: () => void` — no longer called automatically; user backspaces manually after invalid-word shake (E1, v1.2.2)
+- `WORD_COUNT_ANSWERS: Record<Language, number>` — exported (was used in settings footer, now unused there)
+- `WORD_COUNT_GUESSES: Record<Language, number>` — exported (was used in settings footer, now unused there)
 
 **`quordleStore.ts`** — multi-board logic:
 - `boardCount: number`, `maxGuesses = maxGuessesForDifficulty(difficulty, boardCount)`, `answers: string[]`, `solvedBoards: boolean[]` — all dynamic
@@ -86,7 +86,7 @@
 
 **Difficulty toggle mid-game**: after abandon confirmed, calls `setDifficulty()` AND calls `newGame()` on the active store (boardCount > 1 → quordleStore; else → gameStore). Does NOT reset dailyStore — daily mode uses `dailyDifficulty` locked at game start.
 
-**Key subscription rule**: `gameStore` and `quordleStore` subscriptions call `newGame()` on `language` change only. Board count changes (settings.tsx → handleBoardCountSelect) and mode cycling (index.tsx → cycleTo) do NOT call newGame() — game persists across mode switches.
+**Key subscription rule**: `gameStore` and `quordleStore` subscriptions call `newGame()` on `language` change only. Board count changes (settings.tsx → handleBoardCountSelect) do NOT call `newGame()` — game persists. Mode cycling (index.tsx → `cycleTo`) calls `quordleStore.newGame()` when `n > 1` so the board immediately reflects the new count; switching back to Wordout (`n === 1`) does NOT call `gameStore.newGame()` — practice board persists.
 
 ### Components — `components/`
 
@@ -97,16 +97,24 @@
 - `suppressOverlay?: boolean` (default false) — when true, win/lose overlay is hidden; set from parent's `overlayLocked` state
 - `count` derived from `words.length ?? guesses.length` — drives animation tracking
 - No border on board (removed in v1.0.1 — green solved border looked ugly)
-- Win overlay: `rgba(0,0,0,0.3)` dim + 80px green ✓; fades in via `useEffect([solved, suppressOverlay])` when `solved && !suppressOverlay`; opacities always initialise to 0
-- Lose overlay: board shakes (3×, 14px, 910ms) + red tint flash (separate from overlay — not gated by suppressOverlay); dim + 80px red ✗ + `answer` word fades in via `useEffect([gameOver, suppressOverlay])` when `gameOver && !solved && !suppressOverlay`
+- Win overlay: `rgba(0,0,0,0.3)` dim + 80px green ✓; fades in after wave animation completes (timestamp-based delay — see B7 below); opacities always initialise to 0
+- Lose overlay: board shakes (3×, 14px, 910ms) + red tint flash (separate from overlay — not gated by suppressOverlay); dim + 80px red ✗ + `answer` word fades in after shake completes (timestamp-based delay)
 - Wave animation fires on ALL tiles (left→right, top→bottom, 80ms stagger `WAVE_STAGGER`) when `solved && animatingRow === count - 1`; `animatingRow` guard prevents replay on remount
 - **Wordle mode must pass `solved={gameStatus === 'won'}`** — previously missing, was breaking win-row bounce
 
-**Overlay timing pattern** (v1.2.1): Two suppression booleans in index.tsx:
+**Overlay timing pattern** (v1.2.2): One suppression boolean in index.tsx:
 - `overlayLocked` — true while end-game popup is visible (all boards suppressed together); false 320ms after popup dismissed
-- `boardOverlayDismissed` — true after user presses "Continue →" button; hides ✓/✗ overlays without resetting game; resets to false on new game
-- `suppressOverlay={overlayLocked || boardOverlayDismissed}` passed to all GameBoards
-- Result: wave → popup → dismiss → per-board ✓/✗ overlay → Continue → bare board
+- `suppressOverlay={overlayLocked}` passed to all GameBoards
+- Result: wave → popup → dismiss → per-board ✓/✗ overlay
+- "Continue →" button removed in v1.2.2 (was `boardOverlayDismissed` state)
+
+**B7 — per-board overlay timing via timestamps** (v1.2.2): `GameBoard` uses two refs to track when `solved`/`gameOver` first became true:
+- `solvedTimestampRef = useRef(solved ? 0 : -1)` — 0 = already solved on mount (remount case), -1 = not yet solved
+- `lostTimestampRef = useRef((gameOver && !solved) ? 0 : -1)`
+- Two tracking effects update the refs when `solved`/`gameOver` change
+- Win overlay effect: `elapsed = Date.now() - solvedTimestampRef.current`; if `elapsed < waveDuration`, delays overlay by `waveDuration - elapsed`; if `elapsed ≥ waveDuration` (popup dismiss / remount), shows immediately
+- Lose overlay effect: same pattern with `shakeDuration = FLIP_DONE_MS + 7*130 + 300 ≈ 2380ms`
+- `ts <= 0` (0 = remount) sets elapsed=Infinity → always immediate show
 
 **`Tile.tsx`** — `margin: 2` around each tile (so each row = `tileSize + 4` px tall). Color blind: correct=🟧, present=🟦. Absent tile: `dark ? '#3a3a3c' : '#787c7e'` (dark-mode-aware since v1.1.1).
 
@@ -117,13 +125,13 @@
 **`HelpModal.tsx`** — sections: rules, EXAMPLES (3 tiles), MULTI-BOARD MODE, BOARD INDICATORS (5 rows with rendered indicator shapes), HARD MODE (conditional), ICONS. ICONS has two sub-sections "Top bar" and "Bottom strip".
 
 **`BottomStrip.tsx`** — `minHeight: 50` + `paddingBottom: insets.bottom` (safe area), replaces tab bar visually:
-- Props: `difficulty: Difficulty`, `onOpenHelp: () => void` (required since v1.2.0)
+- Props: `difficulty: Difficulty`, `onOpenHelp: () => void`, `gameStats: GameStats` (required since v1.2.2)
+- `GameStats = { played: number; winPct: number; streak: number; streakEmoji: string }` — computed in index.tsx from active mode's stats
 - State 0 pre-game (playing, 0 guesses): "? for help" in green (#5BA75A), tappable → `onOpenHelp()`
-- State 1 playing (guesses > 0): "Guess N of M · ? for help" — "? for help" is green and tappable; multi-board solved info inserted before "· ?"; 💀/💪 badge if difficulty !== 'easy'; + 📊
-- State 2 board just solved (quordle only): "Board X solved in N ✓ | 🏆 Best: M" + 📊
-- State 3 game over practice: Played/Win%/⚡N + share-social-outline icon button + 📊
-- State 3 game over daily: Played/Win%/🔥N + 📊 (no Share — in overlay)
-- 📊 opens StatsModal; ⚡/🔥 green (#5BA75A) when >0, grey (#888780) when 0
+- State 1 playing (guesses > 0): "⏳ N tries left · ? for help" (singular: "1 try left"); 💀/💪 badge if difficulty !== 'easy'; + 📊; no multi-board solved count
+- State 2 board just solved (quordle only): "Board X solved in N ✓" + 📊
+- State 3 game over: "{played} played · {winPct}% win · {streakEmoji} {streak}" — streak green (#5BA75A) when >0, grey (#888780) when 0; + 📊
+- 📊 opens StatsModal; `streakEmoji` is 🔥 for daily, ⚡ for practice
 - Uses `useSafeAreaInsets` internally — no inset prop needed from parent
 
 **`StatsModal.tsx`** — Modal, close on backdrop tap or × button:
@@ -137,10 +145,10 @@
 ## Key implementation details
 
 ### Wordout tile sizing (dynamic)
-Single-board layout now HAS a 36px DOTS_H row (📅 ▶ ∞ indicator row), so DOTS_H IS subtracted.
+Single-board layout has a 44px `WORD_DOTS_H` row (📅 ▶ ∞ indicator row + mode/difficulty label), so `WORD_DOTS_H = 44` IS subtracted. Multi-board still uses `DOTS_H = 36` (no label row).
 ```tsx
 // totalH = screenH - insets.top - insets.bottom - HEADER_H - MSG_H - TAB_H
-const wordleAvailH = totalH - KBD_H - DOTS_H;
+const wordleAvailH = totalH - KBD_H - WORD_DOTS_H;
 const wordleTileSize = Math.max(44, Math.min(88,
   Math.min(Math.floor(wordleMeasuredH / 6) - 4, Math.floor((screenW - 16) / 5) - 4)
 ));
@@ -165,6 +173,9 @@ const qTileSize = Math.max(20, Math.min(74,
 ));
 ```
 Each tile row is `tileSize + 4` px tall (2px margin each side from Tile style). `useWindowDimensions().height` returns full screen height — TAB_H must be subtracted explicitly because the tab bar is outside the SafeAreaView. Tiles shrink to 20px minimum on small screens or high board counts.
+
+### Mode indicator row (single-board)
+Row height `WORD_DOTS_H = 44` (was 36). Each mode icon (📅/▶/∞) is wrapped in a `modeIconWithLabel` container. When a mode is active, a `modeLabel` text (9px, green #5BA75A) shows below the icon: "Today's · Easy" (daily) or "Practice · Easy" (practice). Label includes difficulty capitalized. Layout: `modeIconRow` flex row, each icon 30×30 hit target.
 
 ### Board progress indicators
 Shown above the swipeable boards (hidden for single-board modes). Each indicator is a 30×30 hit target wrapping a 24×24 shape, 2px stroke.
@@ -207,15 +218,15 @@ Navigation away on mode change was removed in v1.2.1 (B2 fix).
 Mode segment active state: `(n === 1 && gameMode === 'wordle') || (n > 1 && gameMode === 'quordle' && boardCount === n)`
 Mode segment label: `n === 1 ? 'Wordout' : \`${n}-out\`` — produces "Wordout / 2-out / 3-out / 4-out / 6-out / 8-out".
 
-### Settings footer (v1.2.0)
-Word count pills (answers + valid words per language), GitHub link, `© 2026 Onglipo Labs · MIT License`, version string (`v1.2.1` on web, `v1.2.1 (build 9)` on Android).
-`WORD_COUNT_ANSWERS[language]` + `WORD_COUNT_GUESSES[language]` imported from gameStore.
+### Settings footer (v1.2.2)
+GitHub link, `© 2026 Onglipo Labs · MIT License`, version string (`v1.2.2` on web, `v1.2.2 (build 10)` on Android).
+Word count pills removed in v1.2.2 (E5). `WORD_COUNT_ANSWERS` / `WORD_COUNT_GUESSES` still exported from gameStore but no longer imported in settings.tsx.
 
 ### Settings safe area (v1.2.1)
 `SafeAreaView edges={['top', 'bottom']}` — both edges required so the custom 44px header doesn't overlap the status bar/notch. The header sits inside the SafeAreaView (not positioned outside it).
 
-### Difficulty lock for daily (v1.2.1)
-`handleDifficultyChange()` in settings.tsx calls `useDailyStore.getState()` imperatively (not a hook — safe in event handler). If `dailyStatus === 'playing' && dailyGuesses.length > 0`, shows `Alert.alert('Daily game in progress — difficulty locked')` and returns. Note: `Alert.alert` with one string arg is a no-op on web but the guard still blocks the change.
+### Difficulty lock for daily (v1.2.2)
+`handleDifficultyChange()` in settings.tsx calls `useDailyStore.getState()` imperatively (not a hook — safe in event handler). If `dailyStatus === 'completed' || (dailyStatus === 'playing' && dailyGuesses.length > 0)`, calls `showDiffLockToast()` (inline toast, 3s auto-dismiss) and returns. Shows "Daily solved! Next word in HH:MM:SS" (or similar). Uses `useRef` + `setTimeout` for auto-dismiss — no `Alert.alert` (broken on RN Web).
 
 ### Header arrows (v1.2.1)
 ‹ › boxed chevrons replaced with CSS border-trick solid triangles:
@@ -278,7 +289,7 @@ SVG: 5 tiles [W][O][R][D][✓] on dark `#121213` background, rounded square. Exp
 
 ### EAS build
 `eas.json` has `development` (internal APK), `preview` (APK), `production` (AAB) profiles.  
-`app.json`: `android.package: "com.dilippanicker.wordout"`, `android.versionCode: 8` (current — see version bumping protocol before building)  
+`app.json`: `android.package: "com.dilippanicker.wordout"`, `android.versionCode: 10` (current — see version bumping protocol before building)  
 Build commands: `eas build --local --profile preview --output wordout.apk` / `--profile production --output wordout.aab`
 
 ---

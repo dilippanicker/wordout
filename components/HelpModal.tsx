@@ -159,6 +159,14 @@ const BOTTOM_ICON_ROWS: IconRowDef[] = [
     ),
     text: 'Cycle through board modes (1, 2, 3, 4, 6, 8 boards)',
   },
+  {
+    renderIcon: () => <Text style={styles.statsEmoji}>🔥</Text>,
+    text: 'Daily streak — consecutive days solving the daily word',
+  },
+  {
+    renderIcon: () => <Text style={styles.statsEmoji}>⚡</Text>,
+    text: 'Practice streak — consecutive practice wins, resets on loss',
+  },
 ];
 
 export function HelpModal({ visible, onClose, difficulty }: HelpModalProps) {

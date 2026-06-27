@@ -6,6 +6,13 @@ import { Difficulty } from '@/store/settingsStore';
 const GREEN = '#5BA75A';
 const GREY = '#888780';
 
+interface GameStats {
+  played: number;
+  winPct: number;
+  streak: number;
+  streakEmoji: string;
+}
+
 interface Props {
   gameStatus: 'playing' | 'won' | 'lost';
   isQuordle: boolean;
@@ -21,6 +28,7 @@ interface Props {
   textColor: string;
   backgroundColor: string;
   borderColor: string;
+  gameStats: GameStats;
 }
 
 export function BottomStrip({
@@ -28,6 +36,7 @@ export function BottomStrip({
   currentGuessNum, maxGuesses, boardCount, solvedCount, difficulty,
   justSolvedInfo, onOpenStats, onOpenHelp,
   textColor, backgroundColor, borderColor,
+  gameStats,
 }: Props) {
   const { bottom: bottomInset } = useSafeAreaInsets();
   const isGameOver = gameStatus === 'won' || gameStatus === 'lost';
@@ -51,17 +60,14 @@ export function BottomStrip({
       </View>
     );
   } else if (isGameOver) {
-    // State 3 — game over: 🎯 Solved in X of N / 🎲 Unlucky
-    const resultText = gameStatus === 'won'
-      ? `🎯 Solved in ${currentGuessNum} of ${maxGuesses}`
-      : '🎲 Unlucky';
+    // State 3 — game over: stats row
+    const { played, winPct, streak, streakEmoji } = gameStats;
     content = (
       <View style={styles.row}>
         <View style={styles.playingLeft}>
           <Text style={[styles.guessText, { color: textColor }]}>
-            {resultText}
-            {' · '}
-            <Text style={styles.helpLink} onPress={onOpenHelp}>? for help</Text>
+            {`${played} played · ${winPct}% win · `}
+            <Text style={{ color: streak > 0 ? GREEN : GREY }}>{streakEmoji} {streak}</Text>
           </Text>
         </View>
         {statsIcon}
@@ -80,19 +86,15 @@ export function BottomStrip({
       </View>
     );
   } else {
-    // State 1 — playing: "Guess N of M · ? for help"
-    const remaining = boardCount - solvedCount;
+    // State 1 — playing: "⏳ N tries left · ? for help"
+    const triesLeft = maxGuesses - currentGuessNum;
+    const triesText = triesLeft === 1 ? '1 try left' : `${triesLeft} tries left`;
     const diffEmoji = difficulty === 'extreme' ? '💀' : difficulty === 'hard' ? '💪' : null;
-    const multiInfo = isQuordle && solvedCount > 0 ? `  ·  ${solvedCount} solved  ·  ${remaining} remaining` : '';
     content = (
       <View style={styles.row}>
         <View style={styles.playingLeft}>
           <Text style={[styles.guessText, { color: textColor }]}>
-            {'Guess '}
-            <Text style={styles.guessNum}>{currentGuessNum + 1}</Text>
-            {' of '}
-            <Text style={styles.guessNum}>{maxGuesses}</Text>
-            {multiInfo}
+            {'⏳ '}{triesText}
             {' · '}
             <Text style={styles.helpLink} onPress={onOpenHelp}>? for help</Text>
           </Text>

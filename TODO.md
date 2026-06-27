@@ -1,16 +1,22 @@
 # Wordout — Master TODO
-**Updated: 2026-06-27**
+**Updated: 2026-06-28**
 **Current version: v1.2.2 (versionCode 10) — committed, pending device test**
 
 ---
 
 ## 🔴 IMMEDIATE — Build & Play Store
 
-- [ ] Test on device (Samsung S24 Ultra) — verify RV fixes:
-  - RV1: Win popup shows "Solved in X/N tries 🐣"; BottomStrip shows "🎯 Solved in X of N · ? for help"
-  - RV2: No Continue button visible after game ends
-  - RV3: Difficulty locked in Settings when daily completed (alert shown)
-  - RV4: BottomStrip shows 🎯/🎲 after win/loss
+- [ ] Test on device (Samsung S24 Ultra) — verify v1.2.2 changes:
+  - BottomStrip playing: "⏳ N tries left · ? for help"
+  - BottomStrip game-over: "N played · M% win · ⚡ S 📊"
+  - Mode icon row shows label "Practice · Easy" / "Today's · Easy" under active icon
+  - Practice overlay shows ↺ New Game button; daily overlay shows countdown only
+  - Tapping ↺ New Game on completed daily shows toast (board not reset)
+  - Difficulty change mid-completed-daily shows toast (not alert)
+  - Settings footer: no word count pills
+  - Help modal: 🔥/⚡ streak entries visible at bottom of icons section
+  - Arrow cycling ◄ ► immediately shows new board count game
+  - Practice board persists when switching to daily and back
 - [ ] Build APK: `bash build-and-deploy.sh`
 - [ ] Feature graphic (1024×500px) — design in claude.ai
 - [ ] Screenshots on S24 Ultra (min 2, recommend 6):
@@ -32,7 +38,7 @@
 
 ---
 
-## ✅ v1.2.2 — Completed 2026-06-27
+## ✅ v1.2.2 — Completed 2026-06-28
 
 - ✅ B1: End-game exit — practice "New Game", daily countdown
 - ✅ B2: Daily New Game toast correct

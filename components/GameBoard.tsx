@@ -143,19 +143,53 @@ export function GameBoard({
     }
   }, [gameOver]);
 
-  // Win overlay: fade in when solved and not suppressed.
+  // Timestamps for first solve/loss — 0 means already in that state on mount (remount), -1 means not yet.
+  const solvedTimestampRef = useRef(solved ? 0 : -1);
+  const lostTimestampRef   = useRef((gameOver && !solved) ? 0 : -1);
+
+  useEffect(() => {
+    if (solved) {
+      if (solvedTimestampRef.current === -1) solvedTimestampRef.current = Date.now();
+    } else {
+      solvedTimestampRef.current = -1;
+    }
+  }, [solved]);
+
+  useEffect(() => {
+    if (gameOver && !solved) {
+      if (lostTimestampRef.current === -1) lostTimestampRef.current = Date.now();
+    } else {
+      lostTimestampRef.current = -1;
+    }
+  }, [gameOver, solved]);
+
+  // Win overlay: fade in after wave animation completes (delay on first solve, immediate on remount/re-show).
   useEffect(() => {
     if (solved && !suppressOverlay) {
-      winOverlayOpacity.value = withTiming(1, { duration: 400 });
+      const ts = solvedTimestampRef.current;
+      const elapsed = ts <= 0 ? Infinity : (Date.now() - ts);
+      const waveDuration = FLIP_DONE_MS + count * COLS * WAVE_STAGGER + 400;
+      if (elapsed < waveDuration) {
+        winOverlayOpacity.value = withDelay(waveDuration - elapsed, withTiming(1, { duration: 300 }));
+      } else {
+        winOverlayOpacity.value = withTiming(1, { duration: 200 });
+      }
     } else {
       winOverlayOpacity.value = 0;
     }
   }, [solved, suppressOverlay]);
 
-  // Lose overlay: fade in when gameOver (and not solved) and not suppressed.
+  // Lose overlay: fade in after board shake completes (delay on first loss, immediate on remount/re-show).
   useEffect(() => {
     if (gameOver && !solved && !suppressOverlay) {
-      loseOverlayOpacity.value = withTiming(1, { duration: 400 });
+      const ts = lostTimestampRef.current;
+      const elapsed = ts <= 0 ? Infinity : (Date.now() - ts);
+      const shakeDuration = FLIP_DONE_MS + 7 * 130 + 300; // ~2380ms
+      if (elapsed < shakeDuration) {
+        loseOverlayOpacity.value = withDelay(shakeDuration - elapsed, withTiming(1, { duration: 300 }));
+      } else {
+        loseOverlayOpacity.value = withTiming(1, { duration: 200 });
+      }
     } else {
       loseOverlayOpacity.value = 0;
     }

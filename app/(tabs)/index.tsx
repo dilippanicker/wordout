@@ -20,6 +20,7 @@ import { useGameStore, GuessResult, LetterResult } from '@/store/gameStore';
 import { useQuordleStore, QuordleGuess } from '@/store/quordleStore';
 import { useSettingsStore, boardCountName, BOARD_COUNTS, BoardCount, maxGuessesForDifficulty } from '@/store/settingsStore';
 import { useDailyStore, getDailyIndex } from '@/store/dailyStore';
+import { useStatsStore, emptyBoardStats } from '@/store/statsStore';
 import { isGameInProgress, confirmAbandon } from '@/utils/abandon';
 import { TileStatus } from '@/components/Tile';
 
@@ -196,7 +197,8 @@ export default function WordleScreen() {
   // Layout constants
   const HEADER_H = 50;
   const MSG_H = 44;
-  const DOTS_H = 36;
+  const DOTS_H = 36;       // multi-board indicator row
+  const WORD_DOTS_H = 44;  // single-board mode icon row (includes label)
   const TAB_H = 50 + insets.bottom;   // BottomStrip content + bottom safe area
   const TILE_GAP = 4;
 
@@ -205,8 +207,8 @@ export default function WordleScreen() {
   const KBD_H = kbdHeight(keyHeight);
   const availableWidth = screenW - 16;
 
-  // Single-board tile sizing (includes DOTS_H for the 📅/▶/∞ indicator row)
-  const wordleAvailH = totalH - KBD_H - DOTS_H;
+  // Single-board tile sizing (includes WORD_DOTS_H for the 📅/▶/∞ indicator row)
+  const wordleAvailH = totalH - KBD_H - WORD_DOTS_H;
   const [wordleAreaH, setWordleAreaH] = useState(0);
   const wordleMeasuredH = wordleAreaH > 0 ? wordleAreaH : wordleAvailH;
   const wordleTileSize = Math.max(44, Math.min(88,
@@ -232,7 +234,20 @@ export default function WordleScreen() {
   const submitGuess        = isQuordle ? quordleStore.submitGuess        : isDaily ? dailyStore.submitGuess        : wordleStore.submitGuess;
   const toast              = isQuordle ? quordleStore.toast              : isDaily ? dailyStore.toast              : wordleStore.toast;
   const clearToast         = isQuordle ? quordleStore.clearToast         : isDaily ? dailyStore.clearToast         : wordleStore.clearToast;
-  const clearCurrentGuess  = isQuordle ? quordleStore.clearCurrentGuess  : isDaily ? dailyStore.clearCurrentGuess  : wordleStore.clearCurrentGuess;
+
+  // Stats for bottom strip
+  const statsStore = useStatsStore();
+  const activeStats = isQuordle
+    ? (statsStore.byMode[String(boardCount)] ?? emptyBoardStats())
+    : isDaily
+    ? dailyStore.stats
+    : (statsStore.byMode['wordle'] ?? emptyBoardStats());
+  const gameStats = {
+    played: activeStats.totalGames,
+    winPct: activeStats.totalGames > 0 ? Math.round(activeStats.wins / activeStats.totalGames * 100) : 0,
+    streak: activeStats.currentStreak,
+    streakEmoji: isDaily ? '🔥' : '⚡',
+  };
 
   // UI state
   const [showHelp, setShowHelp] = useState(false);
@@ -243,6 +258,10 @@ export default function WordleScreen() {
   const [countdown, setCountdown] = useState(() => msToHMS(msUntilMidnight()));
   // Per-board overlays suppressed until end-game popup is dismissed
   const [overlayLocked, setOverlayLocked] = useState(false);
+  // System-level toast (e.g. daily blocked)
+  const [systemToast, setSystemToast] = useState<string | null>(null);
+  const systemToastOpacity = useSharedValue(0);
+  const systemToastStyle = useAnimatedStyle(() => ({ opacity: systemToastOpacity.value }));
   const scrollRef = useRef<ScrollView>(null);
   const prevSolvedBoardsRef = useRef<boolean[]>([]);
   const isDailyRef = useRef(isDaily);
@@ -305,17 +324,30 @@ export default function WordleScreen() {
     if (activeGameStatus !== 'playing') setJustSolvedInfo(null);
   }, [activeGameStatus]);
 
+  function showSystemToast(msg: string) {
+    setSystemToast(msg);
+    systemToastOpacity.value = withSequence(
+      withTiming(1, { duration: 100 }),
+      withDelay(2400, withTiming(0, { duration: 300 })),
+    );
+    setTimeout(() => setSystemToast(null), 2900);
+  }
+
   function scrollTo(index: number) {
     scrollRef.current?.scrollTo({ x: index * screenW, animated: true });
     setActiveBoard(index);
   }
 
-  // Mode cycling (moved from _layout.tsx)
+  // Mode cycling
   function cycleTo(n: BoardCount) {
     const doIt = () => {
       setBoardCount(n);
-      if (n === 1) setGameMode('wordle');
-      else setGameMode('quordle');
+      if (n === 1) {
+        setGameMode('wordle');
+      } else {
+        setGameMode('quordle');
+        useQuordleStore.getState().newGame(); // B10: sync board display immediately
+      }
     };
     if (isGameInProgress()) confirmAbandon(doIt);
     else doIt();
@@ -330,6 +362,11 @@ export default function WordleScreen() {
   }
 
   function handleNewGame() {
+    // B2: completed daily — show toast instead of resetting
+    if (isDaily && dailyStore.dailyStatus === 'completed') {
+      showSystemToast(`Daily solved! Next word in ${msToHMS(msUntilMidnight())}`);
+      return;
+    }
     const doIt = () => {
       if (isQuordle) {
         useQuordleStore.getState().newGame();
@@ -355,6 +392,16 @@ export default function WordleScreen() {
     endGameOpacity.value = withTiming(0, { duration: 300 });
     setTimeout(() => { setEndGameVisible(false); setOverlayLocked(false); }, 320);
   }
+
+  // B3: When mode changes, clear any showing overlay and sync the status ref to prevent re-trigger.
+  useEffect(() => {
+    if (endGameTimerRef.current) { clearTimeout(endGameTimerRef.current); endGameTimerRef.current = null; }
+    setEndGameVisible(false);
+    endGameOpacity.value = 0;
+    setOverlayLocked(false);
+    prevGameStatusRef.current = activeGameStatus;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isQuordle, isDaily]);
 
   useEffect(() => {
     const prev = prevGameStatusRef.current;
@@ -470,15 +517,7 @@ export default function WordleScreen() {
       withDelay(1600, withTiming(0, { duration: 300 })),
     );
     const timer = setTimeout(clearToast, 2000);
-    // Auto-clear the current guess row after invalid-word shake finishes
-    let guessTimer: ReturnType<typeof setTimeout> | null = null;
-    if (toast === 'Not in word list' || toast === 'Already guessed') {
-      guessTimer = setTimeout(clearCurrentGuess, 950);
-    }
-    return () => {
-      clearTimeout(timer);
-      if (guessTimer) clearTimeout(guessTimer);
-    };
+    return () => clearTimeout(timer);
   }, [toast]);
 
   function handleKey(key: string) {
@@ -542,6 +581,18 @@ export default function WordleScreen() {
               </View>
           }
         </Pressable>
+        {!isDaily && (
+          <Pressable
+            style={styles.newGameButton}
+            onPress={handleNewGame}
+            {...(noFocus as any)}
+          >
+            <View style={styles.newGameButtonInner}>
+              <Ionicons name="refresh-outline" size={16} color="#fff" />
+              <Text style={styles.newGameButtonText}>New Game</Text>
+            </View>
+          </Pressable>
+        )}
       </Pressable>
     </Animated.View>
   ) : null;
@@ -660,6 +711,9 @@ export default function WordleScreen() {
               <Text style={styles.toastText}>{toast}</Text>
             </View>
           </Animated.View>
+          <Animated.View style={[styles.toastOverlay, systemToastStyle]} pointerEvents="none">
+            {systemToast ? <View style={styles.toastPill}><Text style={styles.toastText}>{systemToast}</Text></View> : null}
+          </Animated.View>
         </View>
 
         <Keyboard onKey={handleKey} keyStatuses={qKeyStatuses} keyHeight={keyHeight} />
@@ -679,6 +733,7 @@ export default function WordleScreen() {
           textColor={colors.text as string}
           backgroundColor={colors.card as string}
           borderColor={colors.border as string}
+          gameStats={gameStats}
         />
 
         <HelpModal visible={showHelp} onClose={() => setShowHelp(false)} difficulty={difficulty} />
@@ -706,7 +761,7 @@ export default function WordleScreen() {
         onSettings: () => router.navigate('/(tabs)/settings' as never),
       })}
 
-      {/* Daily 📅 / board indicator ▶ / Practice ∞ row */}
+      {/* Daily 📅 / Practice ∞ row with active-mode label */}
       <View style={styles.modeIconRow}>
         <Pressable
           {...(noFocus as any)}
@@ -717,11 +772,18 @@ export default function WordleScreen() {
           }}
           accessibilityLabel="Daily mode"
         >
-          <View style={[styles.modeIconSquare, {
-            borderColor: isDaily ? '#5BA75A' : '#878a8c',
-            backgroundColor: isDaily ? 'rgba(91,167,90,0.15)' : 'transparent',
-          }]}>
-            <Ionicons name="calendar-outline" size={13} color={isDaily ? '#5BA75A' : '#878a8c'} />
+          <View style={styles.modeIconWithLabel}>
+            <View style={[styles.modeIconSquare, {
+              borderColor: isDaily ? '#5BA75A' : '#878a8c',
+              backgroundColor: isDaily ? 'rgba(91,167,90,0.15)' : 'transparent',
+            }]}>
+              <Ionicons name="calendar-outline" size={13} color={isDaily ? '#5BA75A' : '#878a8c'} />
+            </View>
+            {isDaily && (
+              <Text style={styles.modeLabel}>
+                {`Today's · ${dailyStore.dailyDifficulty.charAt(0).toUpperCase() + dailyStore.dailyDifficulty.slice(1)}`}
+              </Text>
+            )}
           </View>
         </Pressable>
 
@@ -733,15 +795,21 @@ export default function WordleScreen() {
           onPress={() => {
             if (!isDaily) return;
             dailyStore.setActiveWordleMode('practice');
-            useGameStore.getState().newGame();
           }}
           accessibilityLabel="Practice mode"
         >
-          <View style={[styles.modeIconSquare, {
-            borderColor: isDaily ? '#878a8c' : '#5BA75A',
-            backgroundColor: isDaily ? 'transparent' : 'rgba(91,167,90,0.15)',
-          }]}>
-            <Ionicons name="infinite-outline" size={13} color={isDaily ? '#878a8c' : '#5BA75A'} />
+          <View style={styles.modeIconWithLabel}>
+            <View style={[styles.modeIconSquare, {
+              borderColor: isDaily ? '#878a8c' : '#5BA75A',
+              backgroundColor: isDaily ? 'transparent' : 'rgba(91,167,90,0.15)',
+            }]}>
+              <Ionicons name="infinite-outline" size={13} color={isDaily ? '#878a8c' : '#5BA75A'} />
+            </View>
+            {!isDaily && (
+              <Text style={styles.modeLabel}>
+                {`Practice · ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}`}
+              </Text>
+            )}
           </View>
         </Pressable>
       </View>
@@ -767,6 +835,9 @@ export default function WordleScreen() {
             <Text style={styles.toastText}>{toast}</Text>
           </View>
         </Animated.View>
+        <Animated.View style={[styles.toastOverlay, systemToastStyle]} pointerEvents="none">
+          {systemToast ? <View style={styles.toastPill}><Text style={styles.toastText}>{systemToast}</Text></View> : null}
+        </Animated.View>
       </View>
 
       <Keyboard onKey={handleKey} keyStatuses={keyStatuses} keyHeight={keyHeight} />
@@ -786,6 +857,7 @@ export default function WordleScreen() {
         textColor={colors.text as string}
         backgroundColor={colors.card as string}
         borderColor={colors.border as string}
+        gameStats={gameStats}
       />
 
       <HelpModal visible={showHelp} onClose={() => setShowHelp(false)} difficulty={difficulty} />
@@ -974,9 +1046,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.3,
   },
-  // Mode icon row (📅 ▶ ∞) for single-board
+  // Mode icon row (📅 ∞) for single-board
   modeIconRow: {
-    height: 36,
+    height: 44,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
@@ -985,12 +1057,23 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
   },
+  modeIconWithLabel: {
+    alignItems: 'center',
+    gap: 2,
+  },
   modeIconSquare: {
     width: 24,
     height: 24,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  modeLabel: {
+    fontSize: 9,
+    fontWeight: '600',
+    color: '#5BA75A',
+    letterSpacing: 0.2,
+    lineHeight: 11,
   },
   // Multi-board progress indicators
   dotRow: {
@@ -1149,6 +1232,24 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   shareButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  newGameButton: {
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.4)',
+    paddingHorizontal: 28,
+    paddingVertical: 13,
+    borderRadius: 6,
+  },
+  newGameButtonInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  newGameButtonText: {
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '700',

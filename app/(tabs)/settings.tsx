@@ -1,11 +1,10 @@
-import { useState } from 'react';
-import { View, Text, Switch, Pressable, StyleSheet, ScrollView, Platform, Linking, Alert } from 'react-native';
+import { useState, useRef } from 'react';
+import { View, Text, Switch, Pressable, StyleSheet, ScrollView, Platform, Linking } from 'react-native';
 import Constants from 'expo-constants';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSettingsStore, Language, BOARD_COUNTS, BoardCount, Difficulty, maxGuessesForDifficulty } from '@/store/settingsStore';
-import { WORD_COUNT_ANSWERS, WORD_COUNT_GUESSES } from '@/store/gameStore';
 import { useDailyStore } from '@/store/dailyStore';
 import { HelpModal } from '@/components/HelpModal';
 
@@ -22,8 +21,28 @@ export default function SettingsScreen() {
     boardCount, setBoardCount,
   } = useSettingsStore();
   const [showHelp, setShowHelp] = useState(false);
+  const [diffLockToast, setDiffLockToast] = useState<string | null>(null);
+  const diffLockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const containerBg = dark ? colors.background : '#f6f7f8';
+
+  function msToHMS(ms: number): string {
+    const s = Math.max(0, Math.floor(ms / 1000));
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+  }
+
+  function showDiffLockToast() {
+    const now = new Date();
+    const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const hms = msToHMS(midnight.getTime() - now.getTime());
+    const msg = `Daily solved! Next word in ${hms}`;
+    setDiffLockToast(msg);
+    if (diffLockTimerRef.current) clearTimeout(diffLockTimerRef.current);
+    diffLockTimerRef.current = setTimeout(() => setDiffLockToast(null), 3000);
+  }
 
   function handleBoardCountSelect(n: BoardCount) {
     setBoardCount(n);
@@ -36,7 +55,7 @@ export default function SettingsScreen() {
     const { dailyStatus, dailyGuesses } = useDailyStore.getState();
     const locked = dailyStatus === 'completed' || (dailyStatus === 'playing' && dailyGuesses.length > 0);
     if (locked) {
-      Alert.alert('Daily game in progress — difficulty locked');
+      showDiffLockToast();
       return;
     }
     setDifficulty(d);
@@ -44,6 +63,13 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: containerBg }]} edges={['top', 'bottom']}>
+      {diffLockToast && (
+        <View style={styles.toastContainer} pointerEvents="none">
+          <View style={styles.toastPill}>
+            <Text style={styles.toastText}>{diffLockToast}</Text>
+          </View>
+        </View>
+      )}
       {/* Settings navigation header */}
       <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <Pressable
@@ -107,14 +133,6 @@ export default function SettingsScreen() {
 
         {/* ── Footer ────────────────────────────────────────────────── */}
         <View style={styles.footer}>
-          <View style={styles.pillRow}>
-            <View style={styles.pill}>
-              <Text style={styles.pillText}>{WORD_COUNT_ANSWERS[language].toLocaleString()} answers</Text>
-            </View>
-            <View style={styles.pill}>
-              <Text style={styles.pillText}>{WORD_COUNT_GUESSES[language].toLocaleString()} valid words</Text>
-            </View>
-          </View>
           <Pressable onPress={() => Linking.openURL('https://github.com/dilippanicker/wordout')}>
             <Text style={styles.githubLink}>GitHub ↗</Text>
           </Pressable>
@@ -378,21 +396,6 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     gap: 8,
   },
-  pillRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  pill: {
-    backgroundColor: '#e8e8e8',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  pillText: {
-    fontSize: 12,
-    color: '#555',
-    fontWeight: '500',
-  },
   githubLink: {
     fontSize: 13,
     color: '#6aaa64',
@@ -407,5 +410,24 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#878a8c',
     textAlign: 'center',
+  },
+  toastContainer: {
+    position: 'absolute',
+    top: 56,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 100,
+  },
+  toastPill: {
+    backgroundColor: '#1a1a1b',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 4,
+  },
+  toastText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
 });
