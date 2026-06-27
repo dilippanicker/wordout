@@ -152,7 +152,7 @@ The `?` button is NO LONGER `position: 'absolute'` — it's a normal flex child.
 ## Key implementation details
 
 ### Wordout tile sizing (dynamic)
-Single-board layout has a 44px `WORD_DOTS_H` row (📅 ▶ ∞ indicator row + mode/difficulty label), so `WORD_DOTS_H = 44` IS subtracted. Multi-board still uses `DOTS_H = 36` (no label row).
+Single-board layout has a 44px `WORD_DOTS_H` row (📅 🎮 indicator row + inline mode/difficulty label), so `WORD_DOTS_H = 44` IS subtracted. Multi-board still uses `DOTS_H = 36` (no label row).
 ```tsx
 // totalH = screenH - insets.top - insets.bottom - HEADER_H - MSG_H - TAB_H
 const wordleAvailH = totalH - KBD_H - WORD_DOTS_H;
@@ -182,7 +182,15 @@ const qTileSize = Math.max(20, Math.min(74,
 Each tile row is `tileSize + 4` px tall (2px margin each side from Tile style). `useWindowDimensions().height` returns full screen height — TAB_H must be subtracted explicitly because the tab bar is outside the SafeAreaView. Tiles shrink to 20px minimum on small screens or high board counts.
 
 ### Mode indicator row (single-board)
-Row height `WORD_DOTS_H = 44` (was 36). Each mode icon (📅/▶/∞) is wrapped in a `modeIconWithLabel` container. A `modeLabel` text (9px, green #5BA75A) sits below each icon: "Today's · Easy" (daily) or "Practice · Easy" (practice). **Both labels always render** — inactive label uses `opacity: 0` rather than conditional rendering. This prevents Android layout recalculation (which caused the label to appear top-left above the board). Both `modeIconWithLabel` containers are always 37px tall (24px icon + 2px gap + 11px label), centering consistently within the 44px row. Label includes difficulty capitalized. Layout: `modeIconRow` flex row, each icon 30×30 hit target.
+Row height `WORD_DOTS_H = 44`. Modes: 📅 (daily) and 🎮 (practice, replaced ∞ in v1.2.3).
+
+**D2 layout (v1.2.3)**: Label is INLINE to the right of the active icon (flex row "pill"). Inactive icon is faded (opacity 0.45). Layout examples:
+- Daily active: `[📅 Today's · Easy]  [🎮]`
+- Practice active: `[📅]  [🎮 Practice · Easy]`
+
+Styles: `modeIconPill` (flexDirection: row, gap: 6), `modeIconSpacer` (flex: 1 spacer between the two pills), `modeIconSquare` (24×24, borderWidth 2), `modeIconEmoji` (fontSize 13, lineHeight 16 for 🎮), `modeLabel` (fontSize 11, color #5BA75A).
+
+Label uses **conditional rendering** (not opacity: 0). This is safe because the label is inline — showing/hiding it only changes pill WIDTH, not row HEIGHT. No height-based layout recalculation on Android.
 
 ### Board progress indicators
 Shown above the swipeable boards (hidden for single-board modes). Each indicator is a 30×30 hit target wrapping a 24×24 shape, 2px stroke.

@@ -48,3 +48,5 @@ yarn-error.*
 wordlist/.venv/
 assets/images.zip
 builds/
+builds/
+claude-ai-prompt.md

@@ -143,7 +143,7 @@ const BOTTOM_ICON_ROWS: IconRowDef[] = [
     text: 'Daily word — one new puzzle per day (green when active)',
   },
   {
-    renderIcon: () => <Ionicons name="infinite-outline" size={18} color="#5BA75A" />,
+    renderIcon: () => <Text style={styles.statsEmoji}>🎮</Text>,
     text: 'Practice mode — unlimited games (green when active)',
   },
   {

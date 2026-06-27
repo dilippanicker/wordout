@@ -1,6 +1,6 @@
 # Wordout — Master TODO
 **Updated: 2026-06-28**
-**Current version: v1.2.3 (versionCode 11) — committed, pending device test**
+**Current version: v1.2.3 (versionCode 11) — committed, pending device test + build**
 
 ---
 
@@ -9,11 +9,12 @@
 - [ ] Test on device (Samsung S24 Ultra) — verify v1.2.2 + post-test bug fixes:
   - BottomStrip playing: "⏳ N tries left · ? for help"
   - BottomStrip game-over: "N played · M% win · ⚡ S 📊"
-  - Mode icon row label "Today's · Easy" / "Practice · Easy" appears under active icon (not top-left)
+  - Mode icon row label "Today's · Easy" / "Practice · Easy" appears INLINE to right of active icon
   - Settings mode change → back → board shows correct new mode immediately
   - Difficulty icon tap after daily completed shows lock toast (does NOT cycle)
   - Daily win overlay auto-dismisses after 3 seconds
-  - Practice lose overlay shows ? icon and ↺ New Game button
+  - Practice lose overlay ↺ New Game and ? buttons functional (stopPropagation fix applied)
+  - Practice mode icon shows 🎮 (not ∞) in indicator row and HelpModal
   - Practice overlay shows ↺ New Game button; daily overlay shows countdown only
   - Tapping ↺ New Game on completed daily shows toast (board not reset)
   - Settings footer: no word count pills
@@ -47,7 +48,9 @@
 - ✅ B2 (post-test): Board doesn't refresh on Settings mode change — boardCount in scroll-reset deps + clamp effect
 - ✅ B3 (post-test): Difficulty icon cycles on completed daily — lock guard changed to `isDaily` (not `!isQuordle`)
 - ✅ B4 (post-test): Daily win overlay auto-dismiss not firing — decoupled to useEffect([endGameVisible])
-- ✅ B5 (post-test): Lose overlay buttons clipped by Android nav bar — insets.bottom added to endGameContent padding
+- ✅ B5 (post-test): Lose overlay ↺ New Game + ? — stopPropagation + explicit dismissEndGame() added to ↺ handler
+- ✅ D1 (design): Replace ∞ with 🎮 throughout (indicator row, HelpModal)
+- ✅ D2 (design): Mode label inline to right of active icon (not below)
 
 ## ✅ v1.2.2 — Completed 2026-06-28
 

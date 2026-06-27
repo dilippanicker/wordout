@@ -3,12 +3,16 @@
 All notable changes to Wordout are documented here.
 
 ## [1.2.3] — 2026-06-28
+### Changed
+- D1: Practice mode icon changed from ∞ to 🎮 throughout — indicator row and HelpModal bottom strip section
+- D2: Mode/difficulty label now appears inline to the right of the active icon (not below it) — layout: `[📅 Today's · Easy]  [🎮]` or `[📅]  [🎮 Practice · Easy]`
+
 ### Fixed
 - B1: "Today's · Easy" label on Android now stays under 📅 icon — `maxWidth: 80`, `marginTop: 2`, `numberOfLines={1}` prevent text overflow and misalignment
 - B2: Board now refreshes when returning from Settings after mode change — `boardCount` added to scroll-reset deps + new clamp effect resets activeBoard when boardCount shrinks
 - B3: Difficulty icon in header locked after daily completed or in-progress — guard changed from `!isQuordle` to `isDaily`; practice mode can still change difficulty freely
 - B4: End-game overlay auto-dismisses after 3 seconds in all modes — decoupled to `useEffect([endGameVisible])` so cleanup from mode-change effects can't cancel the timer
-- B5: Practice lose overlay ↺ New Game button no longer clipped by Android nav bar — `paddingBottom: insets.bottom + 24` applied inline to `endGameContent`
+- B5: Practice lose overlay ↺ New Game button — added `stopPropagation` + explicit `dismissEndGame()` to align with ? button behaviour; ensures button works on web and Android
 
 ---
 

@@ -207,7 +207,7 @@ export default function WordleScreen() {
   const KBD_H = kbdHeight(keyHeight);
   const availableWidth = screenW - 16;
 
-  // Single-board tile sizing (includes WORD_DOTS_H for the 📅/▶/∞ indicator row)
+  // Single-board tile sizing (includes WORD_DOTS_H for the 📅/🎮 indicator row)
   const wordleAvailH = totalH - KBD_H - WORD_DOTS_H;
   const [wordleAreaH, setWordleAreaH] = useState(0);
   const wordleMeasuredH = wordleAreaH > 0 ? wordleAreaH : wordleAvailH;
@@ -623,7 +623,7 @@ export default function WordleScreen() {
           {!isDaily && (
             <Pressable
               style={styles.newGameButton}
-              onPress={handleNewGame}
+              onPress={(e) => { e.stopPropagation?.(); dismissEndGame(); handleNewGame(); }}
               {...(noFocus as any)}
             >
               <View style={styles.newGameButtonInner}>
@@ -803,7 +803,7 @@ export default function WordleScreen() {
         onDifficultyToggle: handleDifficultyToggle,
       })}
 
-      {/* Daily 📅 / Practice ∞ row with active-mode label */}
+      {/* Daily 📅 / Practice 🎮 row — active icon + inline label, inactive faded */}
       <View style={styles.modeIconRow}>
         <Pressable
           {...(noFocus as any)}
@@ -814,20 +814,22 @@ export default function WordleScreen() {
           }}
           accessibilityLabel="Daily mode"
         >
-          <View style={styles.modeIconWithLabel}>
+          <View style={[styles.modeIconPill, { opacity: isDaily ? 1 : 0.45 }]}>
             <View style={[styles.modeIconSquare, {
               borderColor: isDaily ? '#5BA75A' : '#878a8c',
               backgroundColor: isDaily ? 'rgba(91,167,90,0.15)' : 'transparent',
             }]}>
               <Ionicons name="calendar-outline" size={13} color={isDaily ? '#5BA75A' : '#878a8c'} />
             </View>
-            <Text style={[styles.modeLabel, { opacity: isDaily ? 1 : 0 }]} numberOfLines={1}>
-              {`Today's · ${dailyStore.dailyDifficulty.charAt(0).toUpperCase() + dailyStore.dailyDifficulty.slice(1)}`}
-            </Text>
+            {isDaily && (
+              <Text style={styles.modeLabel} numberOfLines={1}>
+                {`Today's · ${dailyStore.dailyDifficulty.charAt(0).toUpperCase() + dailyStore.dailyDifficulty.slice(1)}`}
+              </Text>
+            )}
           </View>
         </Pressable>
 
-        <View style={styles.modeIconCenter} />
+        <View style={styles.modeIconSpacer} />
 
         <Pressable
           {...(noFocus as any)}
@@ -838,16 +840,18 @@ export default function WordleScreen() {
           }}
           accessibilityLabel="Practice mode"
         >
-          <View style={styles.modeIconWithLabel}>
+          <View style={[styles.modeIconPill, { opacity: isDaily ? 0.45 : 1 }]}>
             <View style={[styles.modeIconSquare, {
               borderColor: isDaily ? '#878a8c' : '#5BA75A',
               backgroundColor: isDaily ? 'transparent' : 'rgba(91,167,90,0.15)',
             }]}>
-              <Ionicons name="infinite-outline" size={13} color={isDaily ? '#878a8c' : '#5BA75A'} />
+              <Text style={styles.modeIconEmoji}>🎮</Text>
             </View>
-            <Text style={[styles.modeLabel, { opacity: isDaily ? 0 : 1 }]} numberOfLines={1}>
-              {`Practice · ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}`}
-            </Text>
+            {!isDaily && (
+              <Text style={styles.modeLabel} numberOfLines={1}>
+                {`Practice · ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}`}
+              </Text>
+            )}
           </View>
         </Pressable>
       </View>
@@ -1072,19 +1076,20 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.3,
   },
-  // Mode icon row (📅 ∞) for single-board
+  // Mode icon row (📅 🎮) for single-board
   modeIconRow: {
     height: 44,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
   },
-  modeIconCenter: {
+  modeIconSpacer: {
     flex: 1,
-    alignItems: 'center',
   },
-  modeIconWithLabel: {
+  modeIconPill: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
   },
   modeIconSquare: {
     width: 24,
@@ -1093,15 +1098,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  modeIconEmoji: {
+    fontSize: 13,
+    lineHeight: 16,
+  },
   modeLabel: {
-    marginTop: 2,
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '600',
     color: '#5BA75A',
     letterSpacing: 0.2,
-    lineHeight: 11,
-    maxWidth: 80,
-    textAlign: 'center',
+    maxWidth: 120,
   },
   // Multi-board progress indicators
   dotRow: {

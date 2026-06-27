@@ -4,47 +4,52 @@
 
 ### Files modified
 
-**`app/(tabs)/index.tsx`** — 5 post-test bug fixes (refined from prior commit 0b93b64):
+**`app/(tabs)/index.tsx`** — B5 fix + D1 + D2:
 
-- **B1 (label position Android)**: Removed `gap: 2` from `modeIconWithLabel` style; added `marginTop: 2`, `maxWidth: 80`, `textAlign: 'center'` to `modeLabel`; added `numberOfLines={1}` to both modeLabel Text elements. Constrains label so it can't overflow on Android.
-- **B2 (board refresh from settings)**: Added `quordleStore.boardCount` to deps of scroll-reset effect. Added new clamp effect: when `activeBoard >= quordleStore.boardCount` (boardCount shrinks), resets to 0 and scrolls. Handles edge case where guesses.length stays 0 and old effect wouldn't fire.
-- **B3 (difficulty lock on completed daily)**: Changed lock guard from `!isQuordle` to `isDaily`. Expanded condition: `dailyStatus === 'playing' || dailyStatus === 'completed'`. Old code blocked difficulty in PRACTICE mode if daily was done. New code only locks when actually in daily sub-mode.
-- **B4 (auto-dismiss not firing)**: Separated auto-dismiss into its own `useEffect([endGameVisible])` with 3000ms timer. Removed nested `setTimeout(dismissEndGame, 3000)` from outer timer callback. Prevents the `[activeGameStatus]` cleanup from accidentally cancelling the inner timer via ref overwrite.
-- **B5 (lose overlay missing buttons)**: Added `{ paddingBottom: insets.bottom + 24 }` inline to `endGameContent`. Removed static `paddingBottom: 24`. On Android with nav bar (insets.bottom > 0), content no longer clips below navigation buttons.
+- **B5 (lose overlay ↺/? buttons)**: Changed ↺ New Game `onPress` handler to `(e) => { e.stopPropagation?.(); dismissEndGame(); handleNewGame(); }`. Previously `onPress={handleNewGame}` had no stopPropagation (unlike the ? button which already had it). On web, this caused the outer dismiss Pressable to also fire, potentially closing the overlay before the user interacted. Adding `stopPropagation` + explicit `dismissEndGame()` ensures the button works correctly on both web and Android.
+
+- **D1 (∞ → 🎮)**: Replaced `<Ionicons name="infinite-outline" ...>` in the practice mode icon square with `<Text style={styles.modeIconEmoji}>🎮</Text>`. Updated comment text. Added `modeIconEmoji` style (fontSize: 13, lineHeight: 16).
+
+- **D2 (inline label)**: Rewrote the mode icon row. Labels now appear INLINE to the right of the active icon (in a flex row "pill"), not below it. Layout: `[📅 Today's · Easy]  [🎮]` (daily active) or `[📅]  [🎮 Practice · Easy]` (practice active). Uses conditional rendering (not opacity:0) since labels are inline — the row height (44px) doesn't change. Replaced `modeIconWithLabel` (column) with `modeIconPill` (row). Replaced `modeIconCenter` (flex:1 center) with `modeIconSpacer` (flex:1). Inactive icon: opacity 0.45. Active icon + label: full opacity green.
+
+**`components/HelpModal.tsx`** — D1:
+
+- Replaced `<Ionicons name="infinite-outline" size={18} color="#5BA75A" />` with `<Text style={styles.statsEmoji}>🎮</Text>` in `BOTTOM_ICON_ROWS` for the practice mode row.
 
 ---
 
 ## Decisions & deviations
 
-- **B3 scope fix**: The old `!isQuordle` guard was also blocking practice-mode difficulty changes after a daily was completed (unintended). Using `isDaily` correctly scopes the lock.
-- **B4 decoupled timer**: `useEffect([endGameVisible])` is cleaner than nested setTimeout. Auto-dismiss timer starts only when overlay is visible; cleanup runs if dismissed manually (prevents double-dismiss).
-- **B5 inset pattern**: On web, `insets.bottom = 0` so behaviour is unchanged. On Android, paddingBottom grows to clear nav bar.
-- **No version bump this session**: Version was already bumped to 1.2.3 (versionCode 11) in the prior commit (1e79657). These are refinements to those fixes.
+- **B5 approach**: Could not identify the precise root cause (the code structure was already correct with ? and ↺ both present in endGameOverlay for both win and lose). Made a targeted fix: add `stopPropagation` + explicit `dismissEndGame()` to the ↺ button. This aligns its behaviour with the ? button and is the most defensible change without a device to reproduce the exact bug.
+
+- **D2 conditional rendering vs opacity**: Previous design used `opacity: 0` for inactive labels to prevent Android layout recalculation. The new inline layout means label show/hide only changes pill WIDTH (not row HEIGHT). Row height is fixed at 44px. No height recalculation happens, so conditional rendering is safe.
+
+- **D2 label font size**: Bumped to 11px (from 9px) since the label is inline and has more visual space beside the icon.
+
+- **No version bump**: Stays at v1.2.3 (versionCode 11) per session objective.
 
 ---
 
 ## Current state
 
-All 5 post-test bugs fixed. TypeScript clean (known pre-existing error in new-game.tsx only). App version 1.2.3 (versionCode 11).
+All 3 changes committed. TypeScript clean (pre-existing new-game.tsx error only). Version still 1.2.3.
 
 ---
 
 ## Exact next steps
 
-1. **Device test** on Samsung S24 Ultra — verify specifically:
-   - B1: "Today's · Easy" label appears under 📅 icon on Android (not top-left)
-   - B2: Settings mode change → back → board shows correct new mode
-   - B3: Difficulty tap after completed daily shows toast only (no cycle); practice mode CAN change difficulty
-   - B4: Daily win overlay auto-dismisses after 3s
-   - B5: Practice lose overlay shows ? and ↺ New Game above nav bar
+1. **Device test** on Samsung S24 Ultra — verify:
+   - D2: Mode row shows `[📅 Today's · Easy]  [🎮]` (daily) or `[📅]  [🎮 Practice · Easy]` (practice) — label inline, right of icon
+   - D1: Practice icon is 🎮 (not ∞) in indicator row and in HelpModal bottom strip section
+   - B5: Practice lose overlay — tap the overlay, confirm ↺ New Game button works and ? opens help
+   - All prior B1–B4 still working
 2. **Build APK**: `bash build-and-deploy.sh`
 
 ---
 
 ## Gotchas
 
-- **B3 practice after daily**: After daily completes, switching to practice mode NOW allows difficulty change. This is correct — the daily's locked `dailyDifficulty` is separate from `settingsStore.difficulty`.
-- **B4 dismiss + mode-change**: Mode-change effect sets `setEndGameVisible(false)`, which triggers `[endGameVisible]` cleanup → cancels dismiss timer. Correct.
-- **B5 web**: `insets.bottom = 0` on web → `paddingBottom = 0 + 24 = 24` — identical to before.
-- **B2 clamp on mount**: On first render, `activeBoard = 0`, any `boardCount ≥ 1` → condition false → no-op. Safe.
-- **`WORD_DOTS_H = 44` vs `DOTS_H = 36`**: Single-board uses 44 in tile sizing; multi-board uses 36. Unchanged.
+- **D2 layout shift**: When switching daily↔practice, the active pill grows (gains label) and the inactive pill shrinks (loses label). The `modeIconSpacer` (flex:1) absorbs the difference. The row height stays at 44px fixed. No board reflow.
+- **D2 icon color in modeIconSquare**: The 🎮 emoji is inside a bordered square (same as before). The square border colour is green (active) or grey (inactive). The emoji renders at 13px inside the 24×24 square. Emoji doesn't respond to `color` prop — opacity on the pill parent handles the inactive fading.
+- **B5 stopPropagation on Android**: On Android (native), React Native Pressables don't bubble events the same way. The `e.stopPropagation?.()` is a no-op on native but safe. The explicit `dismissEndGame()` call ensures the overlay always closes when ↺ is tapped, regardless of platform.
+- **modeIconEmoji style**: Defined in StyleSheet (index.tsx). If the emoji needs size adjustment, change `fontSize: 13` there.
