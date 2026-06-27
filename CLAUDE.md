@@ -337,7 +337,7 @@ Build commands: `eas build --local --profile preview --output wordout.apk` / `--
 - Never trigger or instruct triggering a build without a confirmed version bump.
 - Update `CHANGELOG.md` with the new version entry as part of the same commit as `app.json`.
 
-**Current version:** `1.2.1` (versionCode 9) — code complete, uncommitted.  
+**Current version:** `1.2.2` (versionCode 10) — committed.  
 Update after each confirmed bump so future sessions start from the right baseline.
 
 ### Build pipeline
@@ -356,7 +356,7 @@ Update after each confirmed bump so future sessions start from the right baselin
   - `https://github.com/dilippanicker/wordout/releases/latest/download/wordout.apk`
   - `https://github.com/dilippanicker/wordout/releases/latest/download/wordout.aab`
 
-**Current version:** `1.2.1` (versionCode 9) — code complete, uncommitted. Commit + push + trigger build next session.
+**Current version:** `1.2.2` (versionCode 10) — committed. Build APK via `bash build-and-deploy.sh` next session.
 
 ### Play Store setup
 - App created in Google Play Console under publisher "Onglipo"

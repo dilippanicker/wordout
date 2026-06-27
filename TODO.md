@@ -1,24 +1,21 @@
 # Wordout — Master TODO
 **Updated: 2026-06-27**
-**Current version: v1.2.1 (uncommitted — commit + push + trigger build next)**
+**Current version: v1.2.2 (versionCode 10) — committed, pending device test**
 
 ---
 
-## 🔴 IMMEDIATE — Commit, Build & Play Store
+## 🔴 IMMEDIATE — Build & Play Store
 
-- [ ] Commit v1.2.1 (all 8 changed source files + app.json + CHANGELOG.md + TODO.md)
-- [ ] Push to origin/main → trigger GitHub Actions build manually
-- [ ] Test on device (Samsung S24 Ultra) — verify all v1.2.1 changes:
-  - Settings safe area: no status bar/notch overlap
-  - Settings mode change stays on Settings (no navigation away)
-  - Daily difficulty lock: alert if daily in progress
-  - Header arrows: solid grey triangles, no box wrapper
-  - Header label updates immediately on ‹ › press
-  - Help screen: 💀 Extreme mode row; green indicator square; 📊 emoji; triangle arrows
-  - Win overlay: "Solved in X/N tries {emoji}" below answer word
-  - Continue button: appears after end-game popup, hides ✓/✗ on press
-  - Stats modal header: "STATISTICS · Wordout" / "STATISTICS · 4-out" etc.
-  - Bottom strip: "? for help" in green pre-game; "Guess N of M · ? for help" while playing
+- [ ] Test v1.2.2 on device (Samsung S24 Ultra) — verify all changes:
+  - End-game exit: practice → New Game button; daily → countdown
+  - Animations fire once only per game
+  - ✓/✗ overlay appears after wave animation
+  - Indicator row label: "Today's · Easy" / "Practice · Easy"
+  - Bottom strip: ⏳/🎯/🎲 states correct
+  - Stats row inline layout
+  - Settings footer: no word count pills
+  - Help screen: streak explanation present
+- [ ] Build APK: `bash build-and-deploy.sh`
 - [ ] Feature graphic (1024×500px) — design in claude.ai
 - [ ] Screenshots on S24 Ultra (min 2, recommend 6):
   - Fresh empty board (Wordout mode, showing pre-game tip)
@@ -38,6 +35,23 @@
 - [ ] Update GitHub Actions workflow to auto-upload to internal track
 
 ---
+
+## ✅ v1.2.2 — Completed 2026-06-27
+
+- ✅ B1: End-game exit — practice "New Game", daily countdown
+- ✅ B2: Daily New Game toast correct
+- ✅ B3: Animations fire once only per game
+- ✅ B5: Difficulty locked after daily completed
+- ✅ B6: Practice board persists on mode switch
+- ✅ B7: ✓/✗ overlay after wave animation
+- ✅ B8: Multi-board strip state cleanup
+- ✅ B10: Mode arrows refresh active board
+- ✅ B13: Streak explanation in HelpModal
+- ✅ E1: Removed auto-clear after invalid-word shake
+- ✅ E2: Bottom strip ⏳/🎯/🎲 states
+- ✅ E3: Stats row inline layout
+- ✅ E4: Indicator row mode/difficulty label
+- ✅ E5: Word count pills removed from Settings
 
 ## ✅ v1.2.1 — Completed 2026-06-27
 

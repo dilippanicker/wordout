@@ -47,3 +47,4 @@ yarn-error.*
 /android
 wordlist/.venv/
 assets/images.zip
+builds/

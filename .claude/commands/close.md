@@ -1,6 +1,6 @@
 ---
 name: close
-description: Session close ritual — update handoff, TODO, CHANGELOG and report cost
+description: Session close ritual — update handoff, TODO, CHANGELOG, commit, push, report cost
 ---
 
 Run all steps in order. Do not skip any step even if there were no code changes.
@@ -28,6 +28,16 @@ Run all steps in order. Do not skip any step even if there were no code changes.
    - Add entry under current version (or [Unreleased])
    - Format: `- [Added/Changed/Fixed/Removed] description`
 
-5. **Report `/cost`** for this session
+5. **Commit and push all changes** (mandatory — never close with uncommitted changes):
+   ```
+   git add -A
+   git commit -m "chore: session close — <brief description of what changed>"
+   git push origin main
+   ```
+   The commit message should describe the session's changes in a few words, e.g.:
+   - `chore: session close — update handoff and TODO for v1.2.1`
+   - `chore: session close — update CLAUDE.md and close command`
+
+6. **Report `/cost`** for this session
 
 Confirm with: "Session closed. Handoff written. Safe to /exit."

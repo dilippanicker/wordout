@@ -6,6 +6,31 @@ All notable changes to Wordout are documented here.
 
 ---
 
+## [1.2.2] — 2026-06-27
+### Added
+- Indicator row label: "Today's · Easy" (daily) or "Practice · Easy" (practice) under active mode icon
+- Streak explanation added to help screen
+
+### Changed
+- Bottom strip states redesigned: ⏳ N tries left · ? for help / 🎯 Solved in X of N / 🎲 Unlucky
+- Stats row uses inline layout
+- Word count pills removed from Settings footer
+- Removed auto-clear of current guess after invalid-word shake (user backspaces manually)
+- Removed "Continue →" button introduced in v1.2.1 (simplified flow)
+
+### Fixed
+- B1: End-game overlay exit — practice shows "New Game", daily shows countdown
+- B2: Daily mode "New Game" button toast message correct
+- B3: Win/lose animations fire only once per game (no replay on re-render)
+- B5: Difficulty locked after daily game completed (not just while playing)
+- B6: Practice game board persists correctly on mode switch
+- B7: ✓/✗ board overlay now appears after wave animation completes
+- B8: Multi-board bottom strip state cleanup
+- B10: Mode arrows (‹ ›) refresh active board on press
+- B13: Streak explanation added to HelpModal
+
+---
+
 ## [1.2.1] — 2026-06-27
 ### Added
 - Win overlay: "Solved in X/N tries 💪" line below the answer word (correct difficulty emoji shown)
