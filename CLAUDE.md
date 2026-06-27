@@ -107,11 +107,11 @@
 - `suppressOverlay={overlayLocked}` passed to all GameBoards
 - Result: wave → popup → dismiss → per-board ✓/✗ overlay
 - "Continue →" button removed in v1.2.2 (was `boardOverlayDismissed` state)
-- **All modes auto-dismiss** after 3s (post-test fix — daily previously stayed until tapped; `isDailyRef` removed)
+- **All modes auto-dismiss** after 3s via `useEffect([endGameVisible])` — separate effect fires when overlay becomes visible, starts 3000ms timer; cleanup cancels if dismissed manually first (post-test fix B4)
 
 **End-game overlay structure** (post-test fix for B5): Two-section layout inside `endGamePressable`:
 1. `endGameHelpRow` — full-width `View` with `alignItems: 'flex-end'`; contains `?` help Pressable at right edge
-2. `endGameContent` — `flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14`; contains emoji, message, word, buttons
+2. `endGameContent` — `flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14, paddingBottom: insets.bottom + 24` (inline, dynamic — static 24 was insufficient on Android with nav bar); contains emoji, message, word, buttons
 `endGamePressable` now uses `flexDirection: 'column'` only (no `justifyContent: 'center'` at top level).
 The `?` button is NO LONGER `position: 'absolute'` — it's a normal flex child. This prevents Android rendering issues where absolute children of an absoluteFill Pressable sometimes don't render.
 
@@ -238,7 +238,7 @@ Word count pills removed in v1.2.2 (E5). `WORD_COUNT_ANSWERS` / `WORD_COUNT_GUES
 ### Difficulty lock for daily (v1.2.2)
 Two places enforce the lock:
 - **Settings screen**: `handleDifficultyChange()` in settings.tsx calls `useDailyStore.getState()` imperatively. If `dailyStatus === 'completed' || (dailyStatus === 'playing' && dailyGuesses.length > 0)`, calls `showDiffLockToast()` (inline toast, 3s auto-dismiss). Uses `useRef` + `setTimeout` — no `Alert.alert` (broken on RN Web).
-- **Header difficulty icon**: `handleDifficultyToggle()` in index.tsx (post-test fix). Same lock check using `useDailyStore.getState()`. If locked, calls `showSystemToast('Daily locked — next word in HH:MM:SS')` and returns. Only applies when `!isQuordle` (quordle has no daily concept). `renderHeader` receives `onDifficultyToggle` prop instead of inlining the logic.
+- **Header difficulty icon**: `handleDifficultyToggle()` in index.tsx (post-test fix). Same lock check using `useDailyStore.getState()`. If locked, calls `showSystemToast('Daily locked — next word in HH:MM:SS')` and returns. Only applies when `isDaily` (not `!isQuordle` — practice mode should always allow difficulty change). `renderHeader` receives `onDifficultyToggle` prop instead of inlining the logic.
 
 ### Header arrows (v1.2.1)
 ‹ › boxed chevrons replaced with CSS border-trick solid triangles:
@@ -301,7 +301,7 @@ SVG: 5 tiles [W][O][R][D][✓] on dark `#121213` background, rounded square. Exp
 
 ### EAS build
 `eas.json` has `development` (internal APK), `preview` (APK), `production` (AAB) profiles.  
-`app.json`: `android.package: "com.dilippanicker.wordout"`, `android.versionCode: 10` (current — see version bumping protocol before building)  
+`app.json`: `android.package: "com.dilippanicker.wordout"`, `android.versionCode: 11` (current — see version bumping protocol before building)  
 Build commands: `eas build --local --profile preview --output wordout.apk` / `--profile production --output wordout.aab`
 
 ---
@@ -360,7 +360,7 @@ Build commands: `eas build --local --profile preview --output wordout.apk` / `--
 - Never trigger or instruct triggering a build without a confirmed version bump.
 - Update `CHANGELOG.md` with the new version entry as part of the same commit as `app.json`.
 
-**Current version:** `1.2.2` (versionCode 10) — committed.  
+**Current version:** `1.2.3` (versionCode 11) — committed.  
 Update after each confirmed bump so future sessions start from the right baseline.
 
 ### Build pipeline
@@ -379,7 +379,7 @@ Update after each confirmed bump so future sessions start from the right baselin
   - `https://github.com/dilippanicker/wordout/releases/latest/download/wordout.apk`
   - `https://github.com/dilippanicker/wordout/releases/latest/download/wordout.aab`
 
-**Current version:** `1.2.2` (versionCode 10) — committed. Build APK via `bash build-and-deploy.sh` next session.
+**Current version:** `1.2.3` (versionCode 11) — committed. Build APK via `bash build-and-deploy.sh` next session.
 
 ### Play Store setup
 - App created in Google Play Console under publisher "Onglipo"

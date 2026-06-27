@@ -294,13 +294,24 @@ export default function WordleScreen() {
     if (isDaily) dailyStore.startOrResumeDaily();
   }, [dailyStore.activeWordleMode, isQuordle]);
 
-  // Reset scroll on new quordle game
+  // Reset scroll on new quordle game; also fires when boardCount changes (settings B2)
   useEffect(() => {
     if (isQuordle && quordleStore.guesses.length === 0) {
       setActiveBoard(0);
       scrollRef.current?.scrollTo({ x: 0, animated: false });
     }
-  }, [isQuordle, quordleStore.guesses.length]);
+  }, [isQuordle, quordleStore.guesses.length, quordleStore.boardCount]);
+
+  // B2: clamp activeBoard when boardCount shrinks (e.g. settings 4-out → 2-out)
+  useEffect(() => {
+    setActiveBoard(prev => {
+      if (isQuordle && prev >= quordleStore.boardCount) {
+        scrollRef.current?.scrollTo({ x: 0, animated: false });
+        return 0;
+      }
+      return prev;
+    });
+  }, [isQuordle, quordleStore.boardCount]);
 
   // Track justSolvedInfo for BottomStrip State 2
   const solvedBoardsKey = quordleStore.solvedBoards.join(',');
@@ -359,11 +370,10 @@ export default function WordleScreen() {
   }
 
   function handleDifficultyToggle() {
-    // B3: block difficulty cycle when daily is completed or in-progress
-    if (!isQuordle) {
-      const { dailyStatus, dailyGuesses } = useDailyStore.getState();
-      const dailyLocked = dailyStatus === 'completed' || (dailyStatus === 'playing' && dailyGuesses.length > 0);
-      if (dailyLocked) {
+    // B3: lock difficulty when actually in daily mode and game has started or finished
+    if (isDaily) {
+      const { dailyStatus } = useDailyStore.getState();
+      if (dailyStatus === 'playing' || dailyStatus === 'completed') {
         showSystemToast(`Daily locked — next word in ${msToHMS(msUntilMidnight())}`);
         return;
       }
@@ -433,9 +443,10 @@ export default function WordleScreen() {
       setOverlayLocked(true); // suppress per-board overlays until popup dismissed
       const delay = activeGameStatus === 'won' ? 4200 : 3200;
       endGameTimerRef.current = setTimeout(() => {
+        endGameTimerRef.current = null;
         setEndGameVisible(true);
         endGameOpacity.value = withTiming(1, { duration: 300 });
-        endGameTimerRef.current = setTimeout(dismissEndGame, 3000);
+        // auto-dismiss handled by [endGameVisible] effect (B4)
       }, delay);
     }
 
@@ -450,6 +461,13 @@ export default function WordleScreen() {
       if (endGameTimerRef.current) { clearTimeout(endGameTimerRef.current); endGameTimerRef.current = null; }
     };
   }, [activeGameStatus]);
+
+  // B4: auto-dismiss overlay 3s after it appears — separate from outer delay timer
+  useEffect(() => {
+    if (!endGameVisible) return;
+    const timer = setTimeout(dismissEndGame, 3000);
+    return () => clearTimeout(timer);
+  }, [endGameVisible]);
 
   // ── End-game overlay content ─────────────────────────────────────────────
   let endEmoji = '';
@@ -578,7 +596,7 @@ export default function WordleScreen() {
             <Ionicons name="help-circle-outline" size={24} color="rgba(255,255,255,0.7)" />
           </Pressable>
         </View>
-        <View style={styles.endGameContent}>
+        <View style={[styles.endGameContent, { paddingBottom: insets.bottom + 24 }]}>
           <Text style={styles.endGameEmoji}>{endEmoji}</Text>
           <Text style={styles.endGameMessage}>{endMessage}</Text>
           {endWordsNode}
@@ -803,7 +821,7 @@ export default function WordleScreen() {
             }]}>
               <Ionicons name="calendar-outline" size={13} color={isDaily ? '#5BA75A' : '#878a8c'} />
             </View>
-            <Text style={[styles.modeLabel, { opacity: isDaily ? 1 : 0 }]}>
+            <Text style={[styles.modeLabel, { opacity: isDaily ? 1 : 0 }]} numberOfLines={1}>
               {`Today's · ${dailyStore.dailyDifficulty.charAt(0).toUpperCase() + dailyStore.dailyDifficulty.slice(1)}`}
             </Text>
           </View>
@@ -827,7 +845,7 @@ export default function WordleScreen() {
             }]}>
               <Ionicons name="infinite-outline" size={13} color={isDaily ? '#878a8c' : '#5BA75A'} />
             </View>
-            <Text style={[styles.modeLabel, { opacity: isDaily ? 0 : 1 }]}>
+            <Text style={[styles.modeLabel, { opacity: isDaily ? 0 : 1 }]} numberOfLines={1}>
               {`Practice · ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}`}
             </Text>
           </View>
@@ -1067,7 +1085,6 @@ const styles = StyleSheet.create({
   },
   modeIconWithLabel: {
     alignItems: 'center',
-    gap: 2,
   },
   modeIconSquare: {
     width: 24,
@@ -1077,11 +1094,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   modeLabel: {
+    marginTop: 2,
     fontSize: 9,
     fontWeight: '600',
     color: '#5BA75A',
     letterSpacing: 0.2,
     lineHeight: 11,
+    maxWidth: 80,
+    textAlign: 'center',
   },
   // Multi-board progress indicators
   dotRow: {
@@ -1180,7 +1200,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 14,
     paddingHorizontal: 24,
-    paddingBottom: 24,
   },
   endGameHelpRow: {
     width: '100%',

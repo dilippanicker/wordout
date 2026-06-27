@@ -1,6 +1,6 @@
 # Wordout — Master TODO
 **Updated: 2026-06-28**
-**Current version: v1.2.2 (versionCode 10) — committed, pending device test**
+**Current version: v1.2.3 (versionCode 11) — committed, pending device test**
 
 ---
 
@@ -41,13 +41,13 @@
 
 ---
 
-## ✅ v1.2.2 post-test fixes — Completed 2026-06-28
+## ✅ v1.2.3 post-test fixes — Completed 2026-06-28
 
-- ✅ B1 (post-test): "Today's · Easy" label position on Android — always-rendered with opacity toggle
-- ✅ B2 (post-test): Board doesn't refresh on Settings mode change — added newGame() call
-- ✅ B3 (post-test): Difficulty icon cycles on completed daily — added lock in handleDifficultyToggle
-- ✅ B4 (post-test): Daily win overlay auto-dismiss not firing — removed isDailyRef guard
-- ✅ B5 (post-test): Lose overlay missing ↺ New Game and ? icons — restructured overlay layout
+- ✅ B1 (post-test): "Today's · Easy" label position on Android — maxWidth/marginTop/numberOfLines constraints on modeLabel
+- ✅ B2 (post-test): Board doesn't refresh on Settings mode change — boardCount in scroll-reset deps + clamp effect
+- ✅ B3 (post-test): Difficulty icon cycles on completed daily — lock guard changed to `isDaily` (not `!isQuordle`)
+- ✅ B4 (post-test): Daily win overlay auto-dismiss not firing — decoupled to useEffect([endGameVisible])
+- ✅ B5 (post-test): Lose overlay buttons clipped by Android nav bar — insets.bottom added to endGameContent padding
 
 ## ✅ v1.2.2 — Completed 2026-06-28
 
