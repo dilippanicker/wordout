@@ -6,22 +6,24 @@
 
 ## What was done this session
 
-### Docs update (d590ec3)
-User manually updated three files; committed and pushed as 'docs: update README, trim CLAUDE.md, add playstore.md':
-- `README.md` — updated (content set by user)
-- `CLAUDE.md` — trimmed (content set by user)
-- `docs/playstore.md` — new file added (Play Store setup checklist)
-- `.claude/session-handoff.md` — also picked up by `git add -A` (was modified)
+No code changes. User typed `cost` and session was closed immediately.
 
-### CC tooling update (446d579)
-Two files updated to fix the `/open` model-switch reminder:
-- `.claude/commands/open.md` — Step 2 changed from "Run `/model haiku`" to outputting a reminder message: `"💡 Type /model haiku now for cost savings. Continuing in 10 seconds..."`. CC cannot execute model switches programmatically, only remind.
-- `CLAUDE.md` Model Selection section — replaced self-escalation text with: CC cannot switch models programmatically; CC announces recommended switches; user must execute manually.
+## State at close
+
+- Codebase: clean (no uncommitted changes)
+- All v1.2.7 fixes committed and pushed
+- GitHub Actions build for v1.2.7 not yet triggered
 
 ## Next session priorities
-- Build APK via GitHub Actions (v1.2.7) — trigger from Actions tab
-- Test on device (Samsung S24 Ultra):
-  - Wave animation: win a game, switch mode, return — should go directly to ✓ overlay, no re-wave
-  - Daily: try changing difficulty from ribbon or Settings → should show toast, not change
-  - Daily: difficulty icon should always be 🐣 regardless of settings
-  - Help screen: verify content matches helpContent.ts constants
+
+1. Build APK via GitHub Actions (v1.2.7) — trigger from Actions tab
+2. Test on device (Samsung S24 Ultra):
+   - Wave animation: win a game, switch mode, return — should go directly to ✓ overlay, no re-wave
+   - Daily: try changing difficulty from ribbon or Settings → should show toast, not change
+   - Daily: difficulty icon should always be 🐣 regardless of settings
+   - Help screen: verify content matches helpContent.ts constants
+3. Upload v1.2.7 AAB to Play Store internal testing track (last upload was versionCode 4 / v1.0.3)
+4. Play Console setup:
+   - Content rating questionnaire
+   - Data safety (no data collected — all local)
+   - Feature graphic (1024×500px) + screenshots
