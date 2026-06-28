@@ -464,10 +464,10 @@ export default function WordleScreen() {
     };
   }, [activeGameStatus]);
 
-  // B4: auto-dismiss overlay 3s after it appears — separate from outer delay timer
+  // B4: auto-dismiss overlay 5s after it appears — separate from outer delay timer
   useEffect(() => {
     if (!endGameVisible) return;
-    const timer = setTimeout(dismissEndGame, 3000);
+    const timer = setTimeout(dismissEndGame, 5000);
     return () => clearTimeout(timer);
   }, [endGameVisible]);
 
