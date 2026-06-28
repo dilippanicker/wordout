@@ -3,10 +3,15 @@
 All notable changes to Wordout are documented here.
 
 ## [Unreleased]
+### Added
+- Celebration overlay now shows "Closing in 5…4…3…2…1…" countdown while auto-dismiss timer runs; countdown driven by `END_GAME_DISMISS_MS` constant (single source of truth for both timer and display)
+
 ### Changed
 - Celebration overlay (win and lose) auto-dismiss timer extended from 3 seconds to 5 seconds
 
 ### Fixed
+- Last-row tiles no longer re-animate after celebration overlay auto-dismisses — `!waveDoneLocal` guard on `FlipTile` condition in `GameBoard` prevents type-change remount that was replaying the fill animation
+- Hard mode in n-out (2-out to 8-out): each board now enforces only its own revealed hints independently; a guess is accepted if it satisfies at least one unsolved board's constraints (previously rejected if ANY board's constraint was violated, so board 1 revealing 'I' blocked all guesses without 'I' even for boards that didn't need it)
 - `onWaveDone` now fires at true wave end — last tile's `withSpring` completion via Reanimated `runOnJS` — so ✓/✗ overlay cannot appear before the bounce wave finishes on any board size (previously fired at wave start, causing early overlay on large boards e.g. 8-out)
 - Animation sequence overhaul — fill/wave/celebration/final-state now fire correctly in all modes:
   - Fill animation no longer re-fires when switching mode or board count back to a completed game (`GameBoard` keyed by mode/boardCount, forcing remount so `prevCount` ref initialises fresh)

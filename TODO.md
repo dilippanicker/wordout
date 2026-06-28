@@ -1,21 +1,23 @@
 # Wordout — Master TODO
-**Updated: 2026-06-29 (session 5)**
-**Current version: v1.2.7 (versionCode 15) — celebration overlay auto-dismiss extended to 5s; GitHub Actions build triggered (run 28332145349)**
+**Updated: 2026-06-29 (session 6)**
+**Current version: v1.2.7 (versionCode 15) — tile re-animation fix, overlay countdown, hard mode per-board constraints fixed; bump to v1.2.8 before next build**
 
 ---
 
 ## 🔴 IMMEDIATE — Build & Play Store
 
 - [ ] Check GitHub Actions build result (run 28332145349, triggered 2026-06-29) — confirm APK + AAB produced
-- [ ] Bump to v1.2.8 before next intentional build (patch: 5s overlay + onWaveDone timing fix)
-- [ ] Test animation fix on device (Samsung S24 Ultra) — priority test cases:
+- [ ] Bump to v1.2.8 before next intentional build (patch: tile re-animation, countdown, hard mode fix)
+- [ ] Test on device (Samsung S24 Ultra) — priority test cases:
   - Win practice → ✓ overlay appears ONLY AFTER wave fully completes (not during bounce)
-  - Win 8-out → ✓ overlay waits for all 40 tiles to settle before fading in
+  - Win 8-out → ✓ overlay waits for all 40 tiles; no re-animation after overlay auto-dismisses
   - Win practice → switch to daily → switch back → ✓ immediately, NO wave re-fire
   - Win 4-out → switch to 2-out → switch back → no popup re-fire, boards show ✓
   - Win daily → verify ✓ persists on app relaunch, no re-wave, no re-popup
   - Lose a game → ✗ shows on revisit, no red shake re-fire
   - New Game resets: wave fires fresh, popup fires fresh
+  - Celebration overlay: "Closing in 5…4…3…2…1…" visible, then auto-dismisses
+  - Hard mode 2-out: board 1 reveals 'I' → can submit guess without 'I' if board 2 accepts it
 - [ ] Also verify v1.2.6/v1.2.7 fixes still intact:
   - Footer on completed daily: only [? for help] [📊], NO countdown, NO New Game button
   - ↺ New Game button in footer is green/white rounded
@@ -43,6 +45,12 @@
 - [ ] Update GitHub Actions workflow to auto-upload to internal track
 
 ---
+
+## ✅ Session 6 — Completed 2026-06-29
+
+- ✅ Tile re-animation bug fixed — last-row tiles no longer re-animate after celebration overlay dismisses (`waveDoneLocal` guard in `GameBoard.tsx`)
+- ✅ Celebration overlay countdown — "Closing in 5…4…3…2…1…" shown while 5s auto-dismiss timer runs; driven by `END_GAME_DISMISS_MS` constant
+- ✅ Hard mode per-board constraint fix — n-out: each board enforces only its own revealed hints; guess accepted if any unsolved board accepts it
 
 ## ✅ v1.2.7 — Completed 2026-06-28
 

@@ -127,6 +127,14 @@
 - `boardCount` is in the mode-reset `useEffect` deps — syncs `prevGameStatusRef` on bc-switch so returning to a completed bc-game doesn't re-trigger the popup.
 - Wave skip path in `GameBoard`: on remount with `waveShown=true`, `isRevisit=true` → `setWaveDoneLocal(true)` immediately → no bounce → ✓ overlay shows via `elapsed=Infinity` path.
 - `onWaveDone` fires at TRUE wave end — `BounceTile` last tile (`row=count-1, col=COLS-1`) uses `runOnJS` in the `withSpring` completion callback. `stableHandleWaveDone` is a `useCallback([], [])` stable reference that reads `onWaveDone` via `onWaveDoneRef` to avoid stale closure; guards with `waveSentRef` to prevent double-call. Do NOT call `onWaveDone` at wave start — that causes ✓ overlay to appear before the wave finishes on large boards.
+- FlipTile is gated on `row === animatingRow && !waveDoneLocal` — the `!waveDoneLocal` guard is critical. When `waveDoneLocal` flips true, both the BounceTile wrapper condition and the FlipTile condition become false in the same render, collapsing to a static Tile. Without this guard, React sees a BounceTile→FlipTile type change and remounts FlipTile fresh (progress=0), replaying the fill animation after the overlay dismisses.
+
+**Hard mode constraint semantics (n-out):**
+- Each board independently enforces only its own revealed hints (`checkHardModeConstraints` uses per-board history via `g.boardResults[b]`)
+- A guess is **accepted** if at least one unsolved board's constraints are satisfied
+- A guess is **rejected** only when ALL unsolved boards reject it (toast shows first board's violation)
+- A board with no revealed letters trivially accepts (no constraints) — normal in early turns
+- Single-board (`gameStore`) hard mode is unchanged: that board's constraints always apply
 
 ### Difficulty lock rules
 - Daily: always Easy; toast on change attempt: "Daily is always Easy · Try changing difficulty in Practice"
