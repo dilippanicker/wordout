@@ -176,16 +176,13 @@ Before every build, follow exactly:
 
 ## Model Selection
 
-Start every session on Haiku — `/model haiku` runs automatically in `/open`.
+CC cannot switch models programmatically. At session start, CC reminds user to switch to Haiku. User switches manually if desired. CC announces recommended switches during session (e.g. "Switching to Sonnet recommended — animation logic is complex") but user must execute the switch.
 
 | Situation | Model |
 |-----------|-------|
 | Simple edits, config, file reading, cleanup | Haiku |
 | Complex logic, hard bugs, animations, store changes | Sonnet |
 | Sonnet failing after 2 attempts | Opus |
-
-Always announce switches: "Switching to Sonnet — animation logic is complex."
-De-escalate after hard task: "Switching back to Haiku — cleanup now."
 
 Cost awareness: Haiku ≈ 20× cheaper than Sonnet. `/compact` at 50%+ context.
 
