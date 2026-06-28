@@ -1231,8 +1231,9 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 14,
+    gap: 24,
     paddingHorizontal: 24,
+    paddingVertical: 32,
   },
   endGameHelpRow: {
     width: '100%',
@@ -1306,9 +1307,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   dismissCountdown: {
-    color: 'rgba(255,255,255,0.45)',
-    fontSize: 13,
-    marginTop: -4,
+    color: '#5BA75A',
+    fontSize: 16,
+    fontWeight: '700',
   },
   newGameButton: {
     marginTop: 4,

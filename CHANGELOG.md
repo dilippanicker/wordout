@@ -3,11 +3,14 @@
 All notable changes to Wordout are documented here.
 
 ## [Unreleased]
+
+## [1.2.8] — 2026-06-29
 ### Added
-- Celebration overlay now shows "Closing in 5…4…3…2…1…" countdown while auto-dismiss timer runs; countdown driven by `END_GAME_DISMISS_MS` constant (single source of truth for both timer and display)
+- Celebration overlay shows "Closing in 5…4…3…2…1…" countdown (green, bold) while auto-dismiss timer runs; driven by `END_GAME_DISMISS_MS` constant — single source of truth for timer and display
 
 ### Changed
 - Celebration overlay (win and lose) auto-dismiss timer extended from 3 seconds to 5 seconds
+- Celebration overlay content layout: increased item gap (14→24) and added vertical padding — content now has natural breathing room across the full overlay height instead of being tightly clustered
 
 ### Fixed
 - Last-row tiles no longer re-animate after celebration overlay auto-dismisses — `!waveDoneLocal` guard on `FlipTile` condition in `GameBoard` prevents type-change remount that was replaying the fill animation
@@ -21,8 +24,6 @@ All notable changes to Wordout are documented here.
 
 ### Changed
 - README and CLAUDE.md updated; `docs/playstore.md` added (Play Store setup checklist)
-- `/open` skill updated: CC now reminds user to type `/model haiku` instead of trying to execute it programmatically
-- CLAUDE.md Model Selection section clarified: CC announces recommended model switches but user must execute them manually
 
 ## [1.2.7] — 2026-06-28
 ### Changed

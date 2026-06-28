@@ -1,13 +1,13 @@
 # Wordout — Master TODO
 **Updated: 2026-06-29 (session 6)**
-**Current version: v1.2.7 (versionCode 15) — tile re-animation fix, overlay countdown, hard mode per-board constraints fixed; bump to v1.2.8 before next build**
+**Current version: v1.2.8 (versionCode 16) — tile re-animation fix, overlay countdown + layout, hard mode per-board constraints fixed**
 
 ---
 
 ## 🔴 IMMEDIATE — Build & Play Store
 
-- [ ] Check GitHub Actions build result (run 28332145349, triggered 2026-06-29) — confirm APK + AAB produced
-- [ ] Bump to v1.2.8 before next intentional build (patch: tile re-animation, countdown, hard mode fix)
+- [ ] Check GitHub Actions build result (run 28332145349, triggered 2026-06-29) — confirm APK + AAB produced (was built at v1.2.7; trigger fresh build at v1.2.8)
+- [ ] Trigger GitHub Actions build for v1.2.8 (versionCode 16)
 - [ ] Test on device (Samsung S24 Ultra) — priority test cases:
   - Win practice → ✓ overlay appears ONLY AFTER wave fully completes (not during bounce)
   - Win 8-out → ✓ overlay waits for all 40 tiles; no re-animation after overlay auto-dismisses
