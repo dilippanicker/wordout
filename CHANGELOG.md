@@ -4,6 +4,7 @@ All notable changes to Wordout are documented here.
 
 ## [Unreleased]
 ### Fixed
+- `onWaveDone` now fires at true wave end — last tile's `withSpring` completion via Reanimated `runOnJS` — so ✓/✗ overlay cannot appear before the bounce wave finishes on any board size (previously fired at wave start, causing early overlay on large boards e.g. 8-out)
 - Animation sequence overhaul — fill/wave/celebration/final-state now fire correctly in all modes:
   - Fill animation no longer re-fires when switching mode or board count back to a completed game (`GameBoard` keyed by mode/boardCount, forcing remount so `prevCount` ref initialises fresh)
   - Celebration popup no longer re-fires when switching board counts back to a completed game (`celebrationShown` flag in all stores; `boardCount` added to mode-reset effect deps)

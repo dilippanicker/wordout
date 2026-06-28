@@ -1,6 +1,6 @@
 # Wordout — Master TODO
-**Updated: 2026-06-28 (session 3)**
-**Current version: v1.2.7 (versionCode 15) — animation fix added (no bump yet), pending device test + build**
+**Updated: 2026-06-29 (session 4)**
+**Current version: v1.2.7 (versionCode 15) — animation fix + onWaveDone timing fix added (no bump yet), pending device test + build**
 
 ---
 
@@ -8,6 +8,8 @@
 
 - [ ] Build APK via GitHub Actions (trigger from Actions tab — bump to v1.2.8 FIRST after device test)
 - [ ] Test animation fix on device (Samsung S24 Ultra) — priority test cases:
+  - Win practice → ✓ overlay appears ONLY AFTER wave fully completes (not during bounce)
+  - Win 8-out → ✓ overlay waits for all 40 tiles to settle before fading in
   - Win practice → switch to daily → switch back → ✓ immediately, NO wave re-fire
   - Win 4-out → switch to 2-out → switch back → no popup re-fire, boards show ✓
   - Win daily → verify ✓ persists on app relaunch, no re-wave, no re-popup

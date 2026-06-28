@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -7,6 +7,7 @@ import Animated, {
   withTiming,
   withSpring,
   withDelay,
+  runOnJS,
 } from 'react-native-reanimated';
 import { Tile, TileStatus } from './Tile';
 import { FlipTile } from './FlipTile';
@@ -20,13 +21,20 @@ const FLIP_DONE_MS = STAGGER * (COLS - 1) + 450;
 const WAVE_STAGGER = 80; // ms between each tile in the win wave
 
 // Wraps one tile; bounces up-then-spring-back with a per-tile delay.
-function BounceTile({ delay, children }: { delay: number; children: React.ReactNode }) {
+// onDone fires via runOnJS when the spring settles — used on the last tile to signal wave complete.
+function BounceTile({ delay, onDone, children }: { delay: number; onDone?: () => void; children: React.ReactNode }) {
   const translateY = useSharedValue(0);
   useEffect(() => {
+    const springCb = onDone
+      ? (finished?: boolean) => {
+          'worklet';
+          if (finished) runOnJS(onDone)();
+        }
+      : undefined;
     translateY.value = withDelay(delay,
       withSequence(
         withTiming(-14, { duration: 100 }),
-        withSpring(0, { damping: 6, stiffness: 180 }),
+        withSpring(0, { damping: 6, stiffness: 180 }, springCb),
       ),
     );
   }, []);
@@ -217,6 +225,19 @@ export function GameBoard({
   // waveShownRef: sync of the waveShown prop, readable in effects without making waveShown a dep
   const waveShownRef = useRef(waveShown ?? false);
   waveShownRef.current = waveShown ?? false;
+  // onWaveDoneRef: latest onWaveDone prop, read via stable callback to avoid stale closure in BounceTile
+  const onWaveDoneRef = useRef(onWaveDone);
+  onWaveDoneRef.current = onWaveDone;
+  // stableHandleWaveDone: stable ref passed to the last BounceTile; fires setWaveDoneLocal + onWaveDone
+  // when the last tile's spring animation completes (via runOnJS). Stable so BounceTile's useEffect
+  // (which runs once on mount) captures the correct function.
+  const stableHandleWaveDone = useCallback(() => {
+    if (!waveSentRef.current) {
+      waveSentRef.current = true;
+      setWaveDoneLocal(true);
+      onWaveDoneRef.current?.();
+    }
+  }, []);
 
   // Reset when new game starts (waveShown goes false → store reset)
   useEffect(() => {
@@ -237,23 +258,12 @@ export function GameBoard({
   // Computed each render using refs (stable during animation, no re-render triggered by ref changes)
   const isRevisit = waveShownRef.current && !waveSentRef.current;
 
-  // Wave timer: calls onWaveDone immediately when wave starts so the store is updated before any
-  // mode-switch cleanup can cancel the timer. waveDoneLocal is set after the full animation.
-  // waveShown is intentionally NOT in deps — adding it would cancel the timer when store updates.
+  // Revisit path: store already flagged wave shown for this game — skip animation, go straight to done.
+  // Fresh-solve path: wave fires via BounceTile; stableHandleWaveDone is called via runOnJS from
+  // the last tile's spring callback, which sets waveDoneLocal and calls onWaveDone at the true end.
   useEffect(() => {
-    // Revisit: store already flagged wave shown, skip directly to overlay
     if (waveShownRef.current && !waveSentRef.current && !waveDoneLocal) {
       setWaveDoneLocal(true);
-      return;
-    }
-    if (solved && animatingRow === count - 1 && count > 0 && !waveDoneLocal) {
-      if (!waveSentRef.current) {
-        waveSentRef.current = true;
-        onWaveDone?.(); // Persist to store immediately — survives mode switches that cancel the timer
-      }
-      const totalMs = FLIP_DONE_MS + count * COLS * WAVE_STAGGER + 600;
-      const t = setTimeout(() => setWaveDoneLocal(true), totalMs);
-      return () => clearTimeout(t);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [solved, animatingRow, count, waveDoneLocal]);
@@ -285,12 +295,19 @@ export function GameBoard({
 
     // Wave fires only on first solve: animatingRow guard prevents accidental triggers,
     // isRevisit (ref-based) prevents re-animation when switching back to a solved board.
+    // The last tile (row=count-1, col=COLS-1) receives stableHandleWaveDone via onDone so that
+    // onWaveDone + setWaveDoneLocal fire only after the spring animation actually completes.
     if (solved && row < count && animatingRow === count - 1 && !waveDoneLocal && !isRevisit) {
       return (
         <View key={row} style={styles.row}>
-          {tiles.map((tile, col) => (
-            <BounceTile key={col} delay={FLIP_DONE_MS + (row * COLS + col) * WAVE_STAGGER}>{tile}</BounceTile>
-          ))}
+          {tiles.map((tile, col) => {
+            const isLastTile = row === count - 1 && col === COLS - 1;
+            return (
+              <BounceTile key={col} delay={FLIP_DONE_MS + (row * COLS + col) * WAVE_STAGGER} onDone={isLastTile ? stableHandleWaveDone : undefined}>
+                {tile}
+              </BounceTile>
+            );
+          })}
         </View>
       );
     }

@@ -126,6 +126,7 @@
 - `celebrationShown` is checked in `index.tsx` before firing the end-game popup. Set immediately on first fire, stored in all three game stores.
 - `boardCount` is in the mode-reset `useEffect` deps — syncs `prevGameStatusRef` on bc-switch so returning to a completed bc-game doesn't re-trigger the popup.
 - Wave skip path in `GameBoard`: on remount with `waveShown=true`, `isRevisit=true` → `setWaveDoneLocal(true)` immediately → no bounce → ✓ overlay shows via `elapsed=Infinity` path.
+- `onWaveDone` fires at TRUE wave end — `BounceTile` last tile (`row=count-1, col=COLS-1`) uses `runOnJS` in the `withSpring` completion callback. `stableHandleWaveDone` is a `useCallback([], [])` stable reference that reads `onWaveDone` via `onWaveDoneRef` to avoid stale closure; guards with `waveSentRef` to prevent double-call. Do NOT call `onWaveDone` at wave start — that causes ✓ overlay to appear before the wave finishes on large boards.
 
 ### Difficulty lock rules
 - Daily: always Easy; toast on change attempt: "Daily is always Easy · Try changing difficulty in Practice"
