@@ -126,7 +126,7 @@ const TOP_ICON_ROWS: IconRowDef[] = [
         <View style={styles.triangleRight} />
       </View>
     ),
-    text: 'Cycle through board modes (1, 2, 3, 4, 6, 8 boards)',
+    text: 'Cycle through board counts (Wordout, 2-out, 3-out, 4-out, 6-out, 8-out)',
   },
   {
     renderIcon: () => <Ionicons name="moon-outline" size={18} color="#878a8c" />,
@@ -257,6 +257,9 @@ export function HelpModal({ visible, onClose, difficulty }: HelpModalProps) {
             ))}
 
             <Text style={[styles.subLabel, { color: colors.text, marginTop: 10 }]}>Ribbon</Text>
+            <Text style={[styles.rule, { color: colors.text, marginBottom: 12 }]}>
+              The Ribbon shows your current mode, difficulty, board indicators, and contextual status (such as the next word countdown when today's game is complete).
+            </Text>
             {RIBBON_ICON_ROWS.map(({ renderIcon, text }, i) => (
               <View key={i} style={styles.iconRow}>
                 <View style={styles.iconCell}>{renderIcon()}</View>

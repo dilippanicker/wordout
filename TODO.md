@@ -1,29 +1,32 @@
 # Wordout — Master TODO
 **Updated: 2026-06-28**
-**Current version: v1.2.5 (versionCode 13) — committed, pending device test + build**
+**Current version: v1.2.6 (versionCode 14) — committed, pending device test + build**
 
 ---
 
 ## 🔴 IMMEDIATE — Build & Play Store
 
-- [ ] Build APK via GitHub Actions (trigger from Actions tab — v1.2.5)
-- [ ] Test on device (Samsung S24 Ultra) — verify v1.2.5 fixes:
-  - Ribbon shows "Next word in HH:MM:SS" after daily completion (replaces "Today's · Easy")
-  - Footer game-over: single row [? for help] [📊] [↺ New Game] (practice) or [countdown] (daily)
-  - No stats row in footer after game ends — stats via 📊 only
-  - Header difficulty emoji reflects locked daily difficulty (not settingsStore difficulty)
-  - Completed 4-out game persists when going to daily and back (no board reset)
-  - Active board indicator: ✓ in green square when current board solved; ✓ in circle for other solved boards
-  - Footer immediately shows "Board N solved in M ✓" when swiping to a solved board
-  - Wave fires once on solve; revisit board → immediate ✓ overlay, no wave replay
-  - Daily→practice→daily: wave does NOT re-fire on return
+- [ ] Build APK via GitHub Actions (trigger from Actions tab — v1.2.6)
+- [ ] Test on device (Samsung S24 Ultra) — verify v1.2.6 fixes:
+  - Footer on completed daily: only [? for help] [📊], NO countdown, NO New Game button
+  - ↺ New Game button in footer is green/white rounded (not plain text)
+  - Practice ribbon label: "Practice · Easy 🎮" (text FIRST, then icon)
+  - Daily ribbon label: "📅 Today's · Easy" (icon first — unchanged)
+  - Wave animation does NOT re-fire when returning to a solved board
+  - 4-out → 2-out → back to 4-out: board state persists (snapshot restored)
+  - 4-out → Wordout → back to 4-out: board state persists
+  - Difficulty change in practice: shows abandon confirm if in-progress, resets board
+  - Difficulty change when game is complete (any mode): shows lock toast, no change
+  - Daily difficulty changeable before first guess; locked after first guess or completion
+  - Help screen Ribbon section has description paragraph
+  - Help screen ◄ ► text: "Cycle through board counts (Wordout, 2-out … 8-out)"
 - [ ] Feature graphic (1024×500px) — design in claude.ai
 - [ ] Screenshots on S24 Ultra (min 2, recommend 6):
   - Fresh empty board (Wordout mode, showing pre-game tip)
   - Mid-game with green/yellow tiles
   - Multi-board mode (4-out) mid-game
   - End-of-game overlay (win)
-  - Settings screen (showing new footer + difficulty radio)
+  - Settings screen (showing difficulty radio)
   - Help modal
 - [ ] Complete Play Console setup:
   - Content rating questionnaire
@@ -36,6 +39,20 @@
 - [ ] Update GitHub Actions workflow to auto-upload to internal track
 
 ---
+
+## ✅ v1.2.6 — Completed 2026-06-28
+
+- ✅ B1: Footer on completed daily no longer shows countdown — only [? for help] [📊]
+- ✅ B2: Wave animation race condition fixed — `waveDone` derived from prop directly, no one-render lag
+- ✅ B3: Multi-board state persists across mode switches via per-bc snapshots in quordleStore
+- ✅ B4: Practice board resets on difficulty change (both header toggle and settings); quordle snapshots cleared
+- ✅ B5: Difficulty locked after any game completes (practice, quordle, daily) — shows toast
+- ✅ B6: Daily difficulty lock only applies after first guess submitted (or completion)
+- ✅ B7: Practice ribbon label order: "Practice · Easy 🎮" (text before icon)
+- ✅ B8: Help screen Ribbon section has description paragraph
+- ✅ B9: ↺ New Game button styled green (#5BA75A) with white text, rounded corners
+- ✅ D1: Startup logic verified correct from v1.2.5 — no change needed
+- ✅ D2: Help screen ◄ ► description updated to list all board count names
 
 ## ✅ v1.2.5 — Completed 2026-06-28
 
@@ -154,6 +171,7 @@
 - [ ] Sequential ✓ flash across boards before end-game overlay (multi-board all-won)
 - [ ] GitHub Actions → Play Store auto-publish pipeline
 - [ ] End-game overlay delay dynamic based on guess count (currently fixed — feels long on 1-guess wins)
+- [ ] Per-difficulty state persistence in quordle (snapshots currently invalidated on difficulty change)
 
 ---
 

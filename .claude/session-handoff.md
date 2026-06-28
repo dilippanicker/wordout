@@ -4,102 +4,107 @@
 
 ### Files modified
 
-**`store/gameStore.ts`** — B2:
-- Added `waveShown: boolean` + `setWaveShown(v)` — reset to false in `newGame()`
+**`components/BottomStrip.tsx`** — B1, B9:
+- Removed `countdown` prop entirely (countdown no longer shown in footer)
+- Game-over state: daily → `[? for help] [spacer] [📊]`; practice/quordle → `[? for help] [spacer] [↺ New Game (green)] [📊]`
+- New Game button now styled: green `#5BA75A` background, white text, rounded corners (paddingHorizontal 14, paddingVertical 7, borderRadius 6), `marginRight 10` before the 📊 icon
+- Removed `countdownText`, `newGameText`, old `newGameBtn` styles; added `newGameBtn` (green bg) and `newGameBtnText` (white)
 
-**`store/dailyStore.ts`** — B2:
-- Added `waveShown: boolean` + `setWaveShown(v)` — reset to false in `startOrResumeDaily()`, `resetDailyForToday()`, `checkAndReset()`
-
-**`store/quordleStore.ts`** — B2:
-- Added `waveDoneBoards: boolean[]` + `setWaveDone(boardIndex)` — reset to all-false in `newGame()` via `initialState()`
+**`components/HelpModal.tsx`** — B8, D2:
+- Ribbon section: added descriptive paragraph before `RIBBON_ICON_ROWS`: "The Ribbon shows your current mode, difficulty, board indicators, and contextual status (such as the next word countdown when today's game is complete)."
+- TOP_ICON_ROWS ◄ ► entry: updated text from "Cycle through board modes (1, 2, 3, 4, 6, 8 boards)" → "Cycle through board counts (Wordout, 2-out, 3-out, 4-out, 6-out, 8-out)"
 
 **`components/GameBoard.tsx`** — B2:
-- Added `waveShown?: boolean` and `onWaveDone?: () => void` props
-- `waveDone` state now initializes from `waveShown` prop and syncs via `useEffect([waveShown])`
-- Removed `setWaveDone(false)` from count===0 branch (was causing re-animation on mode switch)
-- Wave-done effect calls `onWaveDone?.()` alongside `setWaveDone(true)`
-- Added `waveDone` to wave-done effect dependency array (was missing, could cause stale closure)
+- Replaced `const [waveDone, setWaveDone] = useState(waveShown ?? false)` + sync effect with:
+  - `const [waveDoneLocal, setWaveDoneLocal] = useState(false)`
+  - `const waveDone = (waveShown ?? false) || waveDoneLocal` — derived directly from prop (no render lag)
+  - Reset effect: `useEffect(() => { if (!(waveShown ?? false)) setWaveDoneLocal(false); }, [waveShown])`
+- Wave timer effect now calls `setWaveDoneLocal(true)` (was `setWaveDone(true)`)
 
-**`components/BottomStrip.tsx`** — B1, B7, B8:
-- Removed `justSolvedInfo` prop entirely
-- Added `activeBoardIndex?`, `activeBoardSolved?`, `activeBoardSolvedGuess?` props for B7
-- Game-over state: single row `[? for help] [spacer] [📊] [↺ New Game / countdown]` — no stats row
-- Playing + active board solved (multi-board): shows persistent "Board N solved in M ✓"
+**`store/quordleStore.ts`** — B3:
+- Added `QuordleSnapshot` interface (all game fields except actions and snapshots)
+- Added `snapshots: Record<number, QuordleSnapshot>` to `QuordleState` and initialized to `{}`
+- Added `switchBoardCount(n: number)` action: saves current board state under current `boardCount` key, then either restores saved state for `n` or starts fresh
+- `newGame()` now deletes the snapshot for the current board count (explicit reset)
+- Language subscription: now calls `useQuordleStore.setState({ ...initialState(lang, bc), snapshots: {} })` instead of `newGame()` to clear all snapshots
 
-**`components/HelpModal.tsx`** — B5:
-- Added ◄ ► triangles entry to TOP_ICON_ROWS (Header section)
-- Removed ◄ ► from FOOTER_ICON_ROWS
-- Fixed "at the bottom" → "in the header" in MULTI-BOARD MODE section
+**`app/(tabs)/index.tsx`** — B3, B4, B5, B6, B7, D1:
+- **B3**: `cycleTo()` no longer reads `prevBc` or calls `newGame()` — now calls `switchBoardCount(n)` for quordle mode
+- **B4+B5+B6**: `handleDifficultyToggle()` rewritten:
+  - B6 fix: daily lock condition changed from `dailyStatus === 'playing' || dailyStatus === 'completed'` → `dailyStatus === 'completed' || (dailyStatus === 'playing' && dailyGuesses.length > 0)`
+  - B5 fix: added `else if (activeGameStatus !== 'playing')` check → shows "Game complete — start a new game to change difficulty" toast
+  - B4 fix: new `applyAndReset()` helper calls `setDifficulty(next)` AND `newGame()` on the active store; both in-progress (via confirmAbandon) and idle paths call it
+- **B7**: Practice mode pill order swapped — label text rendered BEFORE the icon square (daily pill unchanged: icon then text)
+- **D1**: Startup logic verified as already correct from v1.2.5 — no changes needed
+- Removed `countdown={isDaily ? countdown : undefined}` from BottomStrip call
 
-**`app/(tabs)/index.tsx`** — B2, B3, B4, B6, B7, B9:
-- **B2**: Pass `waveShown` + `onWaveDone` to both single-board and multi-board GameBoard instances
-- **B3**: Ribbon label changes to `Next word in HH:MM:SS` when `dailyStore.dailyStatus === 'completed'`
-- **B4**: `renderHeader` for single-board path receives `isDaily ? dailyStore.dailyDifficulty : difficulty`
-- **B6**: `cycleTo` only calls `newGame()` when `n !== prevBc` (quordle board count changes)
-- **B7**: Removed `justSolvedInfo` state and effects; compute `activeBoardSolved` + `activeBoardSolvedGuess` from `quordleStore.solvedBoards[activeBoard]`; pass to BottomStrip
-- **B8**: Resolved by B1 (stats row removed from footer)
-- **B9**: Board indicator — active+solved shows green filled square with ✓; non-active+solved uses circle (as before)
-- Removed `prevSolvedBoardsRef` and all `justSolvedInfo` tracking effects
-
-**`app/(tabs)/settings.tsx`** — B6:
-- `handleBoardCountSelect`: only calls `newGame()` when `n !== prevBc`
+**`app/(tabs)/settings.tsx`** — B3, B4, B5, B6:
+- **B3**: `handleBoardCountSelect()` now calls `switchBoardCount(n)` instead of conditionally calling `newGame()`
+- Added imports: `useGameStore` from `@/store/gameStore`, `isGameInProgress` + `confirmAbandon` from `@/utils/abandon`
+- **B4+B5+B6**: `handleDifficultyChange()` rewritten:
+  - B6: Daily check uses `dailyGuesses.length > 0` guard (was already correct here, confirmed)
+  - B5: Added checks for practice (`useGameStore.getState().gameStatus !== 'playing'`) and quordle (`useQuordleStore.getState().gameStatus !== 'playing'`) → show lock toast
+  - B4: `applyAndReset()` helper calls `setDifficulty(d)` + `newGame()` for practice/quordle; also clears quordle snapshots for all bc via `useQuordleStore.setState({ snapshots: {} })` before `newGame()`
+  - Added `confirmAbandon` flow via `isGameInProgress()` check
+- `showDiffLockToast()` now accepts optional `msg?: string` parameter; defaults to "Daily locked — next word in HH:MM:SS"
 
 **`app.json`** — version bump:
-- `version`: 1.2.4 → 1.2.5
-- `versionCode`: 12 → 13
+- `version`: 1.2.5 → 1.2.6
+- `versionCode`: 13 → 14
 
-**`CHANGELOG.md`** — new [1.2.5] entry added
+**`CHANGELOG.md`** — new [1.2.6] entry added
 
 ---
 
 ## Decisions & deviations
 
-- **B2 wave fix approach**: Store-level flags (`waveShown` in gameStore/dailyStore, `waveDoneBoards` in quordleStore) persist across mode switches. Local `waveDone` state syncs from prop via `useEffect` — when mode switches (prop changes to false = new game), local state resets too. This avoids the "daily→practice→daily re-triggers wave" bug.
+- **B2 fix approach**: Instead of syncing `waveDone` state via a `useEffect` (which runs after the render, causing a one-render lag), `waveDone` is now computed inline as `(waveShown ?? false) || waveDoneLocal`. The `waveShown` prop is read directly during render, so there's no lag when switching back to a completed board — the wave guard is true immediately in the first render.
 
-- **B3 countdown in Ribbon**: When `dailyStore.dailyStatus === 'completed'`, the Ribbon shows `Next word in ${countdown}` inline with 📅 icon — replacing "Today's · Easy". Countdown is still computed every second via the same interval. Footer also shows countdown per B1 (both show it).
+- **B3 snapshot approach**: Per-board-count state is saved in `quordleStore.snapshots` (in-memory only, not persisted). On every board count switch, the current state is snapshotted. Restoring a board count restores its exact game state (guesses, solved status, wave animation flags). `newGame()` (↺ New Game) clears the snapshot for the current bc. Language change clears all snapshots. Difficulty change in settings also clears all snapshots (they're invalid at a new difficulty).
 
-- **B4 header difficulty**: Only the single-board renderHeader call gets the effective difficulty. Quordle path unchanged (no daily mode in quordle). This means the header emoji (🐣/💪/💀) accurately reflects the locked daily difficulty when in daily mode.
+- **B5 lock message**: Used "Game complete — start a new game to change difficulty" as the toast message for practice/quordle completed games (vs. daily's specific countdown message). This was not in the spec but is appropriate UX.
 
-- **B6 preserve completed board**: The quordle board is only reset when bc changes, not on every mode switch. A completed 4-out game persists through daily→4-out round trip.
+- **B4 + confirmAbandon in settings**: Added abandon confirmation when game is in progress before difficulty change. The spec just said "start a fresh board on difficulty change" but the abandon pattern is consistent with the rest of the app. If game is NOT in progress, still calls `newGame()` to reset to the new difficulty's initial state.
 
-- **B7 persistent vs flash**: `justSolvedInfo` (transient flash) replaced entirely by `activeBoardSolved` computed directly from `quordleStore.solvedBoards[activeBoard]`. Footer shows "Board N solved" persistently whenever you're on a solved board (not just for 1 guess after it's solved).
-
-- **B8 stats removed from footer**: Footer no longer shows stats row in game-over state. Stats accessed via 📊 icon (StatsModal).
-
-- **B9 active+solved indicator**: Active board indicator was always a square (with ▶). Now when the active board is solved, it shows a green-filled square with ✓ (matching the spec). Non-active solved boards still show green-filled circle with ✓.
+- **D1**: Already implemented correctly in v1.2.5. No changes made.
 
 ---
 
 ## Current state
 
-All 9 bugs and 2 design updates addressed. TypeScript clean (pre-existing new-game.tsx error only). Version bumped to v1.2.5 (versionCode 13). Changes committed.
+All 9 bugs and 2 design updates implemented. TypeScript clean (pre-existing new-game.tsx error only). Version bumped to v1.2.6 (versionCode 14). Changes committed and pushed.
 
 ---
 
 ## Exact next steps
 
-1. **Build APK** via GitHub Actions (trigger manually from Actions tab)
+1. **Build APK** via GitHub Actions (trigger manually from Actions tab) for v1.2.6
 2. **Device test** on Samsung S24 Ultra — verify:
-   - Ribbon shows "Next word in HH:MM:SS" after daily completion (replaces "Today's · Easy")
-   - Footer game-over: single row [? for help] [📊] [↺ New Game] (practice) or [countdown] (daily)
-   - No stats row in footer after game ends
-   - Ribbon difficulty icon reflects locked daily difficulty (not settingsStore difficulty)
-   - Completed 4-out game persists when going daily and back
-   - Active board indicator shows ✓ in square when board solved; other solved boards use circles
-   - Footer immediately updates to "Board N solved in M ✓" when swiping to solved board
-   - Wave animation fires once on solve; revisit → immediate ✓ overlay, no wave
-   - Mode switch daily→practice→daily: wave does NOT re-fire on return to daily
+   - Footer on completed daily: only [? for help] [📊], NO countdown, NO New Game
+   - ↺ New Game button is green with white text (not plain text link)
+   - Practice ribbon: "Practice · Easy 🎮" (text first, icon after)
+   - Daily ribbon: "📅 Today's · Easy" (icon first — unchanged)
+   - Wave animation does NOT re-fire when switching back to solved board
+   - Switching 4-out → 2-out → 4-out: 4-out board persists (not cleared)
+   - Switching 4-out → Wordout → 4-out: 4-out board persists
+   - Difficulty change in practice mode: shows abandon confirm if in progress, resets board on confirm
+   - Difficulty change when game is complete (any mode): shows lock toast, no change
+   - Daily difficulty: changeable before first guess, locked after first guess submitted
+   - Help screen Ribbon section: has description paragraph above icon rows
+   - Help screen ◄ ► text: "Cycle through board counts (Wordout, 2-out, 3-out, 4-out, 6-out, 8-out)"
 
 ---
 
 ## Gotchas
 
-- **B3 Ribbon countdown**: The countdown string is computed in index.tsx every second. When daily is completed, the Ribbon label reads from the same `countdown` state. No new effect needed.
+- **B3 snapshots NOT persisted**: Snapshots live in-memory only. If the app restarts, all snapshots are gone. This is intentional (first iteration). The quordle store is not persisted generally.
 
-- **B7 activeBoardSolvedGuess**: Computed as `boardSolvedAtRow(qGuesses, activeBoard) + 1`. Returns 0 if board not solved (-1 + 1 = 0). BottomStrip uses it only when `activeBoardSolved` is true, so the 0 case is never shown.
+- **B4 quordle difficulty change clears ALL snapshots**: When difficulty changes in quordle mode, `useQuordleStore.setState({ snapshots: {} })` clears all saved board counts before calling `newGame()`. This is correct — saved games at the old difficulty are invalid.
 
-- **B6 isGameInProgress**: When user is in daily mode (bc=1), `isGameInProgress()` checks daily store not quordle. A playing quordle game won't trigger the abandon guard when cycling from daily to quordle. This is pre-existing behavior, not introduced by B6 fix.
+- **B5 lock interplay with B4**: B5 check runs BEFORE the `applyAndReset` path in both `handleDifficultyToggle` and `handleDifficultyChange`. So completed game → locked (toast) → return. No newGame() is called on a completed game.
 
-- **waveDone effect deps**: Added `waveDone` to the deps array of the wave-done effect. This causes the effect to re-run when `waveDone` changes (from prop sync). The `if (!waveDone)` guard prevents the timeout from firing again once waveDone is true. No infinite loop risk.
+- **B6 index.tsx vs settings.tsx**: The settings.tsx `handleDifficultyChange` already had the correct `dailyGuesses.length > 0` guard from v1.2.5. The bug was in `handleDifficultyToggle` in index.tsx (header emoji tap), which used `dailyStatus === 'playing'` without the guesses check.
 
-- **waveShown in dailyStore persist**: `waveShown` is part of the persisted `wordout-daily` store. If user closes and reopens app after solving daily, the wave won't re-fire. This is correct behavior. Old persisted state without `waveShown` will have `undefined` → falsy → wave fires on first load (correct).
+- **B7 practice pill layout**: When practice is INACTIVE (isDaily=true), the pill only contains the icon (no text). When ACTIVE, text is shown BEFORE the icon. This is purely a flex row child order change — no layout height change since label is inline.
+
+- **switchBoardCount called unconditionally**: Unlike the old `if (n !== prevBc) newGame()` pattern, `switchBoardCount(n)` is now called every time a quordle board count is selected. This is correct — even if `n === current bc`, it's idempotent (saves current state under its own key, then restores that same saved state).

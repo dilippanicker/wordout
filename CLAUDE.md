@@ -57,8 +57,12 @@
 - `waveDoneBoards: boolean[]` — per-board wave-shown flags; `setWaveDone(boardIndex)` sets one flag; reset to all-false in `newGame()` via `initialState()`
 - `QuordleGuess.boardResults: LetterResult[][]` — one array per board (not a 4-tuple)
 - `initialState(language, boardCount)` picked at game start via Fisher-Yates shuffle
-- Subscription watches `language` only; `boardCount` changes handled explicitly in `settings.tsx`
+- Subscription watches `language` only; `boardCount` changes handled via `switchBoardCount(n)` in index.tsx and settings.tsx
 - `recordResult(won, guessCount, String(boardCount))` — modeKey is board count as string
+- `snapshots: Record<number, QuordleSnapshot>` — in-memory per-board-count state snapshots (NOT persisted); allows restoring board state when cycling back to a previous count
+- `switchBoardCount(n)` — saves current bc state to `snapshots[currentBc]`, then restores `snapshots[n]` or starts fresh if none saved; called instead of `newGame()` on ALL board-count switches
+- `newGame()` — clears `snapshots[currentBc]` (explicit reset), then starts fresh via `initialState`
+- Language subscription: clears ALL snapshots + resets game (saved states are for the old language)
 
 **`statsStore.ts`** — persisted (`wordle-stats`):
 - `byMode: Record<string, BoardStats>` — keyed by `'wordle'` or `String(boardCount)`
@@ -87,9 +91,14 @@
 `isGameInProgress()` reads the active store imperatively (`getState()`) — no subscription needed. Checks `activeWordleMode` for single-board: daily → `dailyStatus === 'playing' && dailyGuesses.length > 0`; practice → `gameStore` check; multi-board → `quordleStore` check.  
 `confirmAbandon(onConfirm)` shows `Alert.alert` on Android/iOS, `window.confirm` on web. Called before: ↺ New Game header button, ‹/› mode arrows, language flag toggle, **hard mode toggle (💪/🐣)**.
 
-**Difficulty toggle mid-game**: after abandon confirmed, calls `setDifficulty()` AND calls `newGame()` on the active store (boardCount > 1 → quordleStore; else → gameStore). Does NOT reset dailyStore — daily mode uses `dailyDifficulty` locked at game start.
+**Difficulty toggle**: after abandon confirmed (or when game is over and user restarts), calls `setDifficulty()` AND `newGame()` on the active store. Also clears all quordle snapshots (they're invalid at the new difficulty). Does NOT reset dailyStore — daily uses `dailyDifficulty` locked at game start.
 
-**Key subscription rule**: `gameStore` and `quordleStore` subscriptions call `newGame()` on `language` change only. Board count changes (`settings.tsx → handleBoardCountSelect`, `index.tsx → cycleTo`) call `quordleStore.newGame()` ONLY when `n !== quordleStore.boardCount` — completed boards persist on mode switch back to same count (B6, v1.2.5). Switching to Wordout (`n === 1`) does NOT call `gameStore.newGame()` — practice board persists.
+**Difficulty lock rules (v1.2.6)**:
+- Daily: locked after first guess submitted OR game completed (`dailyGuesses.length > 0 || dailyStatus === 'completed'`). Changeable before first guess.
+- Practice/quordle: locked when game is complete (`gameStatus !== 'playing'`). Shows "Game complete — start a new game to change difficulty" toast.
+- Both index.tsx (`handleDifficultyToggle`) and settings.tsx (`handleDifficultyChange`) enforce these rules.
+
+**Key subscription rule**: `gameStore` and `quordleStore` subscriptions call `newGame()` on `language` change only. Board count changes (`settings.tsx → handleBoardCountSelect`, `index.tsx → cycleTo`) call `quordleStore.switchBoardCount(n)` unconditionally for quordle modes — this saves/restores state per bc. Switching to Wordout (`n === 1`) does NOT touch quordleStore — practice board persists.
 
 ### Components — `components/`
 
@@ -98,7 +107,7 @@
 - Quordle mode: `words?: string[]` + `boardResults?: LetterResult[][]` (shared words, per-board colors passed separately)
 - Common: `currentGuess`, `tileSize` (default 60), `shakeKey`, `maxGuesses` (default 6), `solved`, `gameOver`, `answer`, `label`
 - `suppressOverlay?: boolean` (default false) — when true, win/lose overlay is hidden; set from parent's `overlayLocked` state
-- `waveShown?: boolean` — store-level flag from parent (gameStore/dailyStore/quordleStore); synced to local `waveDone` state via `useEffect([waveShown])`; prevents re-animation when switching modes and returning to a solved board
+- `waveShown?: boolean` — store-level flag from parent; `waveDone` is derived as `(waveShown ?? false) || waveDoneLocal` (direct prop read, no effect lag) — prevents re-animation on revisit; `waveDoneLocal` is reset when `waveShown` goes false (new game)
 - `onWaveDone?: () => void` — called after wave animation completes; parent persists flag to store
 - `count` derived from `words.length ?? guesses.length` — drives animation tracking
 - No border on board (removed in v1.0.1 — green solved border looked ugly)
@@ -138,15 +147,14 @@ The `?` button is NO LONGER `position: 'absolute'` — it's a normal flex child.
 **`HelpModal.tsx`** — sections: rules, EXAMPLES (3 tiles), MULTI-BOARD MODE, BOARD INDICATORS (5 rows with rendered indicator shapes), HARD MODE (conditional), ICONS. ICONS has three sub-sections: "Top bar" (flags, difficulty emojis, ↺, ◄ ►, theme, ⚙, ?), "Ribbon" (📅 🎮 mode icons), "Footer" (📊 🔥 ⚡ bottom bar icons). Arrays: `TOP_ICON_ROWS`, `RIBBON_ICON_ROWS`, `FOOTER_ICON_ROWS`. ◄ ► is in TOP_ICON_ROWS (Header) not Footer. MULTI-BOARD section text says "use ◄ ► in the header" (not "at the bottom").
 
 **`BottomStrip.tsx`** — `minHeight: 50` + `paddingBottom: insets.bottom` (safe area), replaces tab bar visually:
-- Props: `difficulty: Difficulty`, `onOpenHelp: () => void`, `onNewGame: () => void`, `countdown?: string`, `gameStats: GameStats` (required since v1.2.2), `activeBoardIndex?`, `activeBoardSolved?`, `activeBoardSolvedGuess?` (for B7 multi-board)
+- Props: `difficulty: Difficulty`, `onOpenHelp: () => void`, `onNewGame: () => void`, `gameStats: GameStats` (required), `activeBoardIndex?`, `activeBoardSolved?`, `activeBoardSolvedGuess?` (for B7 multi-board). NO `countdown` prop (removed v1.2.6).
 - `GameStats = { played: number; winPct: number; streak: number; streakEmoji: string }` — computed in index.tsx from active mode's stats (used only in overlay now; footer no longer shows stats row)
 - State 0 pre-game (playing, 0 guesses): "? for help" in green (#5BA75A) + 📊
 - State 1 playing (guesses > 0): "⏳ N tries left · ? for help"; 💀/💪 badge if difficulty !== 'easy'; + 📊
 - State 2 active board solved (quordle only, game still playing): persistent "Board N solved in M ✓" + 📊 — shown whenever `isQuordle && activeBoardSolved && !isGameOver`
-- State 3 game over: single row `[? for help] [spacer] [📊] [↺ New Game]` (practice/quordle) or `[? for help] [spacer] [📊] [Next word in HH:MM:SS]` (daily) — no stats row (stats in 📊 modal)
+- State 3 game over: `[? for help] [spacer] [↺ New Game (green button)] [📊]` (practice/quordle) or `[? for help] [spacer] [📊]` (daily — no countdown, no New Game). New Game is a green (#5BA75A) rounded button with white text.
 - 📊 opens StatsModal; `streakEmoji` is 🔥 for daily, ⚡ for practice
 - Uses `useSafeAreaInsets` internally — no inset prop needed from parent
-- `gameStats` prop is still required (used by parent for stats computation) but no longer rendered in footer
 
 **`StatsModal.tsx`** — Modal, close on backdrop tap or × button:
 - ? help icon at left of header (position absolute, left: 12) — opens HelpModal
@@ -191,10 +199,10 @@ Each tile row is `tileSize + 4` px tall (2px margin each side from Tile style). 
 ### Mode indicator row (single-board)
 Row height `WORD_DOTS_H = 44`. Modes: 📅 (daily) and 🎮 (practice).
 
-**Layout (v1.2.3, confirmed v1.2.5)**: Label is INLINE to the right of the active icon (flex row "pill"). Inactive icon is faded (opacity 0.45). Layout examples:
-- Daily active, playing: `[📅 Today's · Easy]  [🎮]`
-- Daily active, completed: `[📅 Next word in HH:MM:SS]  [🎮]` — countdown replaces difficulty label (B3, v1.2.5)
-- Practice active: `[📅]  [🎮 Practice · Easy]`
+**Layout (v1.2.6)**: Label is INLINE to the active icon; icon and text ORDER differs by mode:
+- Daily active, playing: `[📅 Today's · Easy]  [🎮]` — icon BEFORE text
+- Daily active, completed: `[📅 Next word in HH:MM:SS]  [🎮]` — icon BEFORE text
+- Practice active: `[📅]  [Practice · Easy 🎮]` — text BEFORE icon (B7, v1.2.6)
 
 **B4 (v1.2.5)**: Header difficulty emoji reflects active mode's locked difficulty. In single-board path, `renderHeader` receives `isDaily ? dailyStore.dailyDifficulty : difficulty` — not always `settingsStore.difficulty`.
 
@@ -237,14 +245,13 @@ function handleBoardCountSelect(n: BoardCount) {
     setBoardCount(n);
     setGameMode('wordle');
   } else {
-    const prevBc = useQuordleStore.getState().boardCount;
     setBoardCount(n);
     setGameMode('quordle');
-    if (n !== prevBc) useQuordleStore.getState().newGame(); // only reset when bc changes (B6, v1.2.5)
+    useQuordleStore.getState().switchBoardCount(n); // save/restore per-bc state (B3, v1.2.6)
   }
 }
 ```
-`newGame()` is only called when board count actually changes — preserves a completed multi-board game when re-selecting the same count. Navigation away on mode change was removed in v1.2.1 (B2 fix). Same logic applies in `cycleTo` in index.tsx.  
+`switchBoardCount(n)` always saves current bc state and restores `n` if previously visited. Same logic in `cycleTo` in index.tsx. Navigation away on mode change was removed in v1.2.1 (B2 fix).
 Mode segment active state: `(n === 1 && gameMode === 'wordle') || (n > 1 && gameMode === 'quordle' && boardCount === n)`
 Mode segment label: `n === 1 ? 'Wordout' : \`${n}-out\`` — produces "Wordout / 2-out / 3-out / 4-out / 6-out / 8-out".
 
@@ -380,7 +387,7 @@ Build commands: `eas build --local --profile preview --output wordout.apk` / `--
 - Never trigger or instruct triggering a build without a confirmed version bump.
 - Update `CHANGELOG.md` with the new version entry as part of the same commit as `app.json`.
 
-**Current version:** `1.2.5` (versionCode 13) — committed.  
+**Current version:** `1.2.6` (versionCode 14) — committed.  
 Update after each confirmed bump so future sessions start from the right baseline.
 
 ### Build pipeline
@@ -399,7 +406,7 @@ Update after each confirmed bump so future sessions start from the right baselin
   - `https://github.com/dilippanicker/wordout/releases/latest/download/wordout.apk`
   - `https://github.com/dilippanicker/wordout/releases/latest/download/wordout.aab`
 
-**Current version:** `1.2.5` (versionCode 13) — committed. Build APK via GitHub Actions next session.
+**Current version:** `1.2.6` (versionCode 14) — committed. Build APK via GitHub Actions next session.
 
 ### Play Store setup
 - App created in Google Play Console under publisher "Onglipo"

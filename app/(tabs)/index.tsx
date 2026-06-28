@@ -336,10 +336,8 @@ export default function WordleScreen() {
       if (n === 1) {
         setGameMode('wordle');
       } else {
-        const prevBc = useQuordleStore.getState().boardCount;
         setGameMode('quordle');
-        // Only reset board if bc is changing — preserves completed multi-board state on mode switch (B6)
-        if (n !== prevBc) useQuordleStore.getState().newGame();
+        useQuordleStore.getState().switchBoardCount(n);
       }
     };
     if (isGameInProgress()) confirmAbandon(doIt);
@@ -355,25 +353,33 @@ export default function WordleScreen() {
   }
 
   function handleDifficultyToggle() {
-    // B3: lock difficulty when actually in daily mode and game has started or finished
     if (isDaily) {
-      const { dailyStatus } = useDailyStore.getState();
-      if (dailyStatus === 'playing' || dailyStatus === 'completed') {
+      // Lock only after first guess submitted or game completed (B6: allow change before any guesses)
+      const { dailyStatus, dailyGuesses } = useDailyStore.getState();
+      if (dailyStatus === 'completed' || (dailyStatus === 'playing' && dailyGuesses.length > 0)) {
         showSystemToast(`Daily locked — next word in ${msToHMS(msUntilMidnight())}`);
         return;
       }
+    } else if (activeGameStatus !== 'playing') {
+      // B5: lock difficulty after any practice/quordle game is complete
+      showSystemToast('Game complete — start a new game to change difficulty');
+      return;
     }
     const idx = DIFFICULTY_CYCLE.indexOf(difficulty);
     const next = DIFFICULTY_CYCLE[(idx + 1) % DIFFICULTY_CYCLE.length];
-    if (isGameInProgress()) {
-      confirmAbandon(() => {
-        setDifficulty(next);
+    const applyAndReset = (d: typeof next) => {
+      setDifficulty(d);
+      // B4: always reset the practice board when difficulty changes
+      if (!isDaily) {
         const { boardCount } = useSettingsStore.getState();
         if (boardCount > 1) useQuordleStore.getState().newGame();
         else useGameStore.getState().newGame();
-      });
+      }
+    };
+    if (isGameInProgress()) {
+      confirmAbandon(() => applyAndReset(next));
     } else {
-      setDifficulty(next);
+      applyAndReset(next);
     }
   }
 
@@ -831,17 +837,17 @@ export default function WordleScreen() {
           accessibilityLabel="Practice mode"
         >
           <View style={[styles.modeIconPill, { opacity: isDaily ? 0.45 : 1 }]}>
+            {!isDaily && (
+              <Text style={styles.modeLabel} numberOfLines={1}>
+                {`Practice · ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}`}
+              </Text>
+            )}
             <View style={[styles.modeIconSquare, {
               borderColor: isDaily ? '#878a8c' : '#5BA75A',
               backgroundColor: isDaily ? 'transparent' : 'rgba(91,167,90,0.15)',
             }]}>
               <Text style={styles.modeIconEmoji}>🎮</Text>
             </View>
-            {!isDaily && (
-              <Text style={styles.modeLabel} numberOfLines={1}>
-                {`Practice · ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}`}
-              </Text>
-            )}
           </View>
         </Pressable>
       </View>
@@ -891,7 +897,6 @@ export default function WordleScreen() {
         onOpenStats={() => setStatsModalVisible(true)}
         onOpenHelp={() => setShowHelp(true)}
         onNewGame={handleNewGame}
-        countdown={isDaily ? countdown : undefined}
         textColor={colors.text as string}
         backgroundColor={colors.card as string}
         borderColor={colors.border as string}

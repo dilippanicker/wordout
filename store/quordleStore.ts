@@ -25,6 +25,17 @@ export interface QuordleGuess {
 
 export type GameStatus = 'playing' | 'won' | 'lost';
 
+interface QuordleSnapshot {
+  answers: string[];
+  boardCount: number;
+  maxGuesses: number;
+  guesses: QuordleGuess[];
+  currentGuess: string;
+  solvedBoards: boolean[];
+  gameStatus: GameStatus;
+  waveDoneBoards: boolean[];
+}
+
 interface QuordleState {
   answers: string[];
   boardCount: number;
@@ -35,6 +46,8 @@ interface QuordleState {
   gameStatus: GameStatus;
   toast: string | null;
   waveDoneBoards: boolean[];
+  // Saved states per board count — allows restoring a game when cycling back to a previous bc.
+  snapshots: Record<number, QuordleSnapshot>;
   addLetter: (letter: string) => void;
   removeLetter: () => void;
   submitGuess: () => void;
@@ -42,6 +55,7 @@ interface QuordleState {
   clearCurrentGuess: () => void;
   setWaveDone: (boardIndex: number) => void;
   newGame: () => void;
+  switchBoardCount: (n: number) => void;
 }
 
 function pickAnswers(n: number, language: Language): string[] {
@@ -115,6 +129,7 @@ export const useQuordleStore = create<QuordleState>((set, get) => {
   const settings = useSettingsStore.getState();
   return {
     ...initialState(settings.language, settings.boardCount),
+    snapshots: {} as Record<number, QuordleSnapshot>,
 
     addLetter: (letter) => {
       const { currentGuess, gameStatus } = get();
@@ -178,14 +193,41 @@ export const useQuordleStore = create<QuordleState>((set, get) => {
 
     newGame: () => {
       const { language, boardCount } = useSettingsStore.getState();
-      set(initialState(language, boardCount));
+      // Clear any saved snapshot for this board count (explicit new game).
+      const { snapshots } = get();
+      const newSnapshots = { ...snapshots };
+      delete newSnapshots[boardCount];
+      set({ ...initialState(language, boardCount), snapshots: newSnapshots });
+    },
+
+    switchBoardCount: (n) => {
+      const current = get();
+      const { language } = useSettingsStore.getState();
+      // Save the current game state under its board count.
+      const currentSnapshot: QuordleSnapshot = {
+        answers: current.answers,
+        boardCount: current.boardCount,
+        maxGuesses: current.maxGuesses,
+        guesses: current.guesses,
+        currentGuess: current.currentGuess,
+        solvedBoards: current.solvedBoards,
+        gameStatus: current.gameStatus,
+        waveDoneBoards: current.waveDoneBoards,
+      };
+      const newSnapshots = { ...current.snapshots, [current.boardCount]: currentSnapshot };
+      const saved = newSnapshots[n];
+      if (saved) {
+        set({ ...saved, snapshots: newSnapshots, toast: null });
+      } else {
+        set({ ...initialState(language, n), snapshots: newSnapshots });
+      }
     },
   };
 });
 
-// Reset only on language change — board count changes are handled explicitly in settings.
+// Reset on language change — also clears all saved snapshots (they're for the old language).
 useSettingsStore.subscribe((curr, prev) => {
   if (curr.language !== prev.language) {
-    useQuordleStore.getState().newGame();
+    useQuordleStore.setState({ ...initialState(curr.language, curr.boardCount), snapshots: {} });
   }
 });

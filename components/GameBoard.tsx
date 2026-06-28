@@ -211,11 +211,13 @@ export function GameBoard({
 
   const [animatingRow, setAnimatingRow] = useState(-1);
   const prevCount = useRef(count);
-  // waveDone: synced from waveShown prop (store-level truth) — prevents re-animation across mode switches.
-  const [waveDone, setWaveDone] = useState(waveShown ?? false);
+  // waveDoneLocal: set to true once wave plays in this session; reset when store resets (new game).
+  // waveDone is derived from the prop directly to avoid a one-render lag that could re-trigger the wave.
+  const [waveDoneLocal, setWaveDoneLocal] = useState(false);
+  const waveDone = (waveShown ?? false) || waveDoneLocal;
 
-  // Sync local waveDone when the store-level waveShown prop changes (e.g. new game → false).
-  useEffect(() => { setWaveDone(waveShown ?? false); }, [waveShown]);
+  // Reset local flag when store resets (waveShown goes false → new game started).
+  useEffect(() => { if (!(waveShown ?? false)) setWaveDoneLocal(false); }, [waveShown]);
 
   useEffect(() => {
     const prev = prevCount.current;
@@ -228,7 +230,7 @@ export function GameBoard({
   useEffect(() => {
     if (solved && animatingRow === count - 1 && count > 0 && !waveDone) {
       const totalMs = FLIP_DONE_MS + count * COLS * WAVE_STAGGER + 600;
-      const t = setTimeout(() => { setWaveDone(true); onWaveDone?.(); }, totalMs);
+      const t = setTimeout(() => { setWaveDoneLocal(true); onWaveDone?.(); }, totalMs);
       return () => clearTimeout(t);
     }
   }, [solved, animatingRow, count, waveDone]);

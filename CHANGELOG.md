@@ -2,6 +2,21 @@
 
 All notable changes to Wordout are documented here.
 
+## [1.2.6] — 2026-06-28
+### Changed
+- B1: Footer on completed daily no longer shows countdown — Ribbon already shows it; footer shows only [? for help] [📊]
+- B7: Practice mode label now shows text before icon: "Practice · Easy 🎮" (daily remains "📅 Today's · Easy")
+- B8: Help screen Ribbon section now has a description paragraph explaining its purpose and content
+- B9: ↺ New Game in footer is now a styled green button (matches Share); layout: [? for help] [spacer] [↺ New Game] [📊]
+- D2: Help screen ◄ ► description updated to list all board count names (Wordout, 2-out … 8-out)
+
+### Fixed
+- B2: Wave animation re-triggering on board revisit — fixed race condition where `waveDone` state lagged one render behind the `waveShown` prop; now computed directly from prop
+- B3: Multi-board state now persists across mode switches — board counts save/restore their game state via snapshots; only ↺ New Game explicitly clears
+- B4: Practice board resets when difficulty changes (both header toggle and settings); quordle snapshots cleared on difficulty change
+- B5: Difficulty locked after any game completes (not just daily) — shows toast, prevents change until new game started
+- B6: Daily difficulty lock now allows changes before first guess is submitted; only locks after guesses.length > 0 or game completed
+
 ## [1.2.5] — 2026-06-28
 ### Changed
 - B1: Footer game-over state redesigned — single row with [? for help] [📊] [↺ New Game / countdown]; stats row removed from footer (accessible via 📊)

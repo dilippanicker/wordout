@@ -29,7 +29,6 @@ interface Props {
   onOpenStats: () => void;
   onOpenHelp: () => void;
   onNewGame: () => void;
-  countdown?: string;
   textColor: string;
   backgroundColor: string;
   borderColor: string;
@@ -40,7 +39,7 @@ export function BottomStrip({
   gameStatus, isQuordle, isDaily,
   currentGuessNum, maxGuesses, boardCount, solvedCount, difficulty,
   activeBoardIndex, activeBoardSolved, activeBoardSolvedGuess,
-  onOpenStats, onOpenHelp, onNewGame, countdown,
+  onOpenStats, onOpenHelp, onNewGame,
   textColor, backgroundColor, borderColor,
   gameStats,
 }: Props) {
@@ -66,21 +65,19 @@ export function BottomStrip({
       </View>
     );
   } else if (isGameOver) {
-    // Game over: [? for help] [spacer] [📊] [↺ New Game / countdown] — all on one line (B1)
+    // Game over: daily → [? for help] [spacer] [📊]; others → [? for help] [spacer] [↺ New Game] [📊]
     content = (
       <View style={styles.row}>
         <Pressable onPress={onOpenHelp} hitSlop={6}>
           <Text style={styles.helpLink}>? for help</Text>
         </Pressable>
         <View style={styles.flex1} />
-        {statsIcon}
-        {isDaily && countdown ? (
-          <Text style={[styles.countdownText]}>{countdown}</Text>
-        ) : !isDaily ? (
+        {!isDaily && (
           <Pressable onPress={onNewGame} hitSlop={6} style={styles.newGameBtn}>
-            <Text style={styles.newGameText}>↺ New Game</Text>
+            <Text style={styles.newGameBtnText}>↺ New Game</Text>
           </Pressable>
-        ) : null}
+        )}
+        {statsIcon}
       </View>
     );
   } else if (isQuordle && activeBoardSolved) {
@@ -172,19 +169,17 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
   // Game-over action items
-  countdownText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: GREEN,
-    paddingLeft: 10,
-  },
   newGameBtn: {
-    paddingLeft: 10,
+    backgroundColor: GREEN,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 6,
+    marginRight: 10,
   },
-  newGameText: {
+  newGameBtnText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: GREEN,
+    fontWeight: '700',
+    color: '#fff',
   },
   // Multi-board solved state (B7)
   solvedLeft: {

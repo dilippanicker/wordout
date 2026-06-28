@@ -7,6 +7,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSettingsStore, Language, BOARD_COUNTS, BoardCount, Difficulty, maxGuessesForDifficulty } from '@/store/settingsStore';
 import { useDailyStore } from '@/store/dailyStore';
 import { useQuordleStore } from '@/store/quordleStore';
+import { useGameStore } from '@/store/gameStore';
+import { isGameInProgress, confirmAbandon } from '@/utils/abandon';
 import { HelpModal } from '@/components/HelpModal';
 
 export default function SettingsScreen() {
@@ -35,12 +37,12 @@ export default function SettingsScreen() {
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
   }
 
-  function showDiffLockToast() {
+  function showDiffLockToast(msg?: string) {
     const now = new Date();
     const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
     const hms = msToHMS(midnight.getTime() - now.getTime());
-    const msg = `Daily solved! Next word in ${hms}`;
-    setDiffLockToast(msg);
+    const text = msg ?? `Daily locked — next word in ${hms}`;
+    setDiffLockToast(text);
     if (diffLockTimerRef.current) clearTimeout(diffLockTimerRef.current);
     diffLockTimerRef.current = setTimeout(() => setDiffLockToast(null), 3000);
   }
@@ -50,27 +52,48 @@ export default function SettingsScreen() {
       setBoardCount(n);
       setGameMode('wordle');
     } else {
-      const prevBc = useQuordleStore.getState().boardCount;
       setBoardCount(n);
       setGameMode('quordle');
-      // Only reset board when count actually changes — preserves completed state (B6)
-      if (n !== prevBc) useQuordleStore.getState().newGame();
+      useQuordleStore.getState().switchBoardCount(n);
     }
   }
 
   function handleDifficultyChange(d: Difficulty) {
-    // Only lock for daily 1-out mode — practice and multi-board can always change difficulty.
     if (gameMode === 'wordle') {
       const { activeWordleMode, dailyStatus, dailyGuesses } = useDailyStore.getState();
       if (activeWordleMode === 'daily') {
+        // B6: only lock after first guess submitted or game completed
         const locked = dailyStatus === 'completed' || (dailyStatus === 'playing' && dailyGuesses.length > 0);
-        if (locked) {
-          showDiffLockToast();
-          return;
-        }
+        if (locked) { showDiffLockToast(); return; }
+      } else {
+        // B5: lock practice when game is complete
+        const { gameStatus } = useGameStore.getState();
+        if (gameStatus !== 'playing') { showDiffLockToast(); return; }
       }
+    } else if (gameMode === 'quordle') {
+      // B5: lock quordle when game is complete
+      const { gameStatus } = useQuordleStore.getState();
+      if (gameStatus !== 'playing') { showDiffLockToast(); return; }
     }
-    setDifficulty(d);
+
+    // B4: reset the practice/quordle board after difficulty changes
+    const applyAndReset = () => {
+      setDifficulty(d);
+      if (gameMode === 'wordle') {
+        const { activeWordleMode } = useDailyStore.getState();
+        if (activeWordleMode === 'practice') useGameStore.getState().newGame();
+      } else if (gameMode === 'quordle') {
+        // Clear snapshots for all board counts (they're at the old difficulty) then start fresh.
+        useQuordleStore.setState({ snapshots: {} });
+        useQuordleStore.getState().newGame();
+      }
+    };
+
+    if (isGameInProgress()) {
+      confirmAbandon(applyAndReset);
+    } else {
+      applyAndReset();
+    }
   }
 
   return (
