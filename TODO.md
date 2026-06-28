@@ -1,27 +1,22 @@
 # Wordout — Master TODO
 **Updated: 2026-06-28**
-**Current version: v1.2.3 (versionCode 11) — committed, pending device test + build**
+**Current version: v1.2.4 (versionCode 12) — committed, pending device test + build**
 
 ---
 
 ## 🔴 IMMEDIATE — Build & Play Store
 
-- [ ] Test on device (Samsung S24 Ultra) — verify v1.2.2 + post-test bug fixes:
-  - BottomStrip playing: "⏳ N tries left · ? for help"
-  - BottomStrip game-over: "N played · M% win · ⚡ S 📊"
-  - Mode icon row label "Today's · Easy" / "Practice · Easy" appears INLINE to right of active icon
-  - Settings mode change → back → board shows correct new mode immediately
-  - Difficulty icon tap after daily completed shows lock toast (does NOT cycle)
-  - Daily win overlay auto-dismisses after 3 seconds
-  - Practice lose overlay ↺ New Game and ? buttons functional (stopPropagation fix applied)
-  - Practice mode icon shows 🎮 (not ∞) in indicator row and HelpModal
-  - Practice overlay shows ↺ New Game button; daily overlay shows countdown only
-  - Tapping ↺ New Game on completed daily shows toast (board not reset)
-  - Settings footer: no word count pills
-  - Help modal: 🔥/⚡ streak entries visible at bottom of icons section
-  - Arrow cycling ◄ ► immediately shows new board count game
-  - Practice board persists when switching to daily and back
-- [ ] Build APK: `bash build-and-deploy.sh`
+- [ ] Test on device (Samsung S24 Ultra) — verify v1.2.4 fixes:
+  - Footer shows ↺ New Game after overlay dismisses (practice)
+  - Footer shows "Next word in HH:MM:SS" after overlay dismisses (daily)
+  - Overlay shows Share only — no ↺ New Game button
+  - Solved board: wave animates once only — swipe away and back goes directly to ✓
+  - Mode/difficulty label inline to right of active icon (D2 fix)
+  - Swipe from solved board 1 to board 2 — footer shows board 2's state immediately
+  - Practice 1-out difficulty change freely allowed (no daily lock toast)
+  - Settings difficulty change allowed in multi-board modes and practice
+  - Help modal ICONS: "Ribbon" section (📅 🎮) and "Footer" section (📊 ‹› 🔥 ⚡)
+- [ ] Build APK via GitHub Actions
 - [ ] Feature graphic (1024×500px) — design in claude.ai
 - [ ] Screenshots on S24 Ultra (min 2, recommend 6):
   - Fresh empty board (Wordout mode, showing pre-game tip)
@@ -41,6 +36,17 @@
 - [ ] Update GitHub Actions workflow to auto-upload to internal track
 
 ---
+
+## ✅ v1.2.4 — Completed 2026-06-28
+
+- ✅ B1: Overlay is Share-only; Footer shows ↺ New Game (practice) or "Next word in HH:MM:SS" (daily) after overlay dismisses
+- ✅ B2: Wave animation fires once per game — revisiting solved board goes directly to ✓ state (`waveDone` state guard)
+- ✅ B3: Mode label inline to right of active icon (confirmed from D2/v1.2.3)
+- ✅ B4: Footer clears "Board X solved in N" when switching active board via swipe
+- ✅ B5: Practice 1-out difficulty change no longer fires daily lock toast — guard checks `activeWordleMode === 'daily'`
+- ✅ B6: Settings difficulty change only locks for daily 1-out — multi-board and practice modes freely changeable
+- ✅ B7: Help ICONS split into "Top bar" / "Ribbon" (📅 🎮) / "Footer" (📊 ‹› 🔥 ⚡)
+- ✅ B8: ∞ → 🎮 throughout (confirmed from D1/v1.2.3)
 
 ## ✅ v1.2.3 post-test fixes — Completed 2026-06-28
 

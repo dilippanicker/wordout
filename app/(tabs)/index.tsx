@@ -328,6 +328,9 @@ export default function WordleScreen() {
     if (justSolvedInfo && quordleStore.guesses.length > justSolvedInfo.guessCount) setJustSolvedInfo(null);
   }, [quordleStore.guesses.length]);
 
+  // Clear "Board X solved in N" when user swipes to a different board (B4).
+  useEffect(() => { setJustSolvedInfo(null); }, [activeBoard]);
+
   useEffect(() => {
     if (activeGameStatus !== 'playing') setJustSolvedInfo(null);
   }, [activeGameStatus]);
@@ -620,18 +623,6 @@ export default function WordleScreen() {
                 </View>
             }
           </Pressable>
-          {!isDaily && (
-            <Pressable
-              style={styles.newGameButton}
-              onPress={(e) => { e.stopPropagation?.(); dismissEndGame(); handleNewGame(); }}
-              {...(noFocus as any)}
-            >
-              <View style={styles.newGameButtonInner}>
-                <Ionicons name="refresh-outline" size={16} color="#fff" />
-                <Text style={styles.newGameButtonText}>New Game</Text>
-              </View>
-            </Pressable>
-          )}
         </View>
       </Pressable>
     </Animated.View>
@@ -771,6 +762,7 @@ export default function WordleScreen() {
           justSolvedInfo={justSolvedInfo}
           onOpenStats={() => setStatsModalVisible(true)}
           onOpenHelp={() => setShowHelp(true)}
+          onNewGame={handleNewGame}
           textColor={colors.text as string}
           backgroundColor={colors.card as string}
           borderColor={colors.border as string}
@@ -896,6 +888,8 @@ export default function WordleScreen() {
         justSolvedInfo={null}
         onOpenStats={() => setStatsModalVisible(true)}
         onOpenHelp={() => setShowHelp(true)}
+        onNewGame={handleNewGame}
+        countdown={isDaily ? countdown : undefined}
         textColor={colors.text as string}
         backgroundColor={colors.card as string}
         borderColor={colors.border as string}

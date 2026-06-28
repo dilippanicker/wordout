@@ -99,15 +99,16 @@
 - No border on board (removed in v1.0.1 — green solved border looked ugly)
 - Win overlay: `rgba(0,0,0,0.3)` dim + 80px green ✓; fades in after wave animation completes (timestamp-based delay — see B7 below); opacities always initialise to 0
 - Lose overlay: board shakes (3×, 14px, 910ms) + red tint flash (separate from overlay — not gated by suppressOverlay); dim + 80px red ✗ + `answer` word fades in after shake completes (timestamp-based delay)
-- Wave animation fires on ALL tiles (left→right, top→bottom, 80ms stagger `WAVE_STAGGER`) when `solved && animatingRow === count - 1`; `animatingRow` guard prevents replay on remount
+- Wave animation fires on ALL tiles (left→right, top→bottom, 80ms stagger `WAVE_STAGGER`) when `solved && animatingRow === count - 1 && !waveDone`; `animatingRow` guard prevents replay on remount; `waveDone` state (set after full wave duration) prevents re-animation when revisiting a solved board via scroll
 - **Wordle mode must pass `solved={gameStatus === 'won'}`** — previously missing, was breaking win-row bounce
 
-**Overlay timing pattern** (v1.2.2): One suppression boolean in index.tsx:
+**Overlay timing pattern** (v1.2.2, updated v1.2.4): One suppression boolean in index.tsx:
 - `overlayLocked` — true while end-game popup is visible (all boards suppressed together); false 320ms after popup dismissed
 - `suppressOverlay={overlayLocked}` passed to all GameBoards
 - Result: wave → popup → dismiss → per-board ✓/✗ overlay
 - "Continue →" button removed in v1.2.2 (was `boardOverlayDismissed` state)
 - **All modes auto-dismiss** after 3s via `useEffect([endGameVisible])` — separate effect fires when overlay becomes visible, starts 3000ms timer; cleanup cancels if dismissed manually first (post-test fix B4)
+- **Overlay content (v1.2.4)**: Share button only (no ↺ New Game in overlay). After overlay dismisses, BottomStrip shows ↺ New Game (practice/quordle) or "Next word in HH:MM:SS" countdown (daily).
 
 **End-game overlay structure** (post-test fix for B5): Two-section layout inside `endGamePressable`:
 1. `endGameHelpRow` — full-width `View` with `alignItems: 'flex-end'`; contains `?` help Pressable at right edge
@@ -129,17 +130,21 @@ The `?` button is NO LONGER `position: 'absolute'` — it's a normal flex child.
 
 **`Keyboard.tsx`** — key height 60px, row gap 8px. Colors reflect best result per letter across all boards in multi-board mode.
 
-**`HelpModal.tsx`** — sections: rules, EXAMPLES (3 tiles), MULTI-BOARD MODE, BOARD INDICATORS (5 rows with rendered indicator shapes), HARD MODE (conditional), ICONS. ICONS has two sub-sections "Top bar" and "Bottom strip".
+**`HelpModal.tsx`** — sections: rules, EXAMPLES (3 tiles), MULTI-BOARD MODE, BOARD INDICATORS (5 rows with rendered indicator shapes), HARD MODE (conditional), ICONS. ICONS has three sub-sections: "Top bar", "Ribbon" (📅 🎮 mode icons), "Footer" (📊 ‹› 🔥 ⚡ bottom bar icons). Arrays: `TOP_ICON_ROWS`, `RIBBON_ICON_ROWS`, `FOOTER_ICON_ROWS`.
 
 **`BottomStrip.tsx`** — `minHeight: 50` + `paddingBottom: insets.bottom` (safe area), replaces tab bar visually:
-- Props: `difficulty: Difficulty`, `onOpenHelp: () => void`, `gameStats: GameStats` (required since v1.2.2)
+- Props: `difficulty: Difficulty`, `onOpenHelp: () => void`, `onNewGame: () => void`, `countdown?: string`, `gameStats: GameStats` (required since v1.2.2)
 - `GameStats = { played: number; winPct: number; streak: number; streakEmoji: string }` — computed in index.tsx from active mode's stats
 - State 0 pre-game (playing, 0 guesses): "? for help" in green (#5BA75A), tappable → `onOpenHelp()`
 - State 1 playing (guesses > 0): "⏳ N tries left · ? for help" (singular: "1 try left"); 💀/💪 badge if difficulty !== 'easy'; + 📊; no multi-board solved count
 - State 2 board just solved (quordle only): "Board X solved in N ✓" + 📊
-- State 3 game over: "{played} played · {winPct}% win · {streakEmoji} {streak}" — streak green (#5BA75A) when >0, grey (#888780) when 0; + 📊
+- State 3 game over: stats row + action row:
+  - Stats: "{played} played · {winPct}% win · {streakEmoji} {streak}" + 📊
+  - Practice/quordle: "↺ New Game" link below stats (calls `onNewGame`)
+  - Daily: "Next word in HH:MM:SS" below stats (from `countdown` prop); pass `countdown={countdown}` only for daily
 - 📊 opens StatsModal; `streakEmoji` is 🔥 for daily, ⚡ for practice
 - Uses `useSafeAreaInsets` internally — no inset prop needed from parent
+- **Note**: In game-over state the strip grows ~20px for the action row. `TAB_H = 50 + insets.bottom` in index.tsx slightly underestimates strip height during game-over — tiles will be very slightly oversized, acceptable error.
 
 **`StatsModal.tsx`** — Modal, close on backdrop tap or × button:
 - ? help icon at left of header (position absolute, left: 12) — opens HelpModal
@@ -243,10 +248,10 @@ Word count pills removed in v1.2.2 (E5). `WORD_COUNT_ANSWERS` / `WORD_COUNT_GUES
 ### Settings safe area (v1.2.1)
 `SafeAreaView edges={['top', 'bottom']}` — both edges required so the custom 44px header doesn't overlap the status bar/notch. The header sits inside the SafeAreaView (not positioned outside it).
 
-### Difficulty lock for daily (v1.2.2)
-Two places enforce the lock:
-- **Settings screen**: `handleDifficultyChange()` in settings.tsx calls `useDailyStore.getState()` imperatively. If `dailyStatus === 'completed' || (dailyStatus === 'playing' && dailyGuesses.length > 0)`, calls `showDiffLockToast()` (inline toast, 3s auto-dismiss). Uses `useRef` + `setTimeout` — no `Alert.alert` (broken on RN Web).
-- **Header difficulty icon**: `handleDifficultyToggle()` in index.tsx (post-test fix). Same lock check using `useDailyStore.getState()`. If locked, calls `showSystemToast('Daily locked — next word in HH:MM:SS')` and returns. Only applies when `isDaily` (not `!isQuordle` — practice mode should always allow difficulty change). `renderHeader` receives `onDifficultyToggle` prop instead of inlining the logic.
+### Difficulty lock for daily (v1.2.4)
+Two places enforce the lock (lock applies ONLY to daily 1-out mode):
+- **Settings screen**: `handleDifficultyChange()` in settings.tsx. Guard: `gameMode === 'wordle' && activeWordleMode === 'daily'`. If that AND `dailyStatus === 'completed' || (dailyStatus === 'playing' && dailyGuesses.length > 0)`, calls `showDiffLockToast()` (inline toast, 3s auto-dismiss). Multi-board and practice modes can freely change difficulty. Uses `useRef` + `setTimeout` — no `Alert.alert` (broken on RN Web).
+- **Header difficulty icon**: `handleDifficultyToggle()` in index.tsx. Guard: `isDaily` (= `!isQuordle && activeWordleMode === 'daily'`). If locked (`dailyStatus === 'playing' || 'completed'`), shows `showSystemToast('Daily locked — next word in HH:MM:SS')`. Practice mode can always change difficulty freely.
 
 ### Header arrows (v1.2.1)
 ‹ › boxed chevrons replaced with CSS border-trick solid triangles:
@@ -368,7 +373,7 @@ Build commands: `eas build --local --profile preview --output wordout.apk` / `--
 - Never trigger or instruct triggering a build without a confirmed version bump.
 - Update `CHANGELOG.md` with the new version entry as part of the same commit as `app.json`.
 
-**Current version:** `1.2.3` (versionCode 11) — committed.  
+**Current version:** `1.2.4` (versionCode 12) — committed.  
 Update after each confirmed bump so future sessions start from the right baseline.
 
 ### Build pipeline
@@ -387,7 +392,7 @@ Update after each confirmed bump so future sessions start from the right baselin
   - `https://github.com/dilippanicker/wordout/releases/latest/download/wordout.apk`
   - `https://github.com/dilippanicker/wordout/releases/latest/download/wordout.aab`
 
-**Current version:** `1.2.3` (versionCode 11) — committed. Build APK via `bash build-and-deploy.sh` next session.
+**Current version:** `1.2.4` (versionCode 12) — committed. Build APK via GitHub Actions next session.
 
 ### Play Store setup
 - App created in Google Play Console under publisher "Onglipo"

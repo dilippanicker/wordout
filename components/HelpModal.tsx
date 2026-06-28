@@ -137,7 +137,7 @@ const TOP_ICON_ROWS: IconRowDef[] = [
   },
 ];
 
-const BOTTOM_ICON_ROWS: IconRowDef[] = [
+const RIBBON_ICON_ROWS: IconRowDef[] = [
   {
     renderIcon: () => <Ionicons name="calendar-outline" size={18} color="#5BA75A" />,
     text: 'Daily word — one new puzzle per day (green when active)',
@@ -146,6 +146,9 @@ const BOTTOM_ICON_ROWS: IconRowDef[] = [
     renderIcon: () => <Text style={styles.statsEmoji}>🎮</Text>,
     text: 'Practice mode — unlimited games (green when active)',
   },
+];
+
+const FOOTER_ICON_ROWS: IconRowDef[] = [
   {
     renderIcon: () => <Text style={styles.statsEmoji}>📊</Text>,
     text: 'Statistics — view scores and guess distribution',
@@ -253,8 +256,16 @@ export function HelpModal({ visible, onClose, difficulty }: HelpModalProps) {
               </View>
             ))}
 
-            <Text style={[styles.subLabel, { color: colors.text, marginTop: 10 }]}>Bottom strip</Text>
-            {BOTTOM_ICON_ROWS.map(({ renderIcon, text }, i) => (
+            <Text style={[styles.subLabel, { color: colors.text, marginTop: 10 }]}>Ribbon</Text>
+            {RIBBON_ICON_ROWS.map(({ renderIcon, text }, i) => (
+              <View key={i} style={styles.iconRow}>
+                <View style={styles.iconCell}>{renderIcon()}</View>
+                <Text style={[styles.iconDesc, { color: colors.text }]}>{text}</Text>
+              </View>
+            ))}
+
+            <Text style={[styles.subLabel, { color: colors.text, marginTop: 10 }]}>Footer</Text>
+            {FOOTER_ICON_ROWS.map(({ renderIcon, text }, i) => (
               <View key={i} style={styles.iconRow}>
                 <View style={styles.iconCell}>{renderIcon()}</View>
                 <Text style={[styles.iconDesc, { color: colors.text }]}>{text}</Text>

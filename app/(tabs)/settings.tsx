@@ -56,11 +56,16 @@ export default function SettingsScreen() {
   }
 
   function handleDifficultyChange(d: Difficulty) {
-    const { dailyStatus, dailyGuesses } = useDailyStore.getState();
-    const locked = dailyStatus === 'completed' || (dailyStatus === 'playing' && dailyGuesses.length > 0);
-    if (locked) {
-      showDiffLockToast();
-      return;
+    // Only lock for daily 1-out mode — practice and multi-board can always change difficulty.
+    if (gameMode === 'wordle') {
+      const { activeWordleMode, dailyStatus, dailyGuesses } = useDailyStore.getState();
+      if (activeWordleMode === 'daily') {
+        const locked = dailyStatus === 'completed' || (dailyStatus === 'playing' && dailyGuesses.length > 0);
+        if (locked) {
+          showDiffLockToast();
+          return;
+        }
+      }
     }
     setDifficulty(d);
   }

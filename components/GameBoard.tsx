@@ -205,13 +205,24 @@ export function GameBoard({
 
   const [animatingRow, setAnimatingRow] = useState(-1);
   const prevCount = useRef(count);
+  // Once the wave fires, prevent re-animation when revisiting a solved board.
+  const [waveDone, setWaveDone] = useState(false);
 
   useEffect(() => {
     const prev = prevCount.current;
     prevCount.current = count;
     if (count > prev) setAnimatingRow(count - 1);
-    else if (count === 0) setAnimatingRow(-1);
+    else if (count === 0) { setAnimatingRow(-1); setWaveDone(false); }
   }, [count]);
+
+  // Mark wave as complete after all tiles have bounced so revisit skips re-animation.
+  useEffect(() => {
+    if (solved && animatingRow === count - 1 && count > 0 && !waveDone) {
+      const totalMs = FLIP_DONE_MS + count * COLS * WAVE_STAGGER + 600;
+      const t = setTimeout(() => setWaveDone(true), totalMs);
+      return () => clearTimeout(t);
+    }
+  }, [solved, animatingRow, count]);
 
   const rows = Array.from({ length: maxGuesses }, (_, row) => {
     const hasSubmitted = row < count;
@@ -238,10 +249,9 @@ export function GameBoard({
       return <Tile key={col} tileWidth={effectiveTileW} tileHeight={effectiveTileH} />;
     });
 
-    // Wave ALL tiles left→right, top→bottom on solve (50ms stagger between tiles).
-    // animatingRow === count - 1 guard ensures this only fires on the winning submission,
-    // not on remount (where animatingRow stays -1).
-    if (solved && row < count && animatingRow === count - 1) {
+    // Wave fires only on first solve: animatingRow guard prevents remount replay,
+    // waveDone guard prevents re-animation when switching back to a solved board.
+    if (solved && row < count && animatingRow === count - 1 && !waveDone) {
       return (
         <View key={row} style={styles.row}>
           {tiles.map((tile, col) => (

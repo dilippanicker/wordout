@@ -2,6 +2,21 @@
 
 All notable changes to Wordout are documented here.
 
+## [1.2.4] — 2026-06-28
+### Changed
+- B1: Overlay is now Share-only; ↺ New Game (practice/multi-board) and "Next word in HH:MM:SS" countdown (daily) moved to Footer
+- B7: Help screen ICONS section split into three subsections: Top bar, Ribbon (📅 🎮), Footer (📊 ‹› 🔥 ⚡)
+
+### Fixed
+- B1: After overlay auto-dismisses, Footer shows ↺ New Game (practice) or countdown (daily) so users can act without reopening overlay
+- B2: Solved board wave animation fires once only — revisiting a completed board via swipe now goes directly to ✓ state
+- B3: Mode/difficulty label inline to right of active icon (already addressed in D2/v1.2.3 — confirmed)
+- B4: Footer no longer shows "Board X solved in N" when switching to a different board — clears on swipe
+- B5: Practice 1-out difficulty change no longer fires daily lock toast — lock only applies when activeWordleMode === 'daily'
+- B6: Settings difficulty change no longer locks for multi-board or practice modes — fix matches ribbon logic
+- B7: Help screen zone labels updated — Ribbon (📅 🎮 mode switchers) and Footer (stats bar) correctly named
+- B8: ∞ → 🎮 throughout (already addressed in D1/v1.2.3 — confirmed)
+
 ## [1.2.3] — 2026-06-28
 ### Changed
 - D1: Practice mode icon changed from ∞ to 🎮 throughout — indicator row and HelpModal bottom strip section
