@@ -279,7 +279,7 @@ export function GameBoard({
       if (hasSubmitted) {
         const letter = word[col] ?? '';
         const status = (result[col] ?? 'absent') as TileStatus;
-        if (row === animatingRow) {
+        if (row === animatingRow && !waveDoneLocal) {
           return <FlipTile key={col} letter={letter} status={status} delay={col * STAGGER} tileWidth={effectiveTileW} tileHeight={effectiveTileH} />;
         }
         return <Tile key={col} letter={letter} status={status} tileWidth={effectiveTileW} tileHeight={effectiveTileH} />;
