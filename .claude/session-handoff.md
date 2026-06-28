@@ -2,38 +2,29 @@
 
 ## Files modified
 
-### `components/GameBoard.tsx`
-- Added `useCallback` to React import
-- Added `runOnJS` to react-native-reanimated import
-- `BounceTile`: added `onDone?: () => void` prop; `withSpring` now receives a worklet callback `(finished?: boolean) => { 'worklet'; if (finished) runOnJS(onDone)(); }` — fires on the JS thread when the spring settles
-- `GameBoard`: added `onWaveDoneRef` (ref keeping latest `onWaveDone` prop); added `stableHandleWaveDone` (`useCallback([], [])` — stable reference, reads `onWaveDone` via ref, guards with `waveSentRef`, calls `setWaveDoneLocal(true)` + `onWaveDoneRef.current?.()`)
-- Wave rendering: `tiles.map` now computes `isLastTile = row === count - 1 && col === COLS - 1`; passes `stableHandleWaveDone` as `onDone` only to the last tile (longest-delay tile — rightmost tile of last solved row)
-- Removed premature `onWaveDone?.()` call at wave START from the wave-timer useEffect
-- Removed `setTimeout(() => setWaveDoneLocal(true), totalMs)` — replaced by animation callback
-- Simplified wave-timer useEffect to revisit-path only (no more timer management)
+### `app/(tabs)/index.tsx`
+- Line 470: Changed `setTimeout(dismissEndGame, 3000)` → `setTimeout(dismissEndGame, 5000)`
+- Comment on line 467 updated to say "5s" instead of "3s"
+- Applies to both win and lose overlays (single shared `endGameVisible` effect handles both)
 
-## Root cause of bug fixed
+## Decisions made
 
-`onWaveDone` was called at wave start (immediately when the useEffect detected the solve condition). The parent (`index.tsx`) uses `onWaveDone` to persist `waveShown` to the store. Some downstream logic (overlay timing, parent state) keyed off this signal. On large boards (8-out), the wave lasts ~4800ms but the end-game popup delay was only 4200ms — if the popup was dismissed early while the wave was still playing, `overlayLocked` dropped to false and the ✓ overlay appeared while the wave was ongoing.
-
-## Decision: `runOnJS` in spring callback, not setTimeout
-
-User explicitly required "no fixed delay" and "use the animation's withTiming completion callback or runOnJS." The `withSpring` callback in Reanimated fires at true animation completion (when the spring physically settles), regardless of board count. This is more accurate than any computed `totalMs` estimate, especially for variable board counts.
-
-The last tile is `row=count-1, col=COLS-1` — always has the highest delay value (`FLIP_DONE_MS + (count*COLS - 1) * WAVE_STAGGER`), so its spring completion is the true wave end.
-
-`stableHandleWaveDone` is stable via `useCallback([], [])` so `BounceTile`'s `useEffect([], [])` captures the correct function at mount. `onWaveDone` prop is read at call time via `onWaveDoneRef` to avoid stale closure.
+- The same `useEffect([endGameVisible])` timer in B4 controls auto-dismiss for both win and lose end-game overlays — no separate timers needed. One change covers both.
+- No version bump this session — single-line tweak; will bundle with next meaningful change or bump standalone before build.
 
 ## Current state
 
-- `components/GameBoard.tsx` modified, TypeScript clean (only pre-existing `new-game.tsx` error)
-- No version bump yet — same v1.2.7 (versionCode 15)
-- Code committed and pushed this session
-- Device testing still needed before version bump
+- `app/(tabs)/index.tsx` modified; committed and pushed (commit `972e943`)
+- **GitHub Actions build triggered** (run ID `28332145349`) — queued as of session close; builds APK + AAB
+- Version still v1.2.7 (versionCode 15) — build triggered without version bump (user did not request bump before triggering)
+- Device testing from previous session (animation sequence) still pending
 
 ## Exact next step to resume
 
-1. **Device test the full animation sequence** on Samsung S24 Ultra (or emulator):
+1. **Check GitHub Actions build** — confirm APK + AAB produced successfully for v1.2.7
+   - If build succeeded: download APK, install on device, test
+   - If build failed: check logs, fix, re-trigger
+2. **Device test the full animation sequence** on Samsung S24 Ultra (or emulator):
    - Win practice game → wave fires → ✓ overlay appears ONLY AFTER wave completes (not during)
    - Win 8-out game → verify ✓ overlay waits for all 40 tiles to settle before appearing
    - Win practice → switch to daily → switch back → ✓ immediately, NO wave re-fire
@@ -41,13 +32,13 @@ The last tile is `row=count-1, col=COLS-1` — always has the highest delay valu
    - Win daily → verify ✓ persists on app relaunch, no re-wave, no re-popup
    - Lose a game → ✗ shows on revisit, no red shake re-fire
    - New Game resets: wave fires fresh, popup fires fresh
-2. **Bump version to v1.2.8** (patch) only after tests pass
-3. **Trigger GitHub Actions build** (v1.2.8 APK + AAB)
+   - **Also verify: celebration overlay stays visible for 5 seconds before auto-dismissing**
+3. **Bump version to v1.2.8** (patch) only after tests pass
 4. **Upload v1.2.8 AAB** to Play Store internal testing track
 
 ## Bugs / gotchas
 
-- If the animation is interrupted mid-wave (component unmounts — e.g. forced app restart), `onDone` is not called (`finished=false`). This means `waveShown` stays `false` in the store. On next launch, the wave will fire again. This is acceptable behaviour (user never saw the full wave).
-- `stableHandleWaveDone` has `[]` deps — it captures `setWaveDoneLocal` (stable React setter) and reads `onWaveDone` via ref. Safe across renders.
-- The revisit path in the useEffect (`if (waveShownRef.current && !waveSentRef.current && !waveDoneLocal)`) is unchanged — still sets `waveDoneLocal=true` directly (no animation, no `onWaveDone` call, since the store already has `waveShown=true`).
+- Build was triggered at v1.2.7 without a version bump — if user wants a fresh v1.2.8 build, bump first then re-trigger.
+- If the animation is interrupted mid-wave (component unmounts — e.g. forced app restart), `onDone` is not called (`finished=false`). `waveShown` stays `false` in the store; wave fires again on next launch. Acceptable behaviour.
+- `stableHandleWaveDone` has `[]` deps — reads `onWaveDone` via ref at call time. Safe across renders.
 - `new-game.tsx` route type mismatch is a known pre-existing non-blocking TypeScript error.

@@ -1,12 +1,13 @@
 # Wordout — Master TODO
-**Updated: 2026-06-29 (session 4)**
-**Current version: v1.2.7 (versionCode 15) — animation fix + onWaveDone timing fix added (no bump yet), pending device test + build**
+**Updated: 2026-06-29 (session 5)**
+**Current version: v1.2.7 (versionCode 15) — celebration overlay auto-dismiss extended to 5s; GitHub Actions build triggered (run 28332145349)**
 
 ---
 
 ## 🔴 IMMEDIATE — Build & Play Store
 
-- [ ] Build APK via GitHub Actions (trigger from Actions tab — bump to v1.2.8 FIRST after device test)
+- [ ] Check GitHub Actions build result (run 28332145349, triggered 2026-06-29) — confirm APK + AAB produced
+- [ ] Bump to v1.2.8 before next intentional build (patch: 5s overlay + onWaveDone timing fix)
 - [ ] Test animation fix on device (Samsung S24 Ultra) — priority test cases:
   - Win practice → ✓ overlay appears ONLY AFTER wave fully completes (not during bounce)
   - Win 8-out → ✓ overlay waits for all 40 tiles to settle before fading in

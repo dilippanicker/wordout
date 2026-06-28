@@ -3,6 +3,9 @@
 All notable changes to Wordout are documented here.
 
 ## [Unreleased]
+### Changed
+- Celebration overlay (win and lose) auto-dismiss timer extended from 3 seconds to 5 seconds
+
 ### Fixed
 - `onWaveDone` now fires at true wave end — last tile's `withSpring` completion via Reanimated `runOnJS` — so ✓/✗ overlay cannot appear before the bounce wave finishes on any board size (previously fired at wave start, causing early overlay on large boards e.g. 8-out)
 - Animation sequence overhaul — fill/wave/celebration/final-state now fire correctly in all modes:
