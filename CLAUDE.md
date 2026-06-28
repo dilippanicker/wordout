@@ -49,13 +49,15 @@
 - `boardCountName(n)` → `'Wordout'|'2-out'|'3-out'|'4-out'|'6-out'|'8-out'`
 
 **`gameStore.ts`** — practice 1-out logic:
-- `waveShown: boolean` — persists win-wave shown flag; reset in `newGame()`
+- `waveShown: boolean` — wave-shown flag; reset in `newGame()`
+- `celebrationShown: boolean` — celebration popup shown flag; reset in `newGame()`
 - `clearCurrentGuess()` — not auto-called; user backspaces manually after shake
 
 **`quordleStore.ts`** — multi-board logic:
 - `waveDoneBoards: boolean[]` — per-board wave flags
+- `celebrationShown: boolean` — end-game popup shown flag; saved/restored in snapshots
 - `snapshots: Record<number, QuordleSnapshot>` — in-memory per-board-count state (NOT persisted)
-- `switchBoardCount(n)` — saves current state to snapshot, restores n if previously visited
+- `switchBoardCount(n)` — saves current state to snapshot (incl. celebrationShown), restores n if previously visited
 - `newGame()` — clears snapshot for current bc, starts fresh
 
 **`dailyStore.ts`** — persisted (`wordout-daily`):
@@ -64,6 +66,7 @@
 - `dailyDifficulty: Difficulty` — always 'easy'; daily is Easy-only until v1.4
 - `activeWordleMode: 'daily'|'practice'`
 - `waveShown: boolean` — persists win-wave shown flag for today's daily
+- `celebrationShown: boolean` — persists end-game popup shown flag for today's daily
 - `checkAndReset()` — resets to 'available' if new day; call on app focus
 
 **`statsStore.ts`** — persisted (`wordle-stats`):
@@ -109,6 +112,20 @@
 
 **App name:** Wordout (not WordOut, not WORDOUT)
 **Mode names:** Wordout, 2-out, 3-out, 4-out, 6-out, 8-out
+
+### Animation sequence (locked design)
+
+**Four animation types:**
+1. **Fill (flip):** tiles reveal colours on guess submit. Always fires on every new guess. Never suppress.
+2. **Wave:** solved-board tiles bounce. Fires ONCE on first solve via `waveShown`/`waveDoneBoards` flags.
+3. **Celebration overlay:** full-screen "Solved!" / "Better luck next time" popup. Fires ONCE via `celebrationShown` flag.
+4. **Final state:** `✓`/`✗` dim overlay on board. Always visible on completed boards, no animation.
+
+**Key implementation details:**
+- `GameBoard` receives `key={isDaily ? 'daily' : 'practice'}` (single-board) or `key={\`${boardCount}-${i}\`}` (quordle) — forces remount on mode/bc switch so `prevCount` ref initialises fresh (prevents spurious fill animation on revisit).
+- `celebrationShown` is checked in `index.tsx` before firing the end-game popup. Set immediately on first fire, stored in all three game stores.
+- `boardCount` is in the mode-reset `useEffect` deps — syncs `prevGameStatusRef` on bc-switch so returning to a completed bc-game doesn't re-trigger the popup.
+- Wave skip path in `GameBoard`: on remount with `waveShown=true`, `isRevisit=true` → `setWaveDoneLocal(true)` immediately → no bounce → ✓ overlay shows via `elapsed=Infinity` path.
 
 ### Difficulty lock rules
 - Daily: always Easy; toast on change attempt: "Daily is always Easy · Try changing difficulty in Practice"

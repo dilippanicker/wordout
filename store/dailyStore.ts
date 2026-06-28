@@ -95,6 +95,8 @@ interface DailyState {
 
   // Wave animation shown flag (prevents re-animation on mode switch back)
   waveShown: boolean;
+  // Celebration overlay shown flag (prevents re-firing on mode switch / app relaunch)
+  celebrationShown: boolean;
 
   // Actions
   checkAndReset: () => void;
@@ -106,6 +108,7 @@ interface DailyState {
   clearCurrentGuess: () => void;
   setActiveWordleMode: (mode: WordleMode) => void;
   setWaveShown: (v: boolean) => void;
+  setCelebrationShown: (v: boolean) => void;
   // Called when difficulty changes mid-daily after abandon confirm
   resetDailyForToday: () => void;
   resetDailyStats: () => void;
@@ -126,6 +129,7 @@ export const useDailyStore = create<DailyState>()(
       stats: emptyBoardStats(),
       activeWordleMode: 'practice',
       waveShown: false,
+      celebrationShown: false,
 
       checkAndReset: () => {
         if (get().lastPlayedDate !== getTodayString()) {
@@ -137,6 +141,7 @@ export const useDailyStore = create<DailyState>()(
             dailySolved: false,
             toast: null,
             waveShown: false,
+            celebrationShown: false,
           });
         }
       },
@@ -155,6 +160,7 @@ export const useDailyStore = create<DailyState>()(
           lastPlayedDate: getTodayString(),
           toast: null,
           waveShown: false,
+          celebrationShown: false,
         });
       },
 
@@ -221,6 +227,7 @@ export const useDailyStore = create<DailyState>()(
 
       setActiveWordleMode: (mode) => set({ activeWordleMode: mode }),
       setWaveShown: (v) => set({ waveShown: v }),
+      setCelebrationShown: (v) => set({ celebrationShown: v }),
 
       resetDailyStats: () => set({ stats: emptyBoardStats() }),
 
@@ -237,6 +244,7 @@ export const useDailyStore = create<DailyState>()(
           lastPlayedDate: getTodayString(),
           toast: null,
           waveShown: false,
+          celebrationShown: false,
         });
       },
     }),

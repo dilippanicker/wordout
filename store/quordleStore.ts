@@ -34,6 +34,7 @@ interface QuordleSnapshot {
   solvedBoards: boolean[];
   gameStatus: GameStatus;
   waveDoneBoards: boolean[];
+  celebrationShown: boolean;
 }
 
 interface QuordleState {
@@ -46,6 +47,7 @@ interface QuordleState {
   gameStatus: GameStatus;
   toast: string | null;
   waveDoneBoards: boolean[];
+  celebrationShown: boolean;
   // Saved states per board count — allows restoring a game when cycling back to a previous bc.
   snapshots: Record<number, QuordleSnapshot>;
   addLetter: (letter: string) => void;
@@ -54,6 +56,7 @@ interface QuordleState {
   clearToast: () => void;
   clearCurrentGuess: () => void;
   setWaveDone: (boardIndex: number) => void;
+  setCelebrationShown: (v: boolean) => void;
   newGame: () => void;
   switchBoardCount: (n: number) => void;
 }
@@ -122,6 +125,7 @@ function initialState(language: Language, boardCount: number) {
     gameStatus: 'playing' as GameStatus,
     toast: null as string | null,
     waveDoneBoards: Array(boardCount).fill(false) as boolean[],
+    celebrationShown: false,
   };
 }
 
@@ -191,6 +195,8 @@ export const useQuordleStore = create<QuordleState>((set, get) => {
       return { waveDoneBoards: arr };
     }),
 
+    setCelebrationShown: (v) => set({ celebrationShown: v }),
+
     newGame: () => {
       const { language, boardCount } = useSettingsStore.getState();
       // Clear any saved snapshot for this board count (explicit new game).
@@ -213,6 +219,7 @@ export const useQuordleStore = create<QuordleState>((set, get) => {
         solvedBoards: current.solvedBoards,
         gameStatus: current.gameStatus,
         waveDoneBoards: current.waveDoneBoards,
+        celebrationShown: current.celebrationShown,
       };
       const newSnapshots = { ...current.snapshots, [current.boardCount]: currentSnapshot };
       const saved = newSnapshots[n];

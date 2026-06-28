@@ -43,12 +43,14 @@ interface GameState {
   gameStatus: GameStatus;
   toast: string | null;
   waveShown: boolean;
+  celebrationShown: boolean;
   addLetter: (letter: string) => void;
   removeLetter: () => void;
   submitGuess: () => void;
   clearToast: () => void;
   clearCurrentGuess: () => void;
   setWaveShown: (v: boolean) => void;
+  setCelebrationShown: (v: boolean) => void;
   newGame: () => void;
 }
 
@@ -114,6 +116,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   gameStatus: 'playing',
   toast: null,
   waveShown: false,
+  celebrationShown: false,
 
   addLetter: (letter) => {
     const { currentGuess, gameStatus } = get();
@@ -176,6 +179,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   clearToast: () => set({ toast: null }),
   clearCurrentGuess: () => set({ currentGuess: '' }),
   setWaveShown: (v) => set({ waveShown: v }),
+  setCelebrationShown: (v) => set({ celebrationShown: v }),
 
   newGame: () => {
     const language = useSettingsStore.getState().language;
@@ -186,6 +190,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       gameStatus: 'playing',
       toast: null,
       waveShown: false,
+      celebrationShown: false,
     });
   },
 }));

@@ -3,6 +3,13 @@
 All notable changes to Wordout are documented here.
 
 ## [Unreleased]
+### Fixed
+- Animation sequence overhaul — fill/wave/celebration/final-state now fire correctly in all modes:
+  - Fill animation no longer re-fires when switching mode or board count back to a completed game (`GameBoard` keyed by mode/boardCount, forcing remount so `prevCount` ref initialises fresh)
+  - Celebration popup no longer re-fires when switching board counts back to a completed game (`celebrationShown` flag in all stores; `boardCount` added to mode-reset effect deps)
+  - Wave animation correctly skips on revisit in all cases
+  - `celebrationShown` flag added to `gameStore`, `dailyStore` (persisted), and `quordleStore` (saved in bc-snapshots)
+
 ### Changed
 - README and CLAUDE.md updated; `docs/playstore.md` added (Play Store setup checklist)
 - `/open` skill updated: CC now reminds user to type `/model haiku` instead of trying to execute it programmatically

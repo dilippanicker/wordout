@@ -1,25 +1,26 @@
 # Wordout — Master TODO
-**Updated: 2026-06-28 (session 2)**
-**Current version: v1.2.7 (versionCode 15) — committed, pending device test + build**
+**Updated: 2026-06-28 (session 3)**
+**Current version: v1.2.7 (versionCode 15) — animation fix added (no bump yet), pending device test + build**
 
 ---
 
 ## 🔴 IMMEDIATE — Build & Play Store
 
-- [ ] Build APK via GitHub Actions (trigger from Actions tab — v1.2.7)
-- [ ] Test on device (Samsung S24 Ultra) — verify v1.2.6 fixes:
+- [ ] Build APK via GitHub Actions (trigger from Actions tab — bump to v1.2.8 FIRST after device test)
+- [ ] Test animation fix on device (Samsung S24 Ultra) — priority test cases:
+  - Win practice → switch to daily → switch back → ✓ immediately, NO wave re-fire
+  - Win 4-out → switch to 2-out → switch back → no popup re-fire, boards show ✓
+  - Win daily → verify ✓ persists on app relaunch, no re-wave, no re-popup
+  - Lose a game → ✗ shows on revisit, no red shake re-fire
+  - New Game resets: wave fires fresh, popup fires fresh
+- [ ] Also verify v1.2.6/v1.2.7 fixes still intact:
   - Footer on completed daily: only [? for help] [📊], NO countdown, NO New Game button
-  - ↺ New Game button in footer is green/white rounded (not plain text)
+  - ↺ New Game button in footer is green/white rounded
   - Practice ribbon label: "Practice · Easy 🎮" (text FIRST, then icon)
   - Daily ribbon label: "📅 Today's · Easy" (icon first — unchanged)
-  - Wave animation does NOT re-fire when returning to a solved board
   - 4-out → 2-out → back to 4-out: board state persists (snapshot restored)
-  - 4-out → Wordout → back to 4-out: board state persists
   - Difficulty change in practice: shows abandon confirm if in-progress, resets board
-  - Difficulty change when game is complete (any mode): shows lock toast, no change
-  - Daily difficulty changeable before first guess; locked after first guess or completion
   - Help screen Ribbon section has description paragraph
-  - Help screen ◄ ► text: "Cycle through board counts (Wordout, 2-out … 8-out)"
 - [ ] Feature graphic (1024×500px) — design in claude.ai
 - [ ] Screenshots on S24 Ultra (min 2, recommend 6):
   - Fresh empty board (Wordout mode, showing pre-game tip)

@@ -412,7 +412,7 @@ export default function WordleScreen() {
     setTimeout(() => { setEndGameVisible(false); setOverlayLocked(false); }, 320);
   }
 
-  // B3: When mode changes, clear any showing overlay and sync the status ref to prevent re-trigger.
+  // B3: When mode or board count changes, clear any showing overlay and sync the status ref to prevent re-trigger.
   useEffect(() => {
     if (endGameTimerRef.current) { clearTimeout(endGameTimerRef.current); endGameTimerRef.current = null; }
     setEndGameVisible(false);
@@ -420,7 +420,7 @@ export default function WordleScreen() {
     setOverlayLocked(false);
     prevGameStatusRef.current = activeGameStatus;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isQuordle, isDaily]);
+  }, [isQuordle, isDaily, boardCount]);
 
   useEffect(() => {
     const prev = prevGameStatusRef.current;
@@ -428,14 +428,28 @@ export default function WordleScreen() {
     if (activeGameStatus === prev) return;
 
     if (activeGameStatus !== 'playing' && prev === 'playing') {
-      setOverlayLocked(true); // suppress per-board overlays until popup dismissed
-      const delay = activeGameStatus === 'won' ? 4200 : 3200;
-      endGameTimerRef.current = setTimeout(() => {
-        endGameTimerRef.current = null;
-        setEndGameVisible(true);
-        endGameOpacity.value = withTiming(1, { duration: 300 });
-        // auto-dismiss handled by [endGameVisible] effect (B4)
-      }, delay);
+      // Check if celebration was already shown for this game (survives bc-switch / mode-switch)
+      const alreadyShown = isDaily
+        ? useDailyStore.getState().celebrationShown
+        : isQuordle
+        ? useQuordleStore.getState().celebrationShown
+        : useGameStore.getState().celebrationShown;
+
+      if (!alreadyShown) {
+        // Mark immediately so any concurrent re-render can't double-fire
+        if (isDaily) useDailyStore.getState().setCelebrationShown(true);
+        else if (isQuordle) useQuordleStore.getState().setCelebrationShown(true);
+        else useGameStore.getState().setCelebrationShown(true);
+
+        setOverlayLocked(true); // suppress per-board overlays until popup dismissed
+        const delay = activeGameStatus === 'won' ? 4200 : 3200;
+        endGameTimerRef.current = setTimeout(() => {
+          endGameTimerRef.current = null;
+          setEndGameVisible(true);
+          endGameOpacity.value = withTiming(1, { duration: 300 });
+          // auto-dismiss handled by [endGameVisible] effect (B4)
+        }, delay);
+      }
     }
 
     if (activeGameStatus === 'playing') {
@@ -712,6 +726,7 @@ export default function WordleScreen() {
                 style={[styles.boardPage, { width: screenW, backgroundColor: colors.background }]}
               >
                 <GameBoard
+                  key={`${boardCount}-${i}`}
                   words={visibleGuesses.map(g => g.word)}
                   boardResults={visibleGuesses.map(g => g.boardResults[i])}
                   currentGuess={isSolved ? '' : qCurrent}
@@ -851,6 +866,7 @@ export default function WordleScreen() {
 
       <View style={styles.boardArea} onLayout={e => setWordleAreaH(e.nativeEvent.layout.height)}>
         <GameBoard
+          key={isDaily ? 'daily' : 'practice'}
           guesses={guesses}
           currentGuess={currentGuess}
           tileSize={wordleTileSize}
