@@ -1,43 +1,54 @@
 # Wordout
 
-A free, open-source word puzzle game for Android with no ads, no tracking, and a carefully curated word list.
+A free, open-source word puzzle game for Android. No ads, no accounts, no tracking.
 
 ## Download
 
 **[⬇ Download latest APK](https://github.com/dilippanicker/wordout/releases/latest/download/wordout.apk)**
 
-Built automatically on every release via GitHub Actions. No login required.
+Built automatically on every release via GitHub Actions.
 
 ## Features
 
-- **Wordout** — classic 5-letter word game, 6 guesses
+- **Daily Word** — one new word per day, same for everyone. Always Easy difficulty.
+- **Practice mode** — unlimited games, any board count, any difficulty
 - **Multi-board mode** — solve 2, 3, 4, 6, or 8 words simultaneously; every guess applies to all boards at once
   - 2-out (7 guesses), 3-out (8 guesses), 4-out (9 guesses), 6-out (11 guesses), 8-out (13 guesses)
-  - Swipe between boards; progress indicators show letters found per board at a glance
-  - Use **‹ ›** arrows in the bottom tab to cycle board modes instantly
+  - Use **◄ ►** arrows in the header to switch between board counts
+- **Three difficulty levels**
+  - 🐣 Easy — no constraints
+  - 💪 Hard — revealed hints must be used in all future guesses
+  - 💀 Extreme — limited guesses (count depends on board count)
 - **American and British English** word lists
-- **Hard mode** — revealed hints must be used in all future guesses
-- **Color blind mode** — high-contrast orange and blue instead of green and yellow
+- **Color blind mode** — high-contrast orange and blue
 - **Dark / light theme**
-- **Stats tracking** with guess distribution, per game mode
+- **Stats tracking** with guess distribution per game mode
 - **Share results** as emoji grid
-- **Win / lose animations** — green shimmer on game win; unsolved boards dim on game loss
-- **Enter key on right** option — swaps ⌫ and ENTER positions on the keyboard
-- Confirms before abandoning an in-progress game (New Game, board switch, language change)
+- **Win / lose animations**
+- **Enter key on right** option
+- Confirms before abandoning an in-progress game
 - No ads, no accounts, no tracking
+
+## Screen Layout
+
+- **Header** — language flag, difficulty, new game, board count arrows, theme, settings, help
+- **Ribbon** — daily/practice mode icons, board indicators, contextual status
+- **Board** — tile grid
+- **Keyboard** — on-screen keyboard
+- **Footer** — tries remaining, stats, new game button
 
 ## Word List
 
 Unlike most Wordle clones, the word list is carefully curated:
 
-- No proper nouns (no names, no place names)
+- No proper nouns, no place names
 - No plurals
 - No 3rd-person verb forms (walks, takes)
 - Separate American and British English variants
 - ~1,500 answer words — over 4 years of daily play
 - ~9,000 valid guess words
 
-The word list pipeline is open source in `wordlist/` — see the scripts in that directory.
+The word list pipeline is open source in `wordlist/`.
 
 ## Tech Stack
 
@@ -53,6 +64,7 @@ The word list pipeline is open source in `wordlist/` — see the scripts in that
 
 - Node.js 18+
 - npm
+- Expo account (for builds)
 
 ### Run locally
 
@@ -63,13 +75,17 @@ npm install
 npx expo start
 ```
 
+Open in browser at `http://localhost:8081` or scan QR with Expo Go.
+
 ### Build APK
 
-```bash
-npx eas-cli build --platform android --profile preview --non-interactive
-```
+Builds run automatically via GitHub Actions on every push. Trigger manually from the Actions tab.
 
-Requires an [Expo account](https://expo.dev) and EAS CLI (`npm install -g eas-cli`).
+Requires `EXPO_TOKEN` secret set in GitHub repo settings.
+
+Download links after build:
+- `https://github.com/dilippanicker/wordout/releases/latest/download/wordout.apk`
+- `https://github.com/dilippanicker/wordout/releases/latest/download/wordout.aab`
 
 ### Word list pipeline
 
@@ -88,7 +104,7 @@ python3 curate.py
 
 ## Contributing
 
-Word list improvements are welcome. Open an issue or PR if you spot a word that shouldn't be an answer, or a common word that's missing from the guess list.
+Word list improvements are welcome. Open an issue or PR if you spot a word that shouldn't be an answer, or a common word missing from the guess list.
 
 ## Licence
 
