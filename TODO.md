@@ -1,22 +1,22 @@
 # Wordout — Master TODO
 **Updated: 2026-06-28**
-**Current version: v1.2.4 (versionCode 12) — committed, pending device test + build**
+**Current version: v1.2.5 (versionCode 13) — committed, pending device test + build**
 
 ---
 
 ## 🔴 IMMEDIATE — Build & Play Store
 
-- [ ] Test on device (Samsung S24 Ultra) — verify v1.2.4 fixes:
-  - Footer shows ↺ New Game after overlay dismisses (practice)
-  - Footer shows "Next word in HH:MM:SS" after overlay dismisses (daily)
-  - Overlay shows Share only — no ↺ New Game button
-  - Solved board: wave animates once only — swipe away and back goes directly to ✓
-  - Mode/difficulty label inline to right of active icon (D2 fix)
-  - Swipe from solved board 1 to board 2 — footer shows board 2's state immediately
-  - Practice 1-out difficulty change freely allowed (no daily lock toast)
-  - Settings difficulty change allowed in multi-board modes and practice
-  - Help modal ICONS: "Ribbon" section (📅 🎮) and "Footer" section (📊 ‹› 🔥 ⚡)
-- [ ] Build APK via GitHub Actions
+- [ ] Build APK via GitHub Actions (trigger from Actions tab — v1.2.5)
+- [ ] Test on device (Samsung S24 Ultra) — verify v1.2.5 fixes:
+  - Ribbon shows "Next word in HH:MM:SS" after daily completion (replaces "Today's · Easy")
+  - Footer game-over: single row [? for help] [📊] [↺ New Game] (practice) or [countdown] (daily)
+  - No stats row in footer after game ends — stats via 📊 only
+  - Header difficulty emoji reflects locked daily difficulty (not settingsStore difficulty)
+  - Completed 4-out game persists when going to daily and back (no board reset)
+  - Active board indicator: ✓ in green square when current board solved; ✓ in circle for other solved boards
+  - Footer immediately shows "Board N solved in M ✓" when swiping to a solved board
+  - Wave fires once on solve; revisit board → immediate ✓ overlay, no wave replay
+  - Daily→practice→daily: wave does NOT re-fire on return
 - [ ] Feature graphic (1024×500px) — design in claude.ai
 - [ ] Screenshots on S24 Ultra (min 2, recommend 6):
   - Fresh empty board (Wordout mode, showing pre-game tip)
@@ -36,6 +36,18 @@
 - [ ] Update GitHub Actions workflow to auto-upload to internal track
 
 ---
+
+## ✅ v1.2.5 — Completed 2026-06-28
+
+- ✅ B1: Footer game-over redesigned — single row [? for help][📊][↺ New Game / countdown]; stats row removed
+- ✅ B2: Wave animation stored in game/daily/quordle stores — no re-animation when returning to solved board
+- ✅ B3: Ribbon label → "Next word in HH:MM:SS" after daily completion (replaces "Today's · Easy")
+- ✅ B4: Header difficulty emoji reflects active mode's locked difficulty
+- ✅ B5: Help screen ◄ ► moved to Header section; "at the bottom" → "in the header"
+- ✅ B6: Mode switch no longer resets completed multi-board game (newGame only when bc changes)
+- ✅ B7: Footer shows persistent "Board N solved ✓" for active solved board (replaces transient flash)
+- ✅ B8: Resolved by B1 (stats removed from footer)
+- ✅ B9: Active+solved board indicator shows ✓ in green square (not circle)
 
 ## ✅ v1.2.4 — Completed 2026-06-28
 
