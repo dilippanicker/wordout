@@ -2,6 +2,12 @@
 
 All notable changes to Wordout are documented here.
 
+## [Unreleased]
+### Changed
+- README and CLAUDE.md updated; `docs/playstore.md` added (Play Store setup checklist)
+- `/open` skill updated: CC now reminds user to type `/model haiku` instead of trying to execute it programmatically
+- CLAUDE.md Model Selection section clarified: CC announces recommended model switches but user must execute them manually
+
 ## [1.2.7] — 2026-06-28
 ### Changed
 - B3: Help screen text content extracted to `constants/helpContent.ts` — edit text there without touching component code

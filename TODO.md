@@ -1,5 +1,5 @@
 # Wordout — Master TODO
-**Updated: 2026-06-28**
+**Updated: 2026-06-28 (session 2)**
 **Current version: v1.2.7 (versionCode 15) — committed, pending device test + build**
 
 ---
