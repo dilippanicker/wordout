@@ -164,12 +164,16 @@ export const useQuordleStore = create<QuordleState>((set, get) => {
       }
 
       if (difficulty === 'hard') {
+        let firstViolation: string | null = null;
+        let anyAccepts = false;
         for (let b = 0; b < boardCount; b++) {
           if (solvedBoards[b]) continue;
           const boardHistory = guesses.map(g => ({ word: g.word, results: g.boardResults[b] }));
-          const violation = checkHardModeConstraints(boardHistory, currentGuess);
-          if (violation) { set({ toast: `Board ${b + 1}: ${violation}` }); return; }
+          const v = checkHardModeConstraints(boardHistory, currentGuess);
+          if (!v) { anyAccepts = true; break; }
+          if (!firstViolation) firstViolation = `Board ${b + 1}: ${v}`;
         }
+        if (!anyAccepts && firstViolation) { set({ toast: firstViolation }); return; }
       }
 
       const boardResults = answers.map(a => evaluateGuess(currentGuess, a));

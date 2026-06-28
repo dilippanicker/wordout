@@ -25,6 +25,7 @@ import { isGameInProgress, confirmAbandon } from '@/utils/abandon';
 import { TileStatus } from '@/components/Tile';
 
 const noFocus = { tabIndex: -1, onMouseDown: (e: any) => e.preventDefault() };
+const END_GAME_DISMISS_MS = 5000;
 
 // ── Key status helpers ──────────────────────────────────────────────────────
 
@@ -464,11 +465,20 @@ export default function WordleScreen() {
     };
   }, [activeGameStatus]);
 
-  // B4: auto-dismiss overlay 5s after it appears — separate from outer delay timer
+  // B4: auto-dismiss overlay after END_GAME_DISMISS_MS — separate from outer delay timer
   useEffect(() => {
     if (!endGameVisible) return;
-    const timer = setTimeout(dismissEndGame, 5000);
+    const timer = setTimeout(dismissEndGame, END_GAME_DISMISS_MS);
     return () => clearTimeout(timer);
+  }, [endGameVisible]);
+
+  // B4b: countdown ticker while overlay is visible
+  const [dismissCountdown, setDismissCountdown] = useState(0);
+  useEffect(() => {
+    if (!endGameVisible) { setDismissCountdown(0); return; }
+    setDismissCountdown(Math.ceil(END_GAME_DISMISS_MS / 1000));
+    const id = setInterval(() => setDismissCountdown(n => Math.max(0, n - 1)), 1000);
+    return () => clearInterval(id);
   }, [endGameVisible]);
 
   // ── End-game overlay content ─────────────────────────────────────────────
@@ -622,6 +632,9 @@ export default function WordleScreen() {
                 </View>
             }
           </Pressable>
+          {dismissCountdown > 0 && (
+            <Text style={styles.dismissCountdown}>Closing in {dismissCountdown}…</Text>
+          )}
         </View>
       </Pressable>
     </Animated.View>
@@ -1291,6 +1304,11 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '700',
+  },
+  dismissCountdown: {
+    color: 'rgba(255,255,255,0.45)',
+    fontSize: 13,
+    marginTop: -4,
   },
   newGameButton: {
     marginTop: 4,
