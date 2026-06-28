@@ -34,11 +34,13 @@ interface QuordleState {
   solvedBoards: boolean[];
   gameStatus: GameStatus;
   toast: string | null;
+  waveDoneBoards: boolean[];
   addLetter: (letter: string) => void;
   removeLetter: () => void;
   submitGuess: () => void;
   clearToast: () => void;
   clearCurrentGuess: () => void;
+  setWaveDone: (boardIndex: number) => void;
   newGame: () => void;
 }
 
@@ -105,6 +107,7 @@ function initialState(language: Language, boardCount: number) {
     solvedBoards: Array(boardCount).fill(false) as boolean[],
     gameStatus: 'playing' as GameStatus,
     toast: null as string | null,
+    waveDoneBoards: Array(boardCount).fill(false) as boolean[],
   };
 }
 
@@ -166,6 +169,12 @@ export const useQuordleStore = create<QuordleState>((set, get) => {
 
     clearToast: () => set({ toast: null }),
     clearCurrentGuess: () => set({ currentGuess: '' }),
+
+    setWaveDone: (boardIndex) => set(state => {
+      const arr = [...state.waveDoneBoards];
+      arr[boardIndex] = true;
+      return { waveDoneBoards: arr };
+    }),
 
     newGame: () => {
       const { language, boardCount } = useSettingsStore.getState();

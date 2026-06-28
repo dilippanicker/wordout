@@ -2,6 +2,20 @@
 
 All notable changes to Wordout are documented here.
 
+## [1.2.5] — 2026-06-28
+### Changed
+- B1: Footer game-over state redesigned — single row with [? for help] [📊] [↺ New Game / countdown]; stats row removed from footer (accessible via 📊)
+- B3: Ribbon shows "Next word in HH:MM:SS" countdown inline with 📅 after daily completion (replaces "Today's · Easy")
+- B7: Multi-board footer shows persistent "Board N solved in M ✓" for current solved board (not just a flash on solve)
+- B9: Active board indicator uses green filled square with ✓ when solved (non-active solved boards use green filled circle)
+
+### Fixed
+- B2: Wave animation stored in game/daily/quordle stores — persists across mode switches, no re-animation on return to solved board
+- B4: Header difficulty icon reflects active mode's locked difficulty (daily shows dailyDifficulty, practice shows settingsStore difficulty)
+- B5: Help screen — ◄ ► arrows moved to Header section (were incorrectly in Footer); "at the bottom" text corrected to "in the header"
+- B6: Switching modes no longer resets a completed multi-board game — newGame() only called when board count actually changes
+- B8: Resolved by B1 — stats removed from footer; available via 📊 modal only
+
 ## [1.2.4] — 2026-06-28
 ### Changed
 - B1: Overlay is now Share-only; ↺ New Game (practice/multi-board) and "Next word in HH:MM:SS" countdown (daily) moved to Footer

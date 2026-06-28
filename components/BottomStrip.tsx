@@ -22,7 +22,10 @@ interface Props {
   boardCount: number;
   solvedCount: number;
   difficulty: Difficulty;
-  justSolvedInfo: { boardNum: number; guessCount: number } | null;
+  // Active board info for multi-board persistent status display (B7)
+  activeBoardIndex?: number;
+  activeBoardSolved?: boolean;
+  activeBoardSolvedGuess?: number;
   onOpenStats: () => void;
   onOpenHelp: () => void;
   onNewGame: () => void;
@@ -36,7 +39,8 @@ interface Props {
 export function BottomStrip({
   gameStatus, isQuordle, isDaily,
   currentGuessNum, maxGuesses, boardCount, solvedCount, difficulty,
-  justSolvedInfo, onOpenStats, onOpenHelp, onNewGame, countdown,
+  activeBoardIndex, activeBoardSolved, activeBoardSolvedGuess,
+  onOpenStats, onOpenHelp, onNewGame, countdown,
   textColor, backgroundColor, borderColor,
   gameStats,
 }: Props) {
@@ -52,7 +56,7 @@ export function BottomStrip({
   let content: ReactNode;
 
   if (gameStatus === 'playing' && currentGuessNum === 0) {
-    // Pre-game: show only "? for help" in green
+    // Pre-game: show only "? for help" in green + 📊
     content = (
       <View style={styles.row}>
         <Pressable style={styles.tipContent} onPress={onOpenHelp} hitSlop={6}>
@@ -62,42 +66,39 @@ export function BottomStrip({
       </View>
     );
   } else if (isGameOver) {
-    // State 3 — game over: stats row + action (↺ New Game for practice, countdown for daily)
-    const { played, winPct, streak, streakEmoji } = gameStats;
+    // Game over: [? for help] [spacer] [📊] [↺ New Game / countdown] — all on one line (B1)
     content = (
-      <View style={styles.gameOverStack}>
-        <View style={styles.row}>
-          <View style={styles.playingLeft}>
-            <Text style={[styles.guessText, { color: textColor }]}>
-              {`${played} played · ${winPct}% win · `}
-              <Text style={{ color: streak > 0 ? GREEN : GREY }}>{streakEmoji} {streak}</Text>
-            </Text>
-          </View>
-          {statsIcon}
-        </View>
+      <View style={styles.row}>
+        <Pressable onPress={onOpenHelp} hitSlop={6}>
+          <Text style={styles.helpLink}>? for help</Text>
+        </Pressable>
+        <View style={styles.flex1} />
+        {statsIcon}
         {isDaily && countdown ? (
-          <Text style={[styles.nextWordText, { color: textColor }]}>Next word in {countdown}</Text>
+          <Text style={[styles.countdownText]}>{countdown}</Text>
         ) : !isDaily ? (
-          <Pressable onPress={onNewGame} hitSlop={6} style={styles.newGameRow}>
+          <Pressable onPress={onNewGame} hitSlop={6} style={styles.newGameBtn}>
             <Text style={styles.newGameText}>↺ New Game</Text>
           </Pressable>
         ) : null}
       </View>
     );
-  } else if (isQuordle && justSolvedInfo !== null) {
-    // State 2 — board just solved flash (multi-board playing)
+  } else if (isQuordle && activeBoardSolved) {
+    // Multi-board: active board is solved — show persistent solved status (B7)
+    const boardNum = (activeBoardIndex ?? 0) + 1;
+    const guessCount = activeBoardSolvedGuess ?? 0;
     content = (
       <View style={styles.row}>
         <View style={styles.solvedLeft}>
           <Text style={[styles.solvedText, { color: GREEN }]}>
-            Board {justSolvedInfo.boardNum} solved in {justSolvedInfo.guessCount} ✓
+            Board {boardNum} solved in {guessCount} ✓
           </Text>
         </View>
         {statsIcon}
       </View>
     );
   } else {
-    // State 1 — playing: "⏳ N tries left · ? for help"
+    // Playing: "⏳ N tries left · ? for help"
     const triesLeft = maxGuesses - currentGuessNum;
     const triesText = triesLeft === 1 ? '1 try left' : `${triesLeft} tries left`;
     const diffEmoji = difficulty === 'extreme' ? '💀' : difficulty === 'hard' ? '💪' : null;
@@ -137,6 +138,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  flex1: {
+    flex: 1,
+  },
   tipContent: {
     flex: 1,
     flexDirection: 'row',
@@ -157,9 +161,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     flexShrink: 1,
   },
-  guessNum: {
-    fontWeight: '700',
-  },
   diffBadge: {
     fontSize: 14,
     lineHeight: 18,
@@ -170,24 +171,22 @@ const styles = StyleSheet.create({
   statsEmoji: {
     fontSize: 20,
   },
-  // State 3 game-over stack (stats row + action row)
-  gameOverStack: {
-    gap: 3,
+  // Game-over action items
+  countdownText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: GREEN,
+    paddingLeft: 10,
   },
-  nextWordText: {
-    fontSize: 12,
-    opacity: 0.65,
-    paddingLeft: 0,
-  },
-  newGameRow: {
-    alignSelf: 'flex-start',
+  newGameBtn: {
+    paddingLeft: 10,
   },
   newGameText: {
     fontSize: 13,
     fontWeight: '600',
     color: GREEN,
   },
-  // State 2
+  // Multi-board solved state (B7)
   solvedLeft: {
     flex: 1,
     flexDirection: 'row',

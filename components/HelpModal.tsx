@@ -120,6 +120,15 @@ const TOP_ICON_ROWS: IconRowDef[] = [
     text: 'New game — abandon the current game and start fresh',
   },
   {
+    renderIcon: () => (
+      <View style={styles.trianglePair}>
+        <View style={styles.triangleLeft} />
+        <View style={styles.triangleRight} />
+      </View>
+    ),
+    text: 'Cycle through board modes (1, 2, 3, 4, 6, 8 boards)',
+  },
+  {
     renderIcon: () => <Ionicons name="moon-outline" size={18} color="#878a8c" />,
     text: 'Dark theme',
   },
@@ -152,15 +161,6 @@ const FOOTER_ICON_ROWS: IconRowDef[] = [
   {
     renderIcon: () => <Text style={styles.statsEmoji}>📊</Text>,
     text: 'Statistics — view scores and guess distribution',
-  },
-  {
-    renderIcon: () => (
-      <View style={styles.trianglePair}>
-        <View style={styles.triangleLeft} />
-        <View style={styles.triangleRight} />
-      </View>
-    ),
-    text: 'Cycle through board modes (1, 2, 3, 4, 6, 8 boards)',
   },
   {
     renderIcon: () => <Text style={styles.statsEmoji}>🔥</Text>,
@@ -228,7 +228,7 @@ export function HelpModal({ visible, onClose, difficulty }: HelpModalProps) {
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <Text style={styles.sectionLabel}>MULTI-BOARD MODE</Text>
             <Text style={[styles.rule, { color: colors.text }]}>
-              Solve <Text style={styles.bold}>2–8 words simultaneously.</Text> Every guess applies to all boards at once. Use the <Text style={styles.bold}>‹ ›</Text> arrows at the bottom to switch between modes.
+              Solve <Text style={styles.bold}>2–8 words simultaneously.</Text> Every guess applies to all boards at once. Use the <Text style={styles.bold}>◄ ►</Text> arrows in the header to switch between modes.
             </Text>
             <Text style={[styles.rule, { color: colors.text }]}>
               You get <Text style={styles.bold}>5 + board count guesses</Text> (e.g. 9 for 4-out, 13 for 8-out).

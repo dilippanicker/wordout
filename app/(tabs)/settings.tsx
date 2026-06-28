@@ -46,12 +46,15 @@ export default function SettingsScreen() {
   }
 
   function handleBoardCountSelect(n: BoardCount) {
-    setBoardCount(n);
     if (n === 1) {
+      setBoardCount(n);
       setGameMode('wordle');
     } else {
+      const prevBc = useQuordleStore.getState().boardCount;
+      setBoardCount(n);
       setGameMode('quordle');
-      useQuordleStore.getState().newGame(); // sync board to new count immediately
+      // Only reset board when count actually changes — preserves completed state (B6)
+      if (n !== prevBc) useQuordleStore.getState().newGame();
     }
   }
 

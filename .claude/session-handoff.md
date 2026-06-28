@@ -4,69 +4,75 @@
 
 ### Files modified
 
+**`store/gameStore.ts`** — B2:
+- Added `waveShown: boolean` + `setWaveShown(v)` — reset to false in `newGame()`
+
+**`store/dailyStore.ts`** — B2:
+- Added `waveShown: boolean` + `setWaveShown(v)` — reset to false in `startOrResumeDaily()`, `resetDailyForToday()`, `checkAndReset()`
+
+**`store/quordleStore.ts`** — B2:
+- Added `waveDoneBoards: boolean[]` + `setWaveDone(boardIndex)` — reset to all-false in `newGame()` via `initialState()`
+
 **`components/GameBoard.tsx`** — B2:
-- Added `waveDone` state (`useState(false)`) to prevent wave re-animation on board revisit
-- Added effect that resets `waveDone = false` when `count` drops to 0 (new game)
-- Added effect that sets `waveDone = true` after full wave duration (`FLIP_DONE_MS + count * COLS * WAVE_STAGGER + 600ms`) — fires once per solve, then prevents BounceTile re-wrapping
-- Changed wave condition from `solved && row < count && animatingRow === count - 1` → added `&& !waveDone`
-- Result: first solve triggers wave; revisiting solved board skips wave and shows ✓ overlay immediately
+- Added `waveShown?: boolean` and `onWaveDone?: () => void` props
+- `waveDone` state now initializes from `waveShown` prop and syncs via `useEffect([waveShown])`
+- Removed `setWaveDone(false)` from count===0 branch (was causing re-animation on mode switch)
+- Wave-done effect calls `onWaveDone?.()` alongside `setWaveDone(true)`
+- Added `waveDone` to wave-done effect dependency array (was missing, could cause stale closure)
 
-**`components/BottomStrip.tsx`** — B1, B4:
-- Added `onNewGame: () => void` and `countdown?: string` to Props interface
-- State 3 (isGameOver) now renders a two-row layout:
-  - Row 1: stats row (unchanged)
-  - Row 2: `↺ New Game` (practice/quordle) OR `Next word in HH:MM:SS` (daily, when `countdown` provided)
-- Added styles: `gameOverStack`, `nextWordText`, `newGameRow`, `newGameText`
+**`components/BottomStrip.tsx`** — B1, B7, B8:
+- Removed `justSolvedInfo` prop entirely
+- Added `activeBoardIndex?`, `activeBoardSolved?`, `activeBoardSolvedGuess?` props for B7
+- Game-over state: single row `[? for help] [spacer] [📊] [↺ New Game / countdown]` — no stats row
+- Playing + active board solved (multi-board): shows persistent "Board N solved in M ✓"
 
-**`app/(tabs)/index.tsx`** — B1, B4:
-- **B1**: Removed `↺ New Game` button from `endGameOverlay` — overlay is now Share-only. Both BottomStrip instances now receive `onNewGame={handleNewGame}`. Single-board BottomStrip also receives `countdown={isDaily ? countdown : undefined}`.
-- **B4**: Added `useEffect(() => { setJustSolvedInfo(null); }, [activeBoard])` — clears "Board X solved in N" message immediately when user swipes to a different board.
-- Quordle BottomStrip: `onNewGame={handleNewGame}` added (no countdown for quordle).
+**`components/HelpModal.tsx`** — B5:
+- Added ◄ ► triangles entry to TOP_ICON_ROWS (Header section)
+- Removed ◄ ► from FOOTER_ICON_ROWS
+- Fixed "at the bottom" → "in the header" in MULTI-BOARD MODE section
 
-**`app/(tabs)/settings.tsx`** — B5, B6:
-- `handleDifficultyChange` now only locks when `gameMode === 'wordle'` AND `activeWordleMode === 'daily'`
-- Previously locked for ALL modes/board counts whenever daily was completed
-- Fix: outer guard `if (gameMode === 'wordle')` prevents lock in multi-board modes; inner guard `if (activeWordleMode === 'daily')` prevents lock in practice 1-out mode
+**`app/(tabs)/index.tsx`** — B2, B3, B4, B6, B7, B9:
+- **B2**: Pass `waveShown` + `onWaveDone` to both single-board and multi-board GameBoard instances
+- **B3**: Ribbon label changes to `Next word in HH:MM:SS` when `dailyStore.dailyStatus === 'completed'`
+- **B4**: `renderHeader` for single-board path receives `isDaily ? dailyStore.dailyDifficulty : difficulty`
+- **B6**: `cycleTo` only calls `newGame()` when `n !== prevBc` (quordle board count changes)
+- **B7**: Removed `justSolvedInfo` state and effects; compute `activeBoardSolved` + `activeBoardSolvedGuess` from `quordleStore.solvedBoards[activeBoard]`; pass to BottomStrip
+- **B8**: Resolved by B1 (stats row removed from footer)
+- **B9**: Board indicator — active+solved shows green filled square with ✓; non-active+solved uses circle (as before)
+- Removed `prevSolvedBoardsRef` and all `justSolvedInfo` tracking effects
 
-**`components/HelpModal.tsx`** — B7:
-- Renamed `BOTTOM_ICON_ROWS` → split into `RIBBON_ICON_ROWS` (📅, 🎮) and `FOOTER_ICON_ROWS` (📊, ‹›, 🔥, ⚡)
-- Updated render to show three subsections under ICONS: "Top bar", "Ribbon", "Footer"
-- Was: single "Bottom strip" sublabel for all 6 rows
+**`app/(tabs)/settings.tsx`** — B6:
+- `handleBoardCountSelect`: only calls `newGame()` when `n !== prevBc`
 
 **`app.json`** — version bump:
-- `version`: 1.2.3 → 1.2.4
-- `versionCode`: 11 → 12
+- `version`: 1.2.4 → 1.2.5
+- `versionCode`: 12 → 13
 
-**`CHANGELOG.md`** — new [1.2.4] entry added
-
-**`TODO.md`** — v1.2.4 section added, IMMEDIATE section updated for new device test checklist
+**`CHANGELOG.md`** — new [1.2.5] entry added
 
 ---
 
 ## Decisions & deviations
 
-- **B3 (label on separate line)**: No code change made. The D2 fix from v1.2.3 is correct in code — `modeIconPill` has `flexDirection: 'row'` and conditional rendering keeps label inline. The bug likely appeared because the v1.2.3 APK was never built (device still ran v1.2.2). Noted in CHANGELOG as "confirmed from D2/v1.2.3".
+- **B2 wave fix approach**: Store-level flags (`waveShown` in gameStore/dailyStore, `waveDoneBoards` in quordleStore) persist across mode switches. Local `waveDone` state syncs from prop via `useEffect` — when mode switches (prop changes to false = new game), local state resets too. This avoids the "daily→practice→daily re-triggers wave" bug.
 
-- **B8 (∞ → 🎮)**: No code change needed. D1 from v1.2.3 already replaced all ∞ references. grep confirmed no remaining occurrences. Noted as "confirmed from D1/v1.2.3".
+- **B3 countdown in Ribbon**: When `dailyStore.dailyStatus === 'completed'`, the Ribbon shows `Next word in ${countdown}` inline with 📅 icon — replacing "Today's · Easy". Countdown is still computed every second via the same interval. Footer also shows countdown per B1 (both show it).
 
-- **B1 overlay approach**: Removed only the `↺ New Game` button from the overlay. The `?` help button and daily countdown in the overlay are retained. This matches the spec "Overlay has Share only" (referring to action buttons — Share being the only primary CTA).
+- **B4 header difficulty**: Only the single-board renderHeader call gets the effective difficulty. Quordle path unchanged (no daily mode in quordle). This means the header emoji (🐣/💪/💀) accurately reflects the locked daily difficulty when in daily mode.
 
-- **B2 wave fix approach**: Used a `waveDone` state in GameBoard (not store-level flag as spec suggested) because:
-  1. ScrollView in RN keeps all pages mounted (no remount) so component state persists
-  2. State resets to false when `count === 0` (new game) — same effect as store reset
-  3. Avoids store schema changes which would require persist migration
+- **B6 preserve completed board**: The quordle board is only reset when bc changes, not on every mode switch. A completed 4-out game persists through daily→4-out round trip.
 
-- **B4 timing**: Clearing `justSolvedInfo` on `activeBoard` change means the "Board X solved" flash disappears the instant the user swipes. The flash is intentional for the ~0.5s it shows while they're still on the solved board. This is correct behavior.
+- **B7 persistent vs flash**: `justSolvedInfo` (transient flash) replaced entirely by `activeBoardSolved` computed directly from `quordleStore.solvedBoards[activeBoard]`. Footer shows "Board N solved" persistently whenever you're on a solved board (not just for 1 guess after it's solved).
 
-- **B5/B6 ribbon fix**: The header `handleDifficultyToggle` was already correct (guards with `isDaily`). Only Settings `handleDifficultyChange` needed fixing — now checks `gameMode === 'wordle' && activeWordleMode === 'daily'` before locking.
+- **B8 stats removed from footer**: Footer no longer shows stats row in game-over state. Stats accessed via 📊 icon (StatsModal).
+
+- **B9 active+solved indicator**: Active board indicator was always a square (with ▶). Now when the active board is solved, it shows a green-filled square with ✓ (matching the spec). Non-active solved boards still show green-filled circle with ✓.
 
 ---
 
 ## Current state
 
-All 8 bugs addressed. TypeScript clean (pre-existing new-game.tsx error only). Version bumped to v1.2.4 (versionCode 12). Changes committed.
-
-B3 and B8 confirmed as already fixed in v1.2.3 — no code change needed in this session.
+All 9 bugs and 2 design updates addressed. TypeScript clean (pre-existing new-game.tsx error only). Version bumped to v1.2.5 (versionCode 13). Changes committed.
 
 ---
 
@@ -74,24 +80,26 @@ B3 and B8 confirmed as already fixed in v1.2.3 — no code change needed in this
 
 1. **Build APK** via GitHub Actions (trigger manually from Actions tab)
 2. **Device test** on Samsung S24 Ultra — verify:
-   - Footer shows ↺ New Game after overlay auto-dismisses (practice)
-   - Footer shows "Next word in HH:MM:SS" after overlay auto-dismisses (daily)
-   - Overlay: Share button only (no ↺ New Game in overlay)
-   - Solved board: wave fires once; swipe away and back → ✓ shown immediately, no wave
-   - Mode/difficulty label appears inline right of 📅/🎮 icon (D2 fix, now deployed in APK)
-   - Swipe from solved board 1 to board 2: footer immediately shows board 2's state
-   - Practice 1-out: difficulty change allowed freely (no "Daily locked" toast)
-   - Settings: difficulty change in 4-out/6-out/8-out allowed freely
-   - Help modal ICONS: "Ribbon" section shows 📅 🎮; "Footer" section shows 📊 ‹› 🔥 ⚡
+   - Ribbon shows "Next word in HH:MM:SS" after daily completion (replaces "Today's · Easy")
+   - Footer game-over: single row [? for help] [📊] [↺ New Game] (practice) or [countdown] (daily)
+   - No stats row in footer after game ends
+   - Ribbon difficulty icon reflects locked daily difficulty (not settingsStore difficulty)
+   - Completed 4-out game persists when going daily and back
+   - Active board indicator shows ✓ in square when board solved; other solved boards use circles
+   - Footer immediately updates to "Board N solved in M ✓" when swiping to solved board
+   - Wave animation fires once on solve; revisit → immediate ✓ overlay, no wave
+   - Mode switch daily→practice→daily: wave does NOT re-fire on return to daily
 
 ---
 
 ## Gotchas
 
-- **BottomStrip height**: In game-over state, the strip now has two rows (stats + action). `minHeight: 50` stays but actual height grows ~20px when action row is shown. `TAB_H = 50 + insets.bottom` in index.tsx is used for tile sizing — tiles will be very slightly oversized during game-over state. Acceptable error; only during game-over.
+- **B3 Ribbon countdown**: The countdown string is computed in index.tsx every second. When daily is completed, the Ribbon label reads from the same `countdown` state. No new effect needed.
 
-- **B2 waveDone reset**: The reset fires when `count === 0`, i.e., on new game. It does NOT fire when `solved` resets to false temporarily (shouldn't happen in normal flow). If quordle store resets a solved board's count, waveDone would reset too — this is correct (animation should re-fire for new game).
+- **B7 activeBoardSolvedGuess**: Computed as `boardSolvedAtRow(qGuesses, activeBoard) + 1`. Returns 0 if board not solved (-1 + 1 = 0). BottomStrip uses it only when `activeBoardSolved` is true, so the 0 case is never shown.
 
-- **B4 justSolvedInfo**: The "Board X solved" flash now clears on ANY board change, even if user immediately swipes back to the solved board. They won't see the flash again. This matches the fix intent.
+- **B6 isGameInProgress**: When user is in daily mode (bc=1), `isGameInProgress()` checks daily store not quordle. A playing quordle game won't trigger the abandon guard when cycling from daily to quordle. This is pre-existing behavior, not introduced by B6 fix.
 
-- **B5/B6 Settings fix**: `useDailyStore.getState()` is called inside `handleDifficultyChange` (already imported at top of settings.tsx). Added `activeWordleMode` to destructure from that call. No new imports needed.
+- **waveDone effect deps**: Added `waveDone` to the deps array of the wave-done effect. This causes the effect to re-run when `waveDone` changes (from prop sync). The `if (!waveDone)` guard prevents the timeout from firing again once waveDone is true. No infinite loop risk.
+
+- **waveShown in dailyStore persist**: `waveShown` is part of the persisted `wordout-daily` store. If user closes and reopens app after solving daily, the wave won't re-fire. This is correct behavior. Old persisted state without `waveShown` will have `undefined` → falsy → wave fires on first load (correct).

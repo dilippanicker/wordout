@@ -254,7 +254,6 @@ export default function WordleScreen() {
   const [copyConfirmed, setCopyConfirmed] = useState(false);
   const [activeBoard, setActiveBoard] = useState(0);
   const [statsModalVisible, setStatsModalVisible] = useState(false);
-  const [justSolvedInfo, setJustSolvedInfo] = useState<{ boardNum: number; guessCount: number } | null>(null);
   const [countdown, setCountdown] = useState(() => msToHMS(msUntilMidnight()));
   // Per-board overlays suppressed until end-game popup is dismissed
   const [overlayLocked, setOverlayLocked] = useState(false);
@@ -263,8 +262,7 @@ export default function WordleScreen() {
   const systemToastOpacity = useSharedValue(0);
   const systemToastStyle = useAnimatedStyle(() => ({ opacity: systemToastOpacity.value }));
   const scrollRef = useRef<ScrollView>(null);
-  const prevSolvedBoardsRef = useRef<boolean[]>([]);
-  // Countdown updates every second (only used in daily overlay display)
+  // Countdown updates every second
   useEffect(() => {
     const id = setInterval(() => setCountdown(msToHMS(msUntilMidnight())), 1000);
     return () => clearInterval(id);
@@ -313,27 +311,9 @@ export default function WordleScreen() {
     });
   }, [isQuordle, quordleStore.boardCount]);
 
-  // Track justSolvedInfo for BottomStrip State 2
-  const solvedBoardsKey = quordleStore.solvedBoards.join(',');
-  useEffect(() => {
-    if (!isQuordle) { prevSolvedBoardsRef.current = []; return; }
-    const curr = quordleStore.solvedBoards;
-    const prev = prevSolvedBoardsRef.current;
-    const idx = curr.findIndex((s, i) => s && !prev[i]);
-    if (idx >= 0) setJustSolvedInfo({ boardNum: idx + 1, guessCount: quordleStore.guesses.length });
-    prevSolvedBoardsRef.current = [...curr];
-  }, [solvedBoardsKey, isQuordle]);
-
-  useEffect(() => {
-    if (justSolvedInfo && quordleStore.guesses.length > justSolvedInfo.guessCount) setJustSolvedInfo(null);
-  }, [quordleStore.guesses.length]);
-
-  // Clear "Board X solved in N" when user swipes to a different board (B4).
-  useEffect(() => { setJustSolvedInfo(null); }, [activeBoard]);
-
-  useEffect(() => {
-    if (activeGameStatus !== 'playing') setJustSolvedInfo(null);
-  }, [activeGameStatus]);
+  // Active board solved state for persistent footer display (B7)
+  const activeBoardSolved = isQuordle ? (quordleStore.solvedBoards[activeBoard] ?? false) : false;
+  const activeBoardSolvedGuess = isQuordle ? boardSolvedAtRow(quordleStore.guesses, activeBoard) + 1 : 0;
 
   function showSystemToast(msg: string) {
     setSystemToast(msg);
@@ -356,8 +336,10 @@ export default function WordleScreen() {
       if (n === 1) {
         setGameMode('wordle');
       } else {
+        const prevBc = useQuordleStore.getState().boardCount;
         setGameMode('quordle');
-        useQuordleStore.getState().newGame(); // B10: sync board display immediately
+        // Only reset board if bc is changing — preserves completed multi-board state on mode switch (B6)
+        if (n !== prevBc) useQuordleStore.getState().newGame();
       }
     };
     if (isGameInProgress()) confirmAbandon(doIt);
@@ -676,11 +658,19 @@ export default function WordleScreen() {
                   }
                 >
                   <View style={styles.indicatorWrap}>
-                    {isActive && !solved ? (
-                      <View style={[styles.indicatorSquare, { borderColor: squareColor }]}>
-                        <Ionicons name="play" size={10} color={squareColor} />
-                      </View>
+                    {isActive ? (
+                      // B9: Active board uses square; shows ✓ when solved, ▶ when not
+                      solved ? (
+                        <View style={[styles.indicatorSquare, { borderColor: '#6aaa64', backgroundColor: '#6aaa64' }]}>
+                          <Text style={styles.indicatorCheckText}>✓</Text>
+                        </View>
+                      ) : (
+                        <View style={[styles.indicatorSquare, { borderColor: squareColor }]}>
+                          <Ionicons name="play" size={10} color={squareColor} />
+                        </View>
+                      )
                     ) : (
+                      // Non-active board: circle
                       <View style={[styles.indicatorCircle, { borderColor: strokeColor, backgroundColor: fillColor }]}>
                         {solved
                           ? <Text style={styles.indicatorCheckText}>✓</Text>
@@ -730,6 +720,8 @@ export default function WordleScreen() {
                   answer={quordleStore.answers[i]}
                   shakeKey={shakeKey}
                   suppressOverlay={overlayLocked}
+                  waveShown={quordleStore.waveDoneBoards[i] ?? false}
+                  onWaveDone={() => useQuordleStore.getState().setWaveDone(i)}
                 />
               </BoardPage>
             );
@@ -759,7 +751,9 @@ export default function WordleScreen() {
           boardCount={bc}
           solvedCount={solvedCount}
           difficulty={difficulty}
-          justSolvedInfo={justSolvedInfo}
+          activeBoardIndex={activeBoard}
+          activeBoardSolved={activeBoardSolved}
+          activeBoardSolvedGuess={activeBoardSolvedGuess}
           onOpenStats={() => setStatsModalVisible(true)}
           onOpenHelp={() => setShowHelp(true)}
           onNewGame={handleNewGame}
@@ -788,7 +782,9 @@ export default function WordleScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       {renderHeader({
-        language, setLanguage, difficulty, setDifficulty, darkTheme, setDarkTheme,
+        language, setLanguage,
+        difficulty: isDaily ? dailyStore.dailyDifficulty : difficulty,  // B4: show active mode's difficulty
+        setDifficulty, darkTheme, setDarkTheme,
         colors, setShowHelp, title: 'Wordout',
         onNewGame: handleNewGame, onCyclePrev: cyclePrev, onCycleNext: cycleNext,
         onSettings: () => router.navigate('/(tabs)/settings' as never),
@@ -815,7 +811,9 @@ export default function WordleScreen() {
             </View>
             {isDaily && (
               <Text style={styles.modeLabel} numberOfLines={1}>
-                {`Today's · ${dailyStore.dailyDifficulty.charAt(0).toUpperCase() + dailyStore.dailyDifficulty.slice(1)}`}
+                {dailyStore.dailyStatus === 'completed'
+                  ? `Next word in ${countdown}`
+                  : `Today's · ${dailyStore.dailyDifficulty.charAt(0).toUpperCase() + dailyStore.dailyDifficulty.slice(1)}`}
               </Text>
             )}
           </View>
@@ -853,12 +851,17 @@ export default function WordleScreen() {
           guesses={guesses}
           currentGuess={currentGuess}
           tileSize={wordleTileSize}
-          maxGuesses={maxGuessesForDifficulty(difficulty, 1)}
+          maxGuesses={maxGuessesForDifficulty(isDaily ? dailyStore.dailyDifficulty : difficulty, 1)}
           shakeKey={shakeKey}
           gameOver={activeGameStatus === 'lost'}
           solved={activeGameStatus === 'won'}
           answer={answer}
           suppressOverlay={overlayLocked}
+          waveShown={isDaily ? dailyStore.waveShown : wordleStore.waveShown}
+          onWaveDone={() => {
+            if (isDaily) useDailyStore.getState().setWaveShown(true);
+            else useGameStore.getState().setWaveShown(true);
+          }}
         />
       </View>
 
@@ -885,7 +888,6 @@ export default function WordleScreen() {
         boardCount={1}
         solvedCount={activeGameStatus === 'won' ? 1 : 0}
         difficulty={difficulty}
-        justSolvedInfo={null}
         onOpenStats={() => setStatsModalVisible(true)}
         onOpenHelp={() => setShowHelp(true)}
         onNewGame={handleNewGame}

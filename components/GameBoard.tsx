@@ -79,6 +79,10 @@ interface GameBoardProps {
   flexMode?: boolean;
   // When true, per-board ✓/✗ overlay is suppressed (shown after end-game popup dismissed).
   suppressOverlay?: boolean;
+  // Store-level flag: wave animation already shown for this game — skips re-animation on mode switch.
+  waveShown?: boolean;
+  // Called when wave animation completes — parent should persist to store.
+  onWaveDone?: () => void;
 }
 
 export function GameBoard({
@@ -95,6 +99,8 @@ export function GameBoard({
   label,
   flexMode = false,
   suppressOverlay = false,
+  waveShown,
+  onWaveDone,
 }: GameBoardProps) {
   // In flex mode we measure the board container and compute tile dimensions ourselves.
   const [boardLayout, setBoardLayout] = useState({ width: 0, height: 0 });
@@ -205,24 +211,27 @@ export function GameBoard({
 
   const [animatingRow, setAnimatingRow] = useState(-1);
   const prevCount = useRef(count);
-  // Once the wave fires, prevent re-animation when revisiting a solved board.
-  const [waveDone, setWaveDone] = useState(false);
+  // waveDone: synced from waveShown prop (store-level truth) — prevents re-animation across mode switches.
+  const [waveDone, setWaveDone] = useState(waveShown ?? false);
+
+  // Sync local waveDone when the store-level waveShown prop changes (e.g. new game → false).
+  useEffect(() => { setWaveDone(waveShown ?? false); }, [waveShown]);
 
   useEffect(() => {
     const prev = prevCount.current;
     prevCount.current = count;
     if (count > prev) setAnimatingRow(count - 1);
-    else if (count === 0) { setAnimatingRow(-1); setWaveDone(false); }
+    else if (count === 0) setAnimatingRow(-1);
   }, [count]);
 
-  // Mark wave as complete after all tiles have bounced so revisit skips re-animation.
+  // Mark wave as complete after all tiles have bounced; persist to store via onWaveDone.
   useEffect(() => {
     if (solved && animatingRow === count - 1 && count > 0 && !waveDone) {
       const totalMs = FLIP_DONE_MS + count * COLS * WAVE_STAGGER + 600;
-      const t = setTimeout(() => setWaveDone(true), totalMs);
+      const t = setTimeout(() => { setWaveDone(true); onWaveDone?.(); }, totalMs);
       return () => clearTimeout(t);
     }
-  }, [solved, animatingRow, count]);
+  }, [solved, animatingRow, count, waveDone]);
 
   const rows = Array.from({ length: maxGuesses }, (_, row) => {
     const hasSubmitted = row < count;
