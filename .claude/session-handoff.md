@@ -6,9 +6,13 @@
 
 ## What was done this session
 
+No code changes — cost check only. Prior session's animation overhaul is the most recent work.
+
+## Prior session summary (animation overhaul)
+
 Complete animation sequence overhaul. No version bump yet — user explicitly said fix first, bump after device testing.
 
-### Files modified
+### Files modified (prior session)
 
 **`store/gameStore.ts`**
 - Added `celebrationShown: boolean` field (initially `false`)
@@ -41,7 +45,7 @@ Complete animation sequence overhaul. No version bump yet — user explicitly sa
 **Bug 2 — Celebration popup re-fires on bc-switch:**
 Going 4-out(won) → 2-out(playing) → 4-out caused `activeGameStatus` to cycle won→playing→won. `prevGameStatusRef.current` was set to `'playing'` in the middle leg. When returning to 4-out(won), `prev === 'playing'` matched the "new completion" condition → popup fired again. Fix: (a) `boardCount` in mode-reset deps syncs `prevGameStatusRef` so it's `'won'` when re-entering 4-out; (b) `celebrationShown` flag provides belt-and-suspenders guard.
 
-**Wave animation (already correct):** `isRevisit` logic in `GameBoard` using `waveShownRef`/`waveSentRef` was already correct. The `key` remount fix ensures fresh refs on revisit, and `waveShown` from the store is correctly `true` → `isRevisit = true` → `setWaveDoneLocal(true)` immediately → no wave. `✓` overlay shows instantly via `elapsed = Infinity` path.
+**Wave animation (already correct):** `isRevisit` logic in `GameBoard` using `waveShownRef`/`waveSentRef` was already correct. The `key` remount fix ensures fresh refs on revisit, and `waveShown` from the store is correctly `true` → `isRevisit = true` → `setWaveDoneLocal(true)` immediately → no bounce → ✓ overlay shows via `elapsed=Infinity` path.
 
 ## Decisions made
 
