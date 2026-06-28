@@ -211,13 +211,20 @@ export function GameBoard({
 
   const [animatingRow, setAnimatingRow] = useState(-1);
   const prevCount = useRef(count);
-  // waveDoneLocal: set to true once wave plays in this session; reset when store resets (new game).
-  // waveDone is derived from the prop directly to avoid a one-render lag that could re-trigger the wave.
   const [waveDoneLocal, setWaveDoneLocal] = useState(false);
-  const waveDone = (waveShown ?? false) || waveDoneLocal;
+  // waveSentRef: onWaveDone has been called for this game instance (prevents double-call)
+  const waveSentRef = useRef(false);
+  // waveShownRef: sync of the waveShown prop, readable in effects without making waveShown a dep
+  const waveShownRef = useRef(waveShown ?? false);
+  waveShownRef.current = waveShown ?? false;
 
-  // Reset local flag when store resets (waveShown goes false → new game started).
-  useEffect(() => { if (!(waveShown ?? false)) setWaveDoneLocal(false); }, [waveShown]);
+  // Reset when new game starts (waveShown goes false → store reset)
+  useEffect(() => {
+    if (!(waveShown ?? false)) {
+      setWaveDoneLocal(false);
+      waveSentRef.current = false;
+    }
+  }, [waveShown]);
 
   useEffect(() => {
     const prev = prevCount.current;
@@ -226,14 +233,30 @@ export function GameBoard({
     else if (count === 0) setAnimatingRow(-1);
   }, [count]);
 
-  // Mark wave as complete after all tiles have bounced; persist to store via onWaveDone.
+  // isRevisit: store says wave was already shown but this instance hasn't played it yet → skip animation
+  // Computed each render using refs (stable during animation, no re-render triggered by ref changes)
+  const isRevisit = waveShownRef.current && !waveSentRef.current;
+
+  // Wave timer: calls onWaveDone immediately when wave starts so the store is updated before any
+  // mode-switch cleanup can cancel the timer. waveDoneLocal is set after the full animation.
+  // waveShown is intentionally NOT in deps — adding it would cancel the timer when store updates.
   useEffect(() => {
-    if (solved && animatingRow === count - 1 && count > 0 && !waveDone) {
+    // Revisit: store already flagged wave shown, skip directly to overlay
+    if (waveShownRef.current && !waveSentRef.current && !waveDoneLocal) {
+      setWaveDoneLocal(true);
+      return;
+    }
+    if (solved && animatingRow === count - 1 && count > 0 && !waveDoneLocal) {
+      if (!waveSentRef.current) {
+        waveSentRef.current = true;
+        onWaveDone?.(); // Persist to store immediately — survives mode switches that cancel the timer
+      }
       const totalMs = FLIP_DONE_MS + count * COLS * WAVE_STAGGER + 600;
-      const t = setTimeout(() => { setWaveDoneLocal(true); onWaveDone?.(); }, totalMs);
+      const t = setTimeout(() => setWaveDoneLocal(true), totalMs);
       return () => clearTimeout(t);
     }
-  }, [solved, animatingRow, count, waveDone]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [solved, animatingRow, count, waveDoneLocal]);
 
   const rows = Array.from({ length: maxGuesses }, (_, row) => {
     const hasSubmitted = row < count;
@@ -260,9 +283,9 @@ export function GameBoard({
       return <Tile key={col} tileWidth={effectiveTileW} tileHeight={effectiveTileH} />;
     });
 
-    // Wave fires only on first solve: animatingRow guard prevents remount replay,
-    // waveDone guard prevents re-animation when switching back to a solved board.
-    if (solved && row < count && animatingRow === count - 1 && !waveDone) {
+    // Wave fires only on first solve: animatingRow guard prevents accidental triggers,
+    // isRevisit (ref-based) prevents re-animation when switching back to a solved board.
+    if (solved && row < count && animatingRow === count - 1 && !waveDoneLocal && !isRevisit) {
       return (
         <View key={row} style={styles.row}>
           {tiles.map((tile, col) => (

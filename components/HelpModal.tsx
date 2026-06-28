@@ -2,6 +2,12 @@ import { Modal, View, Text, Pressable, ScrollView, StyleSheet, useWindowDimensio
 import { useTheme } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Tile, TileStatus } from './Tile';
+import {
+  SINGLE_BOARD_RULES, COLOR_KEY, COLOR_BLIND_NOTE, MULTI_BOARD_RULES,
+  RIBBON_DESCRIPTION, BOARD_IND_TEXTS, TOP_ICON_TEXTS, RIBBON_ICON_TEXTS,
+  FOOTER_ICON_TEXTS, FEEDBACK_PROMPT, FEEDBACK_LINK_TEXT, OPEN_SOURCE_PROMPT,
+  OPEN_SOURCE_LINK_TEXT, MADE_BY,
+} from '@/constants/helpContent';
 
 import { Difficulty } from '@/store/settingsStore';
 
@@ -59,118 +65,63 @@ function IndicatorCircle({
 type IconRowDef = { renderIcon: () => React.ReactNode; text: string };
 type IndRowDef = { renderIndicator: () => React.ReactNode; text: string };
 
-const BOARD_IND_ROWS: IndRowDef[] = [
-  {
-    renderIndicator: () => <IndicatorSquare />,
-    text: 'Board you are currently playing',
-  },
-  {
-    renderIndicator: () => <IndicatorCircle borderColor="#878a8c" />,
-    text: 'No correct letters yet',
-  },
-  {
-    renderIndicator: () => <IndicatorCircle borderColor="#c9b458" />,
-    text: 'Has misplaced letters, no greens yet',
-  },
-  {
-    renderIndicator: () => (
-      <IndicatorCircle borderColor="#6aaa64">
-        <Text style={indStyles.greenNum}>2</Text>
-      </IndicatorCircle>
-    ),
-    text: '2 letters in correct position, no misplaced',
-  },
-  {
-    renderIndicator: () => (
-      <IndicatorCircle borderColor="#c9b458">
-        <Text style={indStyles.greenNum}>2</Text>
-      </IndicatorCircle>
-    ),
-    text: '2 correct position + misplaced letters',
-  },
-  {
-    renderIndicator: () => (
-      <IndicatorCircle borderColor="#6aaa64" backgroundColor="#6aaa64">
-        <Text style={indStyles.checkText}>✓</Text>
-      </IndicatorCircle>
-    ),
-    text: 'Board solved',
-  },
+// Icon/indicator render functions — paired with text from constants/helpContent.ts
+
+const BOARD_IND_RENDER_FNS: Array<() => React.ReactNode> = [
+  () => <IndicatorSquare />,
+  () => <IndicatorCircle borderColor="#878a8c" />,
+  () => <IndicatorCircle borderColor="#c9b458" />,
+  () => (
+    <IndicatorCircle borderColor="#6aaa64">
+      <Text style={indStyles.greenNum}>2</Text>
+    </IndicatorCircle>
+  ),
+  () => (
+    <IndicatorCircle borderColor="#c9b458">
+      <Text style={indStyles.greenNum}>2</Text>
+    </IndicatorCircle>
+  ),
+  () => (
+    <IndicatorCircle borderColor="#6aaa64" backgroundColor="#6aaa64">
+      <Text style={indStyles.checkText}>✓</Text>
+    </IndicatorCircle>
+  ),
 ];
 
-const TOP_ICON_ROWS: IconRowDef[] = [
-  {
-    renderIcon: () => <Text style={styles.flagPair}>🇺🇸 🇬🇧</Text>,
-    text: 'Switch between American and British English',
-  },
-  {
-    renderIcon: () => <Text style={styles.flagPair}>🐣</Text>,
-    text: 'Easy mode — no constraints on future guesses',
-  },
-  {
-    renderIcon: () => <Text style={styles.flagPair}>💪</Text>,
-    text: 'Hard mode — revealed hints must be used in all future guesses',
-  },
-  {
-    renderIcon: () => <Text style={styles.flagPair}>💀</Text>,
-    text: 'Extreme mode — limited guesses, count depends on board count',
-  },
-  {
-    renderIcon: () => <Ionicons name="refresh-outline" size={18} color="#878a8c" />,
-    text: 'New game — abandon the current game and start fresh',
-  },
-  {
-    renderIcon: () => (
-      <View style={styles.trianglePair}>
-        <View style={styles.triangleLeft} />
-        <View style={styles.triangleRight} />
-      </View>
-    ),
-    text: 'Cycle through board counts (Wordout, 2-out, 3-out, 4-out, 6-out, 8-out)',
-  },
-  {
-    renderIcon: () => <Ionicons name="moon-outline" size={18} color="#878a8c" />,
-    text: 'Dark theme',
-  },
-  {
-    renderIcon: () => <Ionicons name="sunny-outline" size={18} color="#878a8c" />,
-    text: 'Light theme',
-  },
-  {
-    renderIcon: () => <Ionicons name="settings-outline" size={18} color="#878a8c" />,
-    text: 'Settings',
-  },
-  {
-    renderIcon: () => <Ionicons name="help-circle-outline" size={18} color="#878a8c" />,
-    text: 'This help screen',
-  },
+const TOP_ICON_RENDER_FNS: Array<() => React.ReactNode> = [
+  () => <Text style={styles.flagPair}>🇺🇸 🇬🇧</Text>,
+  () => <Text style={styles.flagPair}>🐣</Text>,
+  () => <Text style={styles.flagPair}>💪</Text>,
+  () => <Text style={styles.flagPair}>💀</Text>,
+  () => <Ionicons name="refresh-outline" size={18} color="#878a8c" />,
+  () => (
+    <View style={styles.trianglePair}>
+      <View style={styles.triangleLeft} />
+      <View style={styles.triangleRight} />
+    </View>
+  ),
+  () => <Ionicons name="moon-outline" size={18} color="#878a8c" />,
+  () => <Ionicons name="sunny-outline" size={18} color="#878a8c" />,
+  () => <Ionicons name="settings-outline" size={18} color="#878a8c" />,
+  () => <Ionicons name="help-circle-outline" size={18} color="#878a8c" />,
 ];
 
-const RIBBON_ICON_ROWS: IconRowDef[] = [
-  {
-    renderIcon: () => <Ionicons name="calendar-outline" size={18} color="#5BA75A" />,
-    text: 'Daily word — one new puzzle per day (green when active)',
-  },
-  {
-    renderIcon: () => <Text style={styles.statsEmoji}>🎮</Text>,
-    text: 'Practice mode — unlimited games (green when active)',
-  },
+const RIBBON_ICON_RENDER_FNS: Array<() => React.ReactNode> = [
+  () => <Ionicons name="calendar-outline" size={18} color="#5BA75A" />,
+  () => <Text style={styles.statsEmoji}>🎮</Text>,
 ];
 
-const FOOTER_ICON_ROWS: IconRowDef[] = [
-  {
-    renderIcon: () => <Text style={styles.statsEmoji}>📊</Text>,
-    text: 'Statistics — view scores and guess distribution',
-  },
-  {
-    renderIcon: () => <Text style={styles.statsEmoji}>🔥</Text>,
-    text: 'Daily streak — consecutive days solving the daily word',
-  },
-  {
-    renderIcon: () => <Text style={styles.statsEmoji}>⚡</Text>,
-    text: 'Practice streak — consecutive practice wins, resets on loss',
-  },
+const FOOTER_ICON_RENDER_FNS: Array<() => React.ReactNode> = [
+  () => <Text style={styles.statsEmoji}>📊</Text>,
+  () => <Text style={styles.statsEmoji}>🔥</Text>,
+  () => <Text style={styles.statsEmoji}>⚡</Text>,
 ];
+
+// Merged row definitions (render fn + text from constants)
+const BOARD_IND_ROWS: IndRowDef[] = BOARD_IND_RENDER_FNS.map((renderIndicator, i) => ({ renderIndicator, text: BOARD_IND_TEXTS[i] }));
+const TOP_ICON_ROWS: IconRowDef[] = TOP_ICON_RENDER_FNS.map((renderIcon, i) => ({ renderIcon, text: TOP_ICON_TEXTS[i] }));
+const RIBBON_ICON_ROWS: IconRowDef[] = RIBBON_ICON_RENDER_FNS.map((renderIcon, i) => ({ renderIcon, text: RIBBON_ICON_TEXTS[i] }));
+const FOOTER_ICON_ROWS: IconRowDef[] = FOOTER_ICON_RENDER_FNS.map((renderIcon, i) => ({ renderIcon, text: FOOTER_ICON_TEXTS[i] }));
 
 export function HelpModal({ visible, onClose, difficulty }: HelpModalProps) {
   const { colors } = useTheme();
@@ -198,12 +149,13 @@ export function HelpModal({ visible, onClose, difficulty }: HelpModalProps) {
 
             {/* ── SINGLE BOARD ──────────────────────────────────────── */}
             <Text style={styles.sectionLabel}>SINGLE BOARD</Text>
-            <Text style={[styles.rule, { color: colors.text }]}>
-              Guess the word in <Text style={styles.bold}>6 tries.</Text>
-            </Text>
-            <Text style={[styles.rule, { color: colors.text }]}>
-              Each guess must be a valid 5-letter word. After each guess, the colour of the tiles will change to show how close you were.
-            </Text>
+            {SINGLE_BOARD_RULES.map((rule, i) => (
+              <Text key={i} style={[styles.rule, { color: colors.text }]}>
+                {rule.split('**').map((part, j) =>
+                  j % 2 === 1 ? <Text key={j} style={styles.bold}>{part}</Text> : part,
+                )}
+              </Text>
+            ))}
 
             <Text style={[styles.subLabel, { color: colors.text }]}>EXAMPLE</Text>
 
@@ -217,22 +169,19 @@ export function HelpModal({ visible, onClose, difficulty }: HelpModalProps) {
               {Array.from({ length: 5 }, (_, j) => <Tile key={j} size={TILE_SIZE} />)}
             </View>
 
-            <Text style={[styles.colorKey, { color: colors.text }]}>
-              {'🟩 correct position   🟨 right letter, wrong spot   ⬛ not in word'}
-            </Text>
-            <Text style={styles.mutedNote}>
-              Enable Color Blind Mode in Settings for high-contrast orange and blue.
-            </Text>
+            <Text style={[styles.colorKey, { color: colors.text }]}>{COLOR_KEY}</Text>
+            <Text style={styles.mutedNote}>{COLOR_BLIND_NOTE}</Text>
 
             {/* ── MULTI-BOARD MODE ────────────────────────────────── */}
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <Text style={styles.sectionLabel}>MULTI-BOARD MODE</Text>
-            <Text style={[styles.rule, { color: colors.text }]}>
-              Solve <Text style={styles.bold}>2–8 words simultaneously.</Text> Every guess applies to all boards at once. Use the <Text style={styles.bold}>◄ ►</Text> arrows in the header to switch between modes.
-            </Text>
-            <Text style={[styles.rule, { color: colors.text }]}>
-              You get <Text style={styles.bold}>5 + board count guesses</Text> (e.g. 9 for 4-out, 13 for 8-out).
-            </Text>
+            {MULTI_BOARD_RULES.map((rule, i) => (
+              <Text key={i} style={[styles.rule, { color: colors.text }]}>
+                {rule.split('**').map((part, j) =>
+                  j % 2 === 1 ? <Text key={j} style={styles.bold}>{part}</Text> : part,
+                )}
+              </Text>
+            ))}
 
             {/* ── BOARD INDICATORS ────────────────────────────────── */}
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
@@ -258,7 +207,7 @@ export function HelpModal({ visible, onClose, difficulty }: HelpModalProps) {
 
             <Text style={[styles.subLabel, { color: colors.text, marginTop: 10 }]}>Ribbon</Text>
             <Text style={[styles.rule, { color: colors.text, marginBottom: 12 }]}>
-              The Ribbon shows your current mode, difficulty, board indicators, and contextual status (such as the next word countdown when today's game is complete).
+              {RIBBON_DESCRIPTION}
             </Text>
             {RIBBON_ICON_ROWS.map(({ renderIcon, text }, i) => (
               <View key={i} style={styles.iconRow}>
@@ -277,22 +226,22 @@ export function HelpModal({ visible, onClose, difficulty }: HelpModalProps) {
 
             {/* ── FOOTER ──────────────────────────────────────────── */}
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <Text style={styles.feedbackPrompt}>Missing or wrong word?</Text>
+            <Text style={styles.feedbackPrompt}>{FEEDBACK_PROMPT}</Text>
             <Pressable
               onPress={() => Linking.openURL('https://github.com/dilippanicker/wordout/issues')}
               hitSlop={8}
             >
-              <Text style={styles.feedbackLink}>Submit on GitHub →</Text>
+              <Text style={styles.feedbackLink}>{FEEDBACK_LINK_TEXT}</Text>
             </Pressable>
-            <Text style={[styles.feedbackPrompt, { marginTop: 16 }]}>Wordout is free and open source.</Text>
+            <Text style={[styles.feedbackPrompt, { marginTop: 16 }]}>{OPEN_SOURCE_PROMPT}</Text>
             <Pressable
               onPress={() => Linking.openURL('https://github.com/dilippanicker/wordout')}
               hitSlop={8}
             >
-              <Text style={styles.feedbackLink}>View source on GitHub →</Text>
+              <Text style={styles.feedbackLink}>{OPEN_SOURCE_LINK_TEXT}</Text>
             </Pressable>
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <Text style={[styles.madeBy, { color: colors.text }]}>Made with ♥ by Onglipo Labs</Text>
+            <Text style={[styles.madeBy, { color: colors.text }]}>{MADE_BY}</Text>
 
           </ScrollView>
         </View>

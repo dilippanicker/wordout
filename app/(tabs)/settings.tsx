@@ -60,15 +60,15 @@ export default function SettingsScreen() {
 
   function handleDifficultyChange(d: Difficulty) {
     if (gameMode === 'wordle') {
-      const { activeWordleMode, dailyStatus, dailyGuesses } = useDailyStore.getState();
+      const { activeWordleMode } = useDailyStore.getState();
       if (activeWordleMode === 'daily') {
-        // B6: only lock after first guess submitted or game completed
-        const locked = dailyStatus === 'completed' || (dailyStatus === 'playing' && dailyGuesses.length > 0);
-        if (locked) { showDiffLockToast(); return; }
+        // Daily is always Easy — inform user
+        showDiffLockToast('Daily is always Easy · Try changing difficulty in Practice');
+        return;
       } else {
-        // B5: lock practice when game is complete
+        // Lock practice when game is complete
         const { gameStatus } = useGameStore.getState();
-        if (gameStatus !== 'playing') { showDiffLockToast(); return; }
+        if (gameStatus !== 'playing') { showDiffLockToast('Game complete — start a new game to change difficulty'); return; }
       }
     } else if (gameMode === 'quordle') {
       // B5: lock quordle when game is complete

@@ -143,15 +143,15 @@ export const useDailyStore = create<DailyState>()(
 
       startOrResumeDaily: () => {
         if (get().dailyStatus !== 'available') return;
-        const { language, difficulty } = useSettingsStore.getState();
+        const { language } = useSettingsStore.getState();
         set({
           dailyStatus: 'playing',
           dailyGuesses: [],
           currentGuess: '',
           dailyAnswer: getDailyAnswer(language),
           dailySolved: false,
-          dailyHardMode: difficulty === 'hard',
-          dailyDifficulty: difficulty,
+          dailyHardMode: false,   // Daily is always Easy — no hard mode constraints
+          dailyDifficulty: 'easy',
           lastPlayedDate: getTodayString(),
           toast: null,
           waveShown: false,
@@ -225,15 +225,15 @@ export const useDailyStore = create<DailyState>()(
       resetDailyStats: () => set({ stats: emptyBoardStats() }),
 
       resetDailyForToday: () => {
-        const { language, difficulty } = useSettingsStore.getState();
+        const { language } = useSettingsStore.getState();
         set({
           dailyStatus: 'playing',
           dailyGuesses: [],
           currentGuess: '',
           dailyAnswer: getDailyAnswer(language),
           dailySolved: false,
-          dailyHardMode: difficulty === 'hard',
-          dailyDifficulty: difficulty,
+          dailyHardMode: false,
+          dailyDifficulty: 'easy',
           lastPlayedDate: getTodayString(),
           toast: null,
           waveShown: false,

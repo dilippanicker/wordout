@@ -2,6 +2,15 @@
 
 All notable changes to Wordout are documented here.
 
+## [1.2.7] — 2026-06-28
+### Changed
+- B3: Help screen text content extracted to `constants/helpContent.ts` — edit text there without touching component code
+
+### Fixed
+- B1: Win-wave animation fires once per game only — `onWaveDone()` now called at wave START (not after timer) via `waveSentRef`; `waveShownRef` syncs prop into effect without triggering re-run; `isRevisit` guard skips animation on board revisit
+- B2: Daily mode is always Easy — removed lock logic; difficulty icon shows 🐣 in daily; toast shown when user tries to change difficulty in daily: "Daily is always Easy · Try changing difficulty in Practice"
+
+
 ## [1.2.6] — 2026-06-28
 ### Changed
 - B1: Footer on completed daily no longer shows countdown — Ribbon already shows it; footer shows only [? for help] [📊]

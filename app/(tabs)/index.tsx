@@ -354,12 +354,9 @@ export default function WordleScreen() {
 
   function handleDifficultyToggle() {
     if (isDaily) {
-      // Lock only after first guess submitted or game completed (B6: allow change before any guesses)
-      const { dailyStatus, dailyGuesses } = useDailyStore.getState();
-      if (dailyStatus === 'completed' || (dailyStatus === 'playing' && dailyGuesses.length > 0)) {
-        showSystemToast(`Daily locked — next word in ${msToHMS(msUntilMidnight())}`);
-        return;
-      }
+      // Daily is always Easy — inform user, don't cycle
+      showSystemToast('Daily is always Easy · Try changing difficulty in Practice');
+      return;
     } else if (activeGameStatus !== 'playing') {
       // B5: lock difficulty after any practice/quordle game is complete
       showSystemToast('Game complete — start a new game to change difficulty');
@@ -472,8 +469,8 @@ export default function WordleScreen() {
       endMessage = activeGameStatus === 'won' ? 'Solved!' : 'Better luck next time';
       endWordsNode = <Text style={styles.endWordText}>{dailyStore.dailyAnswer}</Text>;
       if (activeGameStatus === 'won') {
-        const maxG = maxGuessesForDifficulty(dailyStore.dailyDifficulty, 1);
-        endSolveCount = `Solved in ${dailyStore.dailyGuesses.length}/${maxG} tries ${DIFFICULTY_EMOJI[dailyStore.dailyDifficulty]}`;
+        const maxG = maxGuessesForDifficulty('easy', 1);
+        endSolveCount = `Solved in ${dailyStore.dailyGuesses.length}/${maxG} tries ${DIFFICULTY_EMOJI['easy']}`;
       }
     } else if (!isQuordle) {
       endEmoji = activeGameStatus === 'won' ? '🎉' : '😢';
@@ -789,7 +786,7 @@ export default function WordleScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       {renderHeader({
         language, setLanguage,
-        difficulty: isDaily ? dailyStore.dailyDifficulty : difficulty,  // B4: show active mode's difficulty
+        difficulty: isDaily ? 'easy' : difficulty,  // Daily is always Easy (🐣)
         setDifficulty, darkTheme, setDarkTheme,
         colors, setShowHelp, title: 'Wordout',
         onNewGame: handleNewGame, onCyclePrev: cyclePrev, onCycleNext: cycleNext,
@@ -819,7 +816,7 @@ export default function WordleScreen() {
               <Text style={styles.modeLabel} numberOfLines={1}>
                 {dailyStore.dailyStatus === 'completed'
                   ? `Next word in ${countdown}`
-                  : `Today's · ${dailyStore.dailyDifficulty.charAt(0).toUpperCase() + dailyStore.dailyDifficulty.slice(1)}`}
+                  : `Today's · Easy`}
               </Text>
             )}
           </View>

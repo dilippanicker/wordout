@@ -1,12 +1,12 @@
 # Wordout — Master TODO
 **Updated: 2026-06-28**
-**Current version: v1.2.6 (versionCode 14) — committed, pending device test + build**
+**Current version: v1.2.7 (versionCode 15) — committed, pending device test + build**
 
 ---
 
 ## 🔴 IMMEDIATE — Build & Play Store
 
-- [ ] Build APK via GitHub Actions (trigger from Actions tab — v1.2.6)
+- [ ] Build APK via GitHub Actions (trigger from Actions tab — v1.2.7)
 - [ ] Test on device (Samsung S24 Ultra) — verify v1.2.6 fixes:
   - Footer on completed daily: only [? for help] [📊], NO countdown, NO New Game button
   - ↺ New Game button in footer is green/white rounded (not plain text)
@@ -39,6 +39,12 @@
 - [ ] Update GitHub Actions workflow to auto-upload to internal track
 
 ---
+
+## ✅ v1.2.7 — Completed 2026-06-28
+
+- ✅ B1: Win-wave re-animation on board revisit — `onWaveDone()` called at wave START; `waveSentRef`/`waveShownRef`/`isRevisit` prevent double-fire and revisit replay
+- ✅ B2: Daily always Easy — removed lock logic; 🐣 always shown in daily; toast on change attempt
+- ✅ B3: Help screen text moved to `constants/helpContent.ts` — component reads from file
 
 ## ✅ v1.2.6 — Completed 2026-06-28
 
