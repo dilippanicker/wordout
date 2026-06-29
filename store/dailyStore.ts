@@ -106,6 +106,7 @@ interface DailyState {
   submitGuess: () => void;
   clearToast: () => void;
   clearCurrentGuess: () => void;
+  setCurrentGuess: (guess: string) => void;
   setActiveWordleMode: (mode: WordleMode) => void;
   setWaveShown: (v: boolean) => void;
   setCelebrationShown: (v: boolean) => void;
@@ -224,6 +225,7 @@ export const useDailyStore = create<DailyState>()(
 
       clearToast: () => set({ toast: null }),
       clearCurrentGuess: () => set({ currentGuess: '' }),
+      setCurrentGuess: (guess) => set({ currentGuess: guess }),
 
       setActiveWordleMode: (mode) => set({ activeWordleMode: mode }),
       setWaveShown: (v) => set({ waveShown: v }),

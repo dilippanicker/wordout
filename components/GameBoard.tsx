@@ -92,6 +92,8 @@ interface GameBoardProps {
   waveShown?: boolean;
   // Called when wave animation completes — parent should persist to store.
   onWaveDone?: () => void;
+  // Called when a tile in current guess is pressed; col is 0-indexed position
+  onCurrentGuessTilePress?: (col: number) => void;
 }
 
 export function GameBoard({
@@ -110,6 +112,7 @@ export function GameBoard({
   suppressOverlay = false,
   waveShown,
   onWaveDone,
+  onCurrentGuessTilePress,
 }: GameBoardProps) {
   // In flex mode we measure the board container and compute tile dimensions ourselves.
   const [boardLayout, setBoardLayout] = useState({ width: 0, height: 0 });
@@ -303,7 +306,16 @@ export function GameBoard({
 
       if (isActive) {
         const letter = currentGuess[col] ?? '';
-        return <Tile key={col} letter={letter} status={letter ? 'filled' : 'empty'} tileWidth={effectiveTileW} tileHeight={effectiveTileH} />;
+        return (
+          <Tile
+            key={col}
+            letter={letter}
+            status={letter ? 'filled' : 'empty'}
+            tileWidth={effectiveTileW}
+            tileHeight={effectiveTileH}
+            onPress={letter ? () => onCurrentGuessTilePress?.(col) : undefined}
+          />
+        );
       }
 
       return <Tile key={col} tileWidth={effectiveTileW} tileHeight={effectiveTileH} />;

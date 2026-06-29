@@ -49,6 +49,7 @@ interface GameState {
   submitGuess: () => void;
   clearToast: () => void;
   clearCurrentGuess: () => void;
+  setCurrentGuess: (guess: string) => void;
   setWaveShown: (v: boolean) => void;
   setCelebrationShown: (v: boolean) => void;
   newGame: () => void;
@@ -178,6 +179,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   clearToast: () => set({ toast: null }),
   clearCurrentGuess: () => set({ currentGuess: '' }),
+  setCurrentGuess: (guess) => set({ currentGuess: guess }),
   setWaveShown: (v) => set({ waveShown: v }),
   setCelebrationShown: (v) => set({ celebrationShown: v }),
 

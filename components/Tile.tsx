@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ViewStyle } from 'react-native';
+import { View, Text, StyleSheet, ViewStyle, Pressable } from 'react-native';
 import { useSettingsStore } from '@/store/settingsStore';
 
 export type TileStatus = 'empty' | 'filled' | 'correct' | 'present' | 'absent';
@@ -10,6 +10,7 @@ interface TileProps {
   tileWidth?: number;
   tileHeight?: number;
   style?: ViewStyle;
+  onPress?: () => void;
 }
 
 function tileColors(status: TileStatus, dark: boolean, colorBlind: boolean) {
@@ -31,7 +32,7 @@ function tileColors(status: TileStatus, dark: boolean, colorBlind: boolean) {
   }
 }
 
-export function Tile({ letter = '', status = 'empty', size = 60, tileWidth, tileHeight, style }: TileProps) {
+export function Tile({ letter = '', status = 'empty', size = 60, tileWidth, tileHeight, style, onPress }: TileProps) {
   const darkTheme = useSettingsStore(s => s.darkTheme);
   const colorBlindMode = useSettingsStore(s => s.colorBlindMode);
 
@@ -44,13 +45,19 @@ export function Tile({ letter = '', status = 'empty', size = 60, tileWidth, tile
   const w = tileWidth ?? size;
   const h = tileHeight ?? size;
 
-  return (
+  const tileView = (
     <View style={[styles.tile, colorStyle, { width: w, height: h }, style]}>
       <Text style={[styles.letter, { fontSize: Math.min(w, h) * 0.45, color: letterColor }]}>
         {letter.toUpperCase()}
       </Text>
     </View>
   );
+
+  if (onPress && status === 'filled') {
+    return <Pressable onPress={onPress}>{tileView}</Pressable>;
+  }
+
+  return tileView;
 }
 
 const styles = StyleSheet.create({

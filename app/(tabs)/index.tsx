@@ -579,6 +579,13 @@ export default function WordleScreen() {
     else addLetter(key);
   }
 
+  function handleTilePress(col: number) {
+    // Clear from this position to the right (set guess to substring up to col)
+    if (isDaily) useDailyStore.getState().setCurrentGuess(useDailyStore.getState().currentGuess.slice(0, col));
+    else if (isQuordle) useQuordleStore.getState().setCurrentGuess(useQuordleStore.getState().currentGuess.slice(0, col));
+    else useGameStore.getState().setCurrentGuess(useGameStore.getState().currentGuess.slice(0, col));
+  }
+
   async function handleShare() {
     if (activeGameStatus === 'playing') return;
     let text: string;
@@ -758,6 +765,7 @@ export default function WordleScreen() {
                   suppressOverlay={overlayLocked}
                   waveShown={quordleStore.waveDoneBoards[i] ?? false}
                   onWaveDone={() => useQuordleStore.getState().setWaveDone(i)}
+                  onCurrentGuessTilePress={handleTilePress}
                 />
               </BoardPage>
             );
@@ -899,6 +907,7 @@ export default function WordleScreen() {
             if (isDaily) useDailyStore.getState().setWaveShown(true);
             else useGameStore.getState().setWaveShown(true);
           }}
+          onCurrentGuessTilePress={handleTilePress}
         />
       </View>
 

@@ -55,6 +55,7 @@ interface QuordleState {
   submitGuess: () => void;
   clearToast: () => void;
   clearCurrentGuess: () => void;
+  setCurrentGuess: (guess: string) => void;
   setWaveDone: (boardIndex: number) => void;
   setCelebrationShown: (v: boolean) => void;
   newGame: () => void;
@@ -192,6 +193,7 @@ export const useQuordleStore = create<QuordleState>((set, get) => {
 
     clearToast: () => set({ toast: null }),
     clearCurrentGuess: () => set({ currentGuess: '' }),
+    setCurrentGuess: (guess) => set({ currentGuess: guess }),
 
     setWaveDone: (boardIndex) => set(state => {
       const arr = [...state.waveDoneBoards];
