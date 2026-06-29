@@ -13,7 +13,7 @@ to restore full project context instantly.
 - **Claude Code (CC)** = Developer
   - Implements specs in the actual codebase
   - Updates session-handoff.md, TODO.md, CHANGELOG.md after each session
-  - Self-escalates from Haiku → Sonnet → Opus as needed
+  - Cannot switch models programmatically — reminds user to run /model haiku at session start
 
 ## Starting a new session
 1. Open claude.ai → new chat
@@ -47,6 +47,8 @@ to restore full project context instantly.
 - I prefer concise outputs with a clear answer up front
 - I run long scripts myself and report results back
 - I use Claude Code (CC) for implementation, claude.ai for planning/architecture/design
+- When writing CC prompts: no markdown formatting, plain text only
+- Never ask me to cut/paste from multiple places to build a CC prompt — write the full prompt directly
 
 ## Planning Chat ↔ CC Workflow
 1. **Ideate here** — bounce ideas, check viability, UX decisions, spec writing
@@ -56,9 +58,9 @@ to restore full project context instantly.
 5. **I paste into CC** — CC implements
 6. **CC closes session** — updates session-handoff.md, TODO.md, CHANGELOG.md, commits and pushes via /close
 7. **I paste CC summary here** — you stay in sync, plan next session
-8. **After CC commits** — run `bash build-and-deploy.sh` to build APK, install on device, create GitHub release
+8. **After CC commits** — trigger GitHub Actions build manually from Actions tab
 
-**IMPORTANT: CC always commits at end of session via /close. Never commit manually before CC closes. Build script runs only after CC has committed.**
+**IMPORTANT: CC always commits at end of session via /close. Never commit manually before CC closes. Build triggers only after CC has committed.**
 
 **This chat = product owner. CC = developer.**
 When CC deviates from spec, bring it here before accepting.
@@ -67,7 +69,7 @@ When CC deviates from spec, bring it here before accepting.
 ```
 .claude/
   commands/
-    open.md      — session start ritual (Haiku default, handoff read, objective)
+    open.md      — session start ritual (model switch reminder, handoff read, objective)
     close.md     — session end ritual (update handoff, TODO, CHANGELOG, commit, push, report cost)
     review.md    — pre-commit review checklist
   session-handoff.md  — auto-updated by /close
@@ -78,23 +80,19 @@ CHANGELOG.md     — version history, updated each session
 ```
 
 ## CC Model Selection (cost optimization)
-- open.md automatically runs `/model haiku` at session start
-- CC self-escalates to Sonnet for: complex logic, animations, hard bugs, architecture
-- CC self-escalates to Opus only when Sonnet also fails after 2 attempts
-- CC de-escalates back to Haiku after hard task — for cleanup, review, /close
-- CC announces model switches: "Switching to Sonnet — this is complex"
-- When writing CC specs: label Haiku-safe vs Sonnet tasks
+- CC cannot switch models programmatically — it reminds user to run /model haiku at session start
+- User switches manually when CC recommends
+- Use Sonnet for: complex logic, animations, hard bugs, architecture, store changes
+- Use Haiku for: simple edits, config, file changes, cleanup, docs
+- CC announces recommended switches: "Switching to Sonnet recommended — animation logic is complex"
 
 ## Build & Deploy (Wordout)
-- Script: `bash build-and-deploy.sh` in repo root
-- Builds APK locally via `eas build --platform android --profile preview --local`
-- If phone connected via ADB WiFi, installs automatically
-- Creates GitHub Release with APK at github.com/dilippanicker/wordout/releases/latest
-- Quick install: `wget -O ~/Downloads/wordout.apk https://github.com/dilippanicker/wordout/releases/latest/download/wordout.apk && adb install -r ~/Downloads/wordout.apk`
-- EAS free tier resets July 1 2026 — use remote builds after that, local as backup
-- Local build is slow first run (~25 min), faster after Gradle cache warms (~5 min)
-- Java: JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 (set in ~/.bashrc and ~/.gradle/gradle.properties)
-- Android Studio installed at ~/android-studio (for logcat/layout inspector)
+- **Primary build: GitHub Actions** — trigger manually from Actions tab: `gh workflow run "Build APK"`
+- Do NOT use local EAS builds — Java/Gradle environment issues on LG Gram
+- Build takes ~45 min, produces APK + AAB, creates GitHub Release automatically
+- Quick install on device: `wget -O ~/Downloads/wordout.apk https://github.com/dilippanicker/wordout/releases/latest/download/wordout.apk && adb install -r ~/Downloads/wordout.apk`
+- Web testing: `npx expo start --web` (no --clear unless stale cache suspected)
+- Always web test first, then device test, then build for Play Store
 
 ---
 
@@ -108,13 +106,19 @@ CHANGELOG.md     — version history, updated each session
 
 **Play Store status:**
 - Publisher: Onglipo, identity verified
-- Internal + closed testing live
-- 12/12 testers opted in ✅
-- 14-day clock running — production access ~July 10
+- Internal + closed testing live, 12/12 testers opted in ✅
+- Production access: ~July 10 2026
 - Last uploaded to Play Store: versionCode 4 (v1.0.3)
-- Next upload: after v1.2.2 is stable
+- Next upload: v1.2.8 (versionCode 16) AAB — ready to upload to closed testing
 
-**Current version: v1.2.2 (versionCode 10) — in development**
+**Current version: v1.2.8 (versionCode 16)**
+
+**Screen zones (naming convention — use these names everywhere):**
+- **Header** — top bar: 🇬🇧 🐣 ↺ | ◄ Wordout ► | ☽ ⚙ ?
+- **Ribbon** — 📅 🎮 icons + board indicators + contextual status (next word countdown etc)
+- **Board** — tile grid
+- **Keyboard** — on-screen keyboard
+- **Footer** — ⏳ tries left / new game button / 📊 stats
 
 **Modes:** Wordout(1), 2-out(2), 3-out(3), 4-out(4), 6-out(6), 8-out(8)
 **Tile colours:** green #5BA75A, yellow #C9A227, dark #3a3a3a
@@ -126,62 +130,66 @@ CHANGELOG.md     — version history, updated each session
 - 💪 hard mode
 - 💀 extreme mode
 - 🔥 daily streak only (consecutive days solving daily word)
-- ⚡ practice streak (consecutive practice wins, resets on loss; green when >0, grey when 0)
+- ⚡ practice streak (consecutive practice wins, resets on loss)
 - 🏆 personal best only
+- 📅 daily mode
+- 🎮 practice mode (replaced ∞ in v1.2.3)
 
-**What's built and working (v1.2.1):**
-- Daily Word mode — one word per day, date seed, locked after completion
-- Practice mode — unlimited, random words, all board counts
-- Startup logic: opens daily Wordout if not yet completed, else last played mode
-- 📅 calendar (daily) and ∞ infinity (practice) icons in indicator row
-- Active mode icon: green square outline, inactive grey
-- ▶ current board: always green square outline
-- Solid triangle arrows (SVG, 20px) replace boxed ‹ › in header
-- Header: 🇬🇧 🐣 ↺ | ◄ 3-out ► | ☽/☀️ ⚙ ?
-- Bottom strip combined line: "Guess N of M · ? for help" (? for help in green #5BA75A)
-- Stats modal header shows current mode: "STATISTICS · Wordout" etc.
-- Stats modal with Daily | Practice tabs + ? help icon
-- End-of-game overlay with HH:MM:SS countdown for daily
-- Win overlay shows "Solved in X/N tries {emoji}"
-- ✓/✗ overlay appears AFTER end-of-game popup is dismissed
-- Daily: no re-animation on revisit (shows final state directly)
-- Daily difficulty locked once game starts
-- Games persist on mode switch — never cleared unless ↺ New Game
-- Auto-clear row after invalid word shake
+**What's built and working (v1.2.8):**
+- Daily Word mode — one word per day, always Easy difficulty
+- Daily is always Easy — toast shown on change attempt: "Daily is always Easy · Try changing difficulty in Practice"
+- Practice mode — unlimited, random words, all board counts, any difficulty
+- Startup: opens daily Wordout if not yet completed today, else last played mode
+- Ribbon: 📅 Today's · Easy (daily active) | Practice · Easy 🎮 (practice active)
+- Daily completed Ribbon shows: 📅 Next word in HH:MM:SS
+- Header: 🇬🇧 🐣 ↺ | ◄ Wordout ► | ☽ ⚙ ?
+- Solid triangle arrows in header (CSS border-trick, no SVG library)
+- Footer playing: "⏳ N tries left · ? for help" (? for help in green #5BA75A)
+- Footer game over (practice): green ↺ New Game button + 📊
+- Footer game over (daily): 📊 only (countdown in Ribbon)
+- Footer solved board (n-out mid-game): "Board N solved in M ✓"
+- Stats modal: "STATISTICS · Wordout" / "STATISTICS · 4-out" etc.
+- End-of-game celebration overlay: 5s auto-dismiss with green countdown "Closing in 5…4…3…2…1…"
+- Win overlay: "Solved in X/N tries 🐣"
+- Animations: tile fill (every guess), wave (once per board on first solve), celebration overlay (once per game)
+- No re-animation on board revisit — waveShown/celebrationShown flags persisted in stores
+- Hard mode n-out: per-board constraint enforcement (guess accepted if any unsolved board accepts it)
+- Games never cleared without explicit ↺ New Game
+- Practice board resets on difficulty change
+- Difficulty locked on completed game (practice or daily)
 - Extreme mode 💀: maxGuesses = max(3, (5+boardCount)-2)
+- Board indicators: ▶ square (active), ✓ filled square (active+solved), ○ circle (unsolved), ✓ filled circle (solved non-active)
 - ? help icon on every screen and modal
-- Share button uses Ionicons share-social-outline icon
-- Win/lose animations: tile wave, dim, ✓/✗ overlay, end-of-game overlay
+- Help text in constants/helpContent.ts (edit there, not HelpModal.tsx)
 - Duplicate guess rejection with toast
-- Help screen: Easy/Hard/Extreme all documented, shortened feedback line
+- No auto-clear after invalid word shake
+- Tap tile to clear from that position rightward — v1.3
 
-**v1.2.2 — in development (versionCode 10)**
-Bugs: B1 ✓/✗ exit actions (practice=New Game, daily=countdown), B2 daily New Game toast, B3 animations fire once only, B5 difficulty lock on completed daily, B6 practice board persists on mode switch, B7 ✓/✗ overlay after wave animation, B8 multi-board strip cleanup, B10 mode arrow refreshes board, B11 remove Continue button, B13 streak explanation in help
-Enhancements: E1 remove auto-clear after shake, E2 bottom strip ⏳/🎯/🎲 states, E3 stats row inline layout, E4 indicator row mode/difficulty label, E5 remove word count pills from settings
-
-**v1.3 planned:**
-- Per-difficulty daily games (Easy/Hard/Extreme same word, independent states)
-- Per-difficulty stats breakdown
-- Tap tile to clear from that position rightward, cursor lands there
-- Daily Quadout (if user demand warrants)
+**v1.3.0 planned:**
 - Haptic feedback
+- Tap tile to clear rightward, cursor lands there
 - Animated board indicator transitions
+- Maestro smoke tests (critical path automated tests)
+
+**v1.3.1 planned:**
 - GitHub Actions → Play Store auto-publish pipeline
 
+**v1.4.0 planned (major architectural release):**
+- Per-difficulty daily games (Easy/Hard/Extreme same word, independent states)
+- Per-difficulty stats breakdown
+
 **Design decisions (locked):**
-- Square tiles, not rectangular, as board count increases
 - App name: Wordout (not WordOut, not WORDOUT)
 - Mode names: Wordout, 2-out, 3-out, 4-out, 6-out, 8-out (Quadout deprecated)
-- Bottom strip replaces tab bar entirely
-- Daily = single board only (until v1.3)
+- Daily = single board (Wordout only) until v1.4
+- Daily = always Easy until v1.4
 - ? help icon top right on every screen/modal — rule
 - Games never cleared without explicit user request
 - Win/loss animations fire only once per game
-- Daily difficulty locked once started; locked again after completion
 - Word count pills removed from Settings footer
-- Bottom strip states: ⏳ N tries left · ? for help / 🎯 Solved in X of N / 🎲 Unlucky
-- "Better luck next time" commiseration shows only on full game loss, not single board loss
-- Indicator row label: "Today's · Easy" (daily) or "Practice · Easy" (practice) under active icon
+- No difficulty emoji in footer text
+- "Better luck next time" shows only on full game loss, not single board loss
+- Hard mode n-out: per-board constraint, not global
 
 ### SwarDB
 - Definitive Indian film music database — swardb.com
@@ -206,6 +214,7 @@ Enhancements: E1 remove auto-clear after shake, E2 bottom strip ⏳/🎯/🎲 st
 - Long outputs: markdown files I can download
 - Design: show visuals using Visualizer before finalising
 - One question at a time max
+- CC prompts: plain text, no markdown, complete and self-contained
 
 ## Infrastructure
 - Server: onglipo.in (DigitalOcean), webhook at ~/webhook.py
@@ -218,7 +227,7 @@ Tell me the idea. I will:
    - CLAUDE.md (project context, model selection rules)
    - TODO.md (tiered task list)
    - CHANGELOG.md (version history)
-   - .claude/commands/open.md (Haiku default + handoff read)
+   - .claude/commands/open.md (model switch reminder + handoff read)
    - .claude/commands/close.md (update handoff/TODO/CHANGELOG/commit/push/cost)
    - .claude/commands/review.md (project-specific checklist)
    - .claude/session-handoff.md (initial state)

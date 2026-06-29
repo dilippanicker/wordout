@@ -187,7 +187,7 @@ Before every build, follow exactly:
 - Never update `app.json` before user confirms
 - Never trigger build without confirmed version bump
 
-**Current version:** `1.2.8` (versionCode 16)
+**Current version:** `1.2.9` (versionCode 17)
 
 ---
 
@@ -202,15 +202,17 @@ Before every build, follow exactly:
 
 ## Model Selection
 
-CC cannot switch models programmatically. At session start, CC reminds user to switch to Haiku. User switches manually if desired. CC announces recommended switches during session (e.g. "Switching to Sonnet recommended — animation logic is complex") but user must execute the switch.
+CC uses Haiku as executor with Opus as advisor. Set up once at session start:
 
-| Situation | Model |
-|-----------|-------|
-| Simple edits, config, file reading, cleanup | Haiku |
-| Complex logic, hard bugs, animations, store changes | Sonnet |
-| Sonnet failing after 2 attempts | Opus |
+```
+claude config set model claude-haiku-4-5-20251001
 
-Cost awareness: Haiku ≈ 20× cheaper than Sonnet. `/compact` at 50%+ context.
+claude config set advisorModel claude-opus-4-8
+```
+
+CC cannot switch models programmatically. The advisor setup means Opus is consulted automatically at key moments (before writing, before committing to an approach, when stuck, before declaring done). No manual model switching needed.
+
+Cost awareness: Haiku as executor keeps costs low; Opus advisor only engages when needed. Run `/compact` at 50%+ context.
 
 ---
 
