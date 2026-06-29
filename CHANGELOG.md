@@ -4,6 +4,12 @@ All notable changes to Wordout are documented here.
 
 ## [Unreleased]
 
+## [1.3.0] — 2026-06-29
+### Added
+- Haptic feedback: Warning notification on invalid word or hard mode violation (shake); Medium impact on correct guess (green tiles reveal); Success notification on win celebration
+- Tap tile to clear rightward: tapping a filled tile in the current guess clears it and all tiles to the right; works in single-board (Wordout), multi-board (Quordle), and daily modes
+- Animated board indicator transitions: smooth 300ms color animations when board indicator state changes (unsolved → solved, green → yellow, etc.); active board shows square (play icon when unsolved, checkmark when solved); non-active boards show circles with correct/yellow counts
+
 ## [1.2.9] — 2026-06-29
 ### Fixed
 - Daily difficulty toast shortened to "Daily is always Easy" — previous message overflowed the footer on device
