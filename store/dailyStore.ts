@@ -34,9 +34,31 @@ function getTodayString(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-export function getDailyAnswer(language: Language): string {
+function getYesterdayString(): string {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+export function getDailyAnswers(language: Language): { easy: string; hard: string; extreme: string } {
   const list = ANSWERS[language];
-  return list[getDailyIndex() % list.length];
+  const midnight = new Date();
+  midnight.setUTCHours(0, 0, 0, 0);
+  const dayMs = midnight.getTime();
+  const seed = Math.imul(dayMs, 2654435761);
+  const indices = [
+    (seed >>> 0)  & 0x7FF,  // easy
+    (seed >>> 11) & 0x7FF,  // hard
+    (seed >>> 22) & 0x7FF,  // extreme
+    (seed >>> 3)  & 0x7FF,  // reserved
+    (seed >>> 14) & 0x7FF,  // reserved
+    (seed >>> 25) & 0x7FF,  // reserved
+  ];
+  return {
+    easy:    list[indices[0] % list.length],
+    hard:    list[indices[1] % list.length],
+    extreme: list[indices[2] % list.length],
+  };
 }
 
 function evaluateGuess(guess: string, answer: string): LetterResult[] {
@@ -75,32 +97,61 @@ function checkHardModeConstraints(guesses: GuessResult[], guess: string): string
   return null;
 }
 
-interface DailyState {
-  // Today's daily game state
-  lastPlayedDate: string;
-  dailyStatus: DailyStatus;
-  dailyGuesses: GuessResult[];
+// ── Per-difficulty daily game state ─────────────────────────────────────────
+
+export interface DailyGameState {
+  status: DailyStatus;
+  guesses: GuessResult[];
   currentGuess: string;
-  dailyAnswer: string;
-  dailySolved: boolean;
-  dailyHardMode: boolean;
-  dailyDifficulty: Difficulty;
-  toast: string | null;
-
-  // Daily-specific stats (separate from practice stats in statsStore)
+  solved: boolean;
+  waveShown: boolean;
+  celebrationShown: boolean;
+  lastWinDate: string;   // 'YYYY-MM-DD' or '' — for missed-day streak detection
   stats: BoardStats;
+}
 
-  // Which single-board sub-mode is active
+export function emptyDailyGameState(): DailyGameState {
+  return {
+    status: 'available',
+    guesses: [],
+    currentGuess: '',
+    solved: false,
+    waveShown: false,
+    celebrationShown: false,
+    lastWinDate: '',
+    stats: emptyBoardStats(),
+  };
+}
+
+// ── Store types ──────────────────────────────────────────────────────────────
+
+const DIFFICULTIES: Difficulty[] = ['easy', 'hard', 'extreme'];
+
+interface DailyState {
+  lastPlayedDate: string;
+  // Per-difficulty answers — all set together on first daily start of the day
+  dailyAnswers: { easy: string; hard: string; extreme: string };
+
+  // Per-difficulty game states
+  games: {
+    easy: DailyGameState;
+    hard: DailyGameState;
+    extreme: DailyGameState;
+  };
+
+  // Which daily difficulty tab is active
+  activeDailyDifficulty: Difficulty;
+
+  // Daily vs practice
   activeWordleMode: WordleMode;
 
-  // Wave animation shown flag (prevents re-animation on mode switch back)
-  waveShown: boolean;
-  // Celebration overlay shown flag (prevents re-firing on mode switch / app relaunch)
-  celebrationShown: boolean;
+  // Ephemeral game toast
+  toast: string | null;
 
   // Actions
   checkAndReset: () => void;
-  startOrResumeDaily: () => void;
+  startOrResumeDailyGame: (difficulty: Difficulty) => void;
+  setActiveDailyDifficulty: (difficulty: Difficulty) => void;
   addLetter: (letter: string) => void;
   removeLetter: () => void;
   submitGuess: () => void;
@@ -108,151 +159,248 @@ interface DailyState {
   clearCurrentGuess: () => void;
   setCurrentGuess: (guess: string) => void;
   setActiveWordleMode: (mode: WordleMode) => void;
-  setWaveShown: (v: boolean) => void;
-  setCelebrationShown: (v: boolean) => void;
-  // Called when difficulty changes mid-daily after abandon confirm
-  resetDailyForToday: () => void;
+  setWaveShown: (difficulty: Difficulty, v: boolean) => void;
+  setCelebrationShown: (difficulty: Difficulty, v: boolean) => void;
   resetDailyStats: () => void;
 }
+
+// ── Store ────────────────────────────────────────────────────────────────────
 
 export const useDailyStore = create<DailyState>()(
   persist(
     (set, get) => ({
       lastPlayedDate: '',
-      dailyStatus: 'available',
-      dailyGuesses: [],
-      currentGuess: '',
-      dailyAnswer: '',
-      dailySolved: false,
-      dailyHardMode: false,
-      dailyDifficulty: 'easy',
-      toast: null,
-      stats: emptyBoardStats(),
+      dailyAnswers: { easy: '', hard: '', extreme: '' },
+      games: {
+        easy: emptyDailyGameState(),
+        hard: emptyDailyGameState(),
+        extreme: emptyDailyGameState(),
+      },
+      activeDailyDifficulty: 'easy',
       activeWordleMode: 'practice',
-      waveShown: false,
-      celebrationShown: false,
+      toast: null,
 
       checkAndReset: () => {
-        if (get().lastPlayedDate !== getTodayString()) {
-          set({
-            dailyStatus: 'available',
-            dailyGuesses: [],
-            currentGuess: '',
-            dailyAnswer: '',
-            dailySolved: false,
-            toast: null,
-            waveShown: false,
-            celebrationShown: false,
-          });
-        }
-      },
+        const today = getTodayString();
+        if (get().lastPlayedDate === today) return;
 
-      startOrResumeDaily: () => {
-        if (get().dailyStatus !== 'available') return;
-        const { language } = useSettingsStore.getState();
+        const yesterday = getYesterdayString();
+        const { games } = get();
+
+        const newGames = { ...games };
+        for (const diff of DIFFICULTIES) {
+          const g = games[diff];
+          // Reset streak if the user didn't win yesterday (missed day or earlier win)
+          const streakResets = g.lastWinDate !== '' && g.lastWinDate !== yesterday;
+          newGames[diff] = {
+            ...emptyDailyGameState(),
+            lastWinDate: g.lastWinDate,
+            stats: {
+              ...g.stats,
+              currentStreak: streakResets ? 0 : g.stats.currentStreak,
+            },
+          };
+        }
+
         set({
-          dailyStatus: 'playing',
-          dailyGuesses: [],
-          currentGuess: '',
-          dailyAnswer: getDailyAnswer(language),
-          dailySolved: false,
-          dailyHardMode: false,   // Daily is always Easy — no hard mode constraints
-          dailyDifficulty: 'easy',
-          lastPlayedDate: getTodayString(),
+          games: newGames,
+          dailyAnswers: { easy: '', hard: '', extreme: '' },
           toast: null,
-          waveShown: false,
-          celebrationShown: false,
+          activeDailyDifficulty: 'easy',
         });
       },
 
+      startOrResumeDailyGame: (difficulty) => {
+        const { games, dailyAnswers } = get();
+        const game = games[difficulty];
+        if (game.status !== 'available') return;
+
+        const { language } = useSettingsStore.getState();
+        const today = getTodayString();
+        // Compute all three answers together; reuse stored if already set today
+        const answers = dailyAnswers.easy ? dailyAnswers : getDailyAnswers(language);
+        if (__DEV__) {
+          console.log(`[Daily words] easy=${answers.easy} hard=${answers.hard} extreme=${answers.extreme}`);
+        }
+
+        set({
+          lastPlayedDate: today,
+          dailyAnswers: answers,
+          games: {
+            ...games,
+            [difficulty]: {
+              ...emptyDailyGameState(),
+              status: 'playing',
+            },
+          },
+        });
+      },
+
+      setActiveDailyDifficulty: (difficulty) => set({ activeDailyDifficulty: difficulty }),
+
       addLetter: (letter) => {
-        const { currentGuess, dailyStatus } = get();
-        if (dailyStatus !== 'playing' || currentGuess.length >= 5) return;
-        set({ currentGuess: currentGuess + letter });
+        const { games, activeDailyDifficulty } = get();
+        const game = games[activeDailyDifficulty];
+        if (game.status !== 'playing' || game.currentGuess.length >= 5) return;
+        set({
+          games: {
+            ...games,
+            [activeDailyDifficulty]: { ...game, currentGuess: game.currentGuess + letter },
+          },
+        });
       },
 
       removeLetter: () => {
-        const { currentGuess } = get();
-        if (currentGuess.length === 0) return;
-        set({ currentGuess: currentGuess.slice(0, -1) });
+        const { games, activeDailyDifficulty } = get();
+        const game = games[activeDailyDifficulty];
+        if (game.currentGuess.length === 0) return;
+        set({
+          games: {
+            ...games,
+            [activeDailyDifficulty]: { ...game, currentGuess: game.currentGuess.slice(0, -1) },
+          },
+        });
       },
 
       submitGuess: () => {
-        const { currentGuess, dailyAnswer, dailyGuesses, dailyStatus, dailyHardMode, dailyDifficulty } = get();
-        if (dailyStatus !== 'playing') return;
+        const { games, activeDailyDifficulty, dailyAnswers } = get();
+        const game = games[activeDailyDifficulty];
+        if (game.status !== 'playing') return;
 
+        const { currentGuess, guesses } = game;
         if (currentGuess.length < 5) { set({ toast: 'Too short' }); return; }
 
         const { language } = useSettingsStore.getState();
         if (!VALID_WORDS[language].has(currentGuess)) { set({ toast: 'Not in word list' }); return; }
-        if (dailyGuesses.some(g => g.word === currentGuess)) { set({ toast: 'Already guessed' }); return; }
+        if (guesses.some(g => g.word === currentGuess)) { set({ toast: 'Already guessed' }); return; }
 
-        if (dailyHardMode) {
-          const violation = checkHardModeConstraints(dailyGuesses, currentGuess);
+        if (activeDailyDifficulty === 'hard') {
+          const violation = checkHardModeConstraints(guesses, currentGuess);
           if (violation) { set({ toast: violation }); return; }
         }
 
-        const maxGuesses = maxGuessesForDifficulty(dailyDifficulty, 1);
+        const dailyAnswer = dailyAnswers[activeDailyDifficulty];
+        const maxGuesses = maxGuessesForDifficulty(activeDailyDifficulty, 1);
         const results = evaluateGuess(currentGuess, dailyAnswer);
-        const newGuesses = [...dailyGuesses, { word: currentGuess, results }];
+        const newGuesses = [...guesses, { word: currentGuess, results }];
         const won = currentGuess === dailyAnswer;
         const lost = !won && newGuesses.length >= maxGuesses;
 
         if (won || lost) {
-          const { stats } = get();
+          const { stats } = game;
+          const today = getTodayString();
           const newStreak = won ? stats.currentStreak + 1 : 0;
           const key = String(newGuesses.length);
           set({
-            dailyGuesses: newGuesses,
-            currentGuess: '',
-            dailyStatus: 'completed',
-            dailySolved: won,
-            toast: null,
-            stats: {
-              totalGames: stats.totalGames + 1,
-              wins: won ? stats.wins + 1 : stats.wins,
-              currentStreak: newStreak,
-              maxStreak: Math.max(stats.maxStreak, newStreak),
-              guessCounts: won
-                ? { ...stats.guessCounts, [key]: (stats.guessCounts[key] ?? 0) + 1 }
-                : stats.guessCounts,
+            games: {
+              ...games,
+              [activeDailyDifficulty]: {
+                ...game,
+                guesses: newGuesses,
+                currentGuess: '',
+                status: 'completed',
+                solved: won,
+                lastWinDate: won ? today : game.lastWinDate,
+                stats: {
+                  totalGames: stats.totalGames + 1,
+                  wins: won ? stats.wins + 1 : stats.wins,
+                  currentStreak: newStreak,
+                  maxStreak: Math.max(stats.maxStreak, newStreak),
+                  guessCounts: won
+                    ? { ...stats.guessCounts, [key]: (stats.guessCounts[key] ?? 0) + 1 }
+                    : stats.guessCounts,
+                },
+              },
             },
+            toast: null,
           });
         } else {
-          set({ dailyGuesses: newGuesses, currentGuess: '' });
+          set({
+            games: {
+              ...games,
+              [activeDailyDifficulty]: { ...game, guesses: newGuesses, currentGuess: '' },
+            },
+          });
         }
       },
 
       clearToast: () => set({ toast: null }),
-      clearCurrentGuess: () => set({ currentGuess: '' }),
-      setCurrentGuess: (guess) => set({ currentGuess: guess }),
+
+      clearCurrentGuess: () => {
+        const { games, activeDailyDifficulty } = get();
+        const game = games[activeDailyDifficulty];
+        set({ games: { ...games, [activeDailyDifficulty]: { ...game, currentGuess: '' } } });
+      },
+
+      setCurrentGuess: (guess) => {
+        const { games, activeDailyDifficulty } = get();
+        const game = games[activeDailyDifficulty];
+        set({ games: { ...games, [activeDailyDifficulty]: { ...game, currentGuess: guess } } });
+      },
 
       setActiveWordleMode: (mode) => set({ activeWordleMode: mode }),
-      setWaveShown: (v) => set({ waveShown: v }),
-      setCelebrationShown: (v) => set({ celebrationShown: v }),
 
-      resetDailyStats: () => set({ stats: emptyBoardStats() }),
+      setWaveShown: (difficulty, v) => {
+        const { games } = get();
+        set({ games: { ...games, [difficulty]: { ...games[difficulty], waveShown: v } } });
+      },
 
-      resetDailyForToday: () => {
-        const { language } = useSettingsStore.getState();
+      setCelebrationShown: (difficulty, v) => {
+        const { games } = get();
+        set({ games: { ...games, [difficulty]: { ...games[difficulty], celebrationShown: v } } });
+      },
+
+      resetDailyStats: () => {
+        const { games } = get();
         set({
-          dailyStatus: 'playing',
-          dailyGuesses: [],
-          currentGuess: '',
-          dailyAnswer: getDailyAnswer(language),
-          dailySolved: false,
-          dailyHardMode: false,
-          dailyDifficulty: 'easy',
-          lastPlayedDate: getTodayString(),
-          toast: null,
-          waveShown: false,
-          celebrationShown: false,
+          games: {
+            easy:    { ...games.easy,    stats: emptyBoardStats() },
+            hard:    { ...games.hard,    stats: emptyBoardStats() },
+            extreme: { ...games.extreme, stats: emptyBoardStats() },
+          },
         });
       },
     }),
     {
       name: 'wordout-daily',
       storage: createJSONStorage(() => AsyncStorage),
+      version: 2,
+      migrate: (persisted: any, fromVersion: number) => {
+        if (fromVersion === 0) {
+          // v1.3.0 → v1.4.0+: flat fields → games + per-difficulty answers
+          const won = persisted.dailySolved === true;
+          const lastWinDate = (won && persisted.lastPlayedDate) ? persisted.lastPlayedDate : '';
+          return {
+            lastPlayedDate: persisted.lastPlayedDate ?? '',
+            dailyAnswers: { easy: persisted.dailyAnswer ?? '', hard: '', extreme: '' },
+            games: {
+              easy: {
+                status:           persisted.dailyStatus ?? 'available',
+                guesses:          persisted.dailyGuesses ?? [],
+                currentGuess:     persisted.currentGuess ?? '',
+                solved:           persisted.dailySolved ?? false,
+                waveShown:        persisted.waveShown ?? false,
+                celebrationShown: persisted.celebrationShown ?? false,
+                lastWinDate,
+                stats:            persisted.stats ?? emptyBoardStats(),
+              },
+              hard:    emptyDailyGameState(),
+              extreme: emptyDailyGameState(),
+            },
+            activeDailyDifficulty: 'easy',
+            activeWordleMode: persisted.activeWordleMode ?? 'practice',
+            toast: null,
+          };
+        }
+        if (fromVersion === 1) {
+          // Interim v1.4.0 (single dailyAnswer) → v1.4.0 final (per-difficulty dailyAnswers)
+          return {
+            ...persisted,
+            dailyAnswers: { easy: persisted.dailyAnswer ?? '', hard: '', extreme: '' },
+          };
+        }
+        return persisted;
+      },
     },
   ),
 );
