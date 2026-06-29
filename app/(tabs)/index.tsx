@@ -379,29 +379,18 @@ export default function WordleScreen() {
       const next = DIFFICULTY_CYCLE[(idx + 1) % DIFFICULTY_CYCLE.length];
       const { games } = useDailyStore.getState();
 
-      // Completed difficulties are always freely accessible — no gate check
-      if (games[next].status !== 'completed') {
-        if (next === 'hard') {
-          const easy = games.easy;
-          if (easy.status === 'completed' && !easy.solved) {
-            showSystemToast("🐣 lost · can't play 💪");
-            return;
-          }
-          if (easy.status !== 'completed' || !easy.solved) {
-            showSystemToast('Win Easy first 🐣');
-            return;
-          }
+      // Block ONLY when target is 'available' AND the prerequisite was definitively lost.
+      // Completed/in-progress difficulties are always freely resumable/viewable.
+      if (next === 'hard' && games.hard.status === 'available') {
+        if (games.easy.status === 'completed' && !games.easy.solved) {
+          showSystemToast("🐣 lost · can't play 💪");
+          return;
         }
-        if (next === 'extreme') {
-          const hard = games.hard;
-          if (hard.status === 'completed' && !hard.solved) {
-            showSystemToast("💪 lost · can't play 💀");
-            return;
-          }
-          if (hard.status !== 'completed' || !hard.solved) {
-            showSystemToast('Win Hard first 💪');
-            return;
-          }
+      }
+      if (next === 'extreme' && games.extreme.status === 'available') {
+        if (games.hard.status === 'completed' && !games.hard.solved) {
+          showSystemToast("💪 lost · can't play 💀");
+          return;
         }
       }
       useDailyStore.getState().setActiveDailyDifficulty(next);
