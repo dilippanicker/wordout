@@ -24,7 +24,9 @@ Built automatically on every release via GitHub Actions.
 - **Dark / light theme**
 - **Stats tracking** with guess distribution per game mode
 - **Share results** as emoji grid
-- **Win / lose animations**
+- **Win / lose animations** with haptic feedback
+- **Haptic feedback** on correct guesses, wrong guesses, and wins
+- **Tap any tile to clear rightward** — cursor lands at tapped position
 - **Enter key on right** option
 - Confirms before abandoning an in-progress game
 - No ads, no accounts, no tracking

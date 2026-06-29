@@ -8,6 +8,8 @@ export const SINGLE_BOARD_RULES = [
 export const COLOR_KEY = '🟩 correct position   🟨 right letter, wrong spot   ⬛ not in word';
 export const COLOR_BLIND_NOTE = 'Enable Color Blind Mode in Settings for high-contrast orange and blue.';
 
+export const KEYBOARD_HINTS = 'Tap any filled tile to clear it and all letters to its right — cursor lands at the tapped position.';
+
 export const MULTI_BOARD_RULES = [
   'Solve **2–8 words simultaneously.** Every guess applies to all boards at once. Use the **◄ ►** arrows in the header to switch between modes.',
   'You get **5 + board count guesses** (e.g. 9 for 4-out, 13 for 8-out).',
