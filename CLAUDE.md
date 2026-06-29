@@ -200,6 +200,30 @@ Before every build, follow exactly:
 
 ---
 
+## v1.3.0 Features
+
+### Haptic Feedback
+- Uses `expo-haptics` (built into Expo, no new dependency)
+- **Warning notification** on invalid word or hard mode violation (unified via toast system in `index.tsx`)
+- **Medium impact** on correct guess (green tiles) — fires after `FLIP_DONE_MS` in `GameBoard`
+- **Success notification** on game win (celebration overlay in `index.tsx`)
+- Gracefully degrades on web (no-op)
+
+### Tap Tile to Clear Rightward
+- Filled tiles in current guess are pressable (via `Tile` component's `onPress` prop)
+- Tap clears tile at position + all tiles to the right: `setCurrentGuess(guess.slice(0, col))`
+- New `setCurrentGuess` method added to all three game stores (gameStore, quordleStore, dailyStore)
+- Works in single-board (Wordout), multi-board (Quordle), and daily modes
+- Cursor position implicit: new guess length determines where typing resumes
+
+### Board Indicators
+- Extracted to `components/BoardIndicator.tsx` (static rendering)
+- Initially implemented scale pop (1.0 → 1.1 → 1.0) + 500ms color animations
+- **Decision:** Reverted to static rendering — at 24×24px size, animations imperceptible even with pop effect
+- Static indicators clean, immediate visual feedback sufficient
+
+---
+
 ## Model Selection
 
 CC uses Haiku as executor with Opus as advisor. Set up once at session start:

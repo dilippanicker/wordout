@@ -1,6 +1,6 @@
 # Wordout — Master TODO
-**Updated: 2026-06-29 (session 7)**
-**Current version: v1.2.9 (versionCode 17) — daily difficulty toast shortened**
+**Updated: 2026-06-29 (session 8)**
+**Current version: v1.3.0 (versionCode 18) — haptics, tap-to-clear, features documented**
 
 ---
 
@@ -45,6 +45,16 @@
 - [ ] Update GitHub Actions workflow to auto-upload to internal track
 
 ---
+
+## ✅ Session 8 — Completed 2026-06-29
+
+- ✅ Haptic feedback: Warning (wrong guesses), Medium (correct guesses), Success (win)
+- ✅ Tap tile to clear rightward — cursor lands at tapped position
+- ✅ Board indicator state changes display correctly (animations removed as too subtle at 24×24px)
+- ✅ v1.3.0 version bump: app.json, CHANGELOG.md, CLAUDE.md updated
+- ✅ Documentation: added KEYBOARD_HINTS to helpContent.ts, features to README.md
+- ✅ TODO reorganized: auto-publish setup linked to production release, marked v1.3 items complete
+- ✅ Git credential issue resolved: configured GitHub CLI as credential helper
 
 ## ✅ Session 7 — Completed 2026-06-29
 
