@@ -10,6 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useFocusEffect, useTheme, useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
+import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { GameBoard } from '@/components/GameBoard';
 import { Keyboard, kbdHeight } from '@/components/Keyboard';
@@ -446,6 +447,9 @@ export default function WordleScreen() {
         const delay = activeGameStatus === 'won' ? 4200 : 3200;
         endGameTimerRef.current = setTimeout(() => {
           endGameTimerRef.current = null;
+          if (activeGameStatus === 'won') {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          }
           setEndGameVisible(true);
           endGameOpacity.value = withTiming(1, { duration: 300 });
           // auto-dismiss handled by [endGameVisible] effect (B4)
@@ -560,6 +564,7 @@ export default function WordleScreen() {
   useEffect(() => {
     if (!toast) return;
     setShakeKey(k => k + 1);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     toastOpacity.value = withSequence(
       withTiming(1, { duration: 100 }),
       withDelay(1600, withTiming(0, { duration: 300 })),

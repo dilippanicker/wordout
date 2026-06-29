@@ -9,6 +9,7 @@ import Animated, {
   withDelay,
   runOnJS,
 } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
 import { Tile, TileStatus } from './Tile';
 import { FlipTile } from './FlipTile';
 import { GuessResult, LetterResult } from '@/store/gameStore';
@@ -250,9 +251,24 @@ export function GameBoard({
   useEffect(() => {
     const prev = prevCount.current;
     prevCount.current = count;
-    if (count > prev) setAnimatingRow(count - 1);
-    else if (count === 0) setAnimatingRow(-1);
-  }, [count]);
+    if (count > prev) {
+      setAnimatingRow(count - 1);
+      // Trigger haptic for correct guess if any tiles are green
+      if (guesses && guesses[count - 1]) {
+        const hasCorrect = guesses[count - 1].results.some(r => r === 'correct');
+        if (hasCorrect) {
+          setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium), FLIP_DONE_MS);
+        }
+      } else if (boardResults && boardResults[count - 1]) {
+        const hasCorrect = boardResults[count - 1].some(r => r === 'correct');
+        if (hasCorrect) {
+          setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium), FLIP_DONE_MS);
+        }
+      }
+    } else if (count === 0) {
+      setAnimatingRow(-1);
+    }
+  }, [count, guesses, boardResults]);
 
   // isRevisit: store says wave was already shown but this instance hasn't played it yet → skip animation
   // Computed each render using refs (stable during animation, no re-render triggered by ref changes)
