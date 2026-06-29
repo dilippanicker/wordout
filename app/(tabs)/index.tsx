@@ -356,7 +356,7 @@ export default function WordleScreen() {
   function handleDifficultyToggle() {
     if (isDaily) {
       // Daily is always Easy — inform user, don't cycle
-      showSystemToast('Daily is always Easy · Try changing difficulty in Practice');
+      showSystemToast('Daily is always Easy');
       return;
     } else if (activeGameStatus !== 'playing') {
       // B5: lock difficulty after any practice/quordle game is complete

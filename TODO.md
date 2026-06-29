@@ -1,13 +1,13 @@
 # Wordout — Master TODO
-**Updated: 2026-06-29 (session 6)**
-**Current version: v1.2.8 (versionCode 16) — tile re-animation fix, overlay countdown + layout, hard mode per-board constraints fixed**
+**Updated: 2026-06-29 (session 7)**
+**Current version: v1.2.9 (versionCode 17) — daily difficulty toast shortened**
 
 ---
 
 ## 🔴 IMMEDIATE — Build & Play Store
 
 - [ ] Check GitHub Actions build result (run 28332145349, triggered 2026-06-29) — confirm APK + AAB produced (was built at v1.2.7; trigger fresh build at v1.2.8)
-- [ ] Trigger GitHub Actions build for v1.2.8 (versionCode 16)
+- [ ] Trigger GitHub Actions build for v1.2.9 (versionCode 17)
 - [ ] Test on device (Samsung S24 Ultra) — priority test cases:
   - Win practice → ✓ overlay appears ONLY AFTER wave fully completes (not during bounce)
   - Win 8-out → ✓ overlay waits for all 40 tiles; no re-animation after overlay auto-dismisses
@@ -45,6 +45,10 @@
 - [ ] Update GitHub Actions workflow to auto-upload to internal track
 
 ---
+
+## ✅ Session 7 — Completed 2026-06-29
+
+- ✅ Daily difficulty toast shortened to "Daily is always Easy" — was overflowing footer on device (two occurrences: `settings.tsx` + `index.tsx`)
 
 ## ✅ Session 6 — Completed 2026-06-29
 

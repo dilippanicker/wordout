@@ -137,7 +137,7 @@
 - Single-board (`gameStore`) hard mode is unchanged: that board's constraints always apply
 
 ### Difficulty lock rules
-- Daily: always Easy; toast on change attempt: "Daily is always Easy · Try changing difficulty in Practice"
+- Daily: always Easy; toast on change attempt: "Daily is always Easy"
 - Practice in-progress: confirm abandon before changing
 - Practice completed: locked until New Game; toast: "Game complete — start a new game to change difficulty"
 

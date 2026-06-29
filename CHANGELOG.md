@@ -4,6 +4,10 @@ All notable changes to Wordout are documented here.
 
 ## [Unreleased]
 
+## [1.2.9] — 2026-06-29
+### Fixed
+- Daily difficulty toast shortened to "Daily is always Easy" — previous message overflowed the footer on device
+
 ## [1.2.8] — 2026-06-29
 ### Added
 - Celebration overlay shows "Closing in 5…4…3…2…1…" countdown (green, bold) while auto-dismiss timer runs; driven by `END_GAME_DISMISS_MS` constant — single source of truth for timer and display

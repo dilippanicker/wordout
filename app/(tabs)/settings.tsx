@@ -63,7 +63,7 @@ export default function SettingsScreen() {
       const { activeWordleMode } = useDailyStore.getState();
       if (activeWordleMode === 'daily') {
         // Daily is always Easy — inform user
-        showDiffLockToast('Daily is always Easy · Try changing difficulty in Practice');
+        showDiffLockToast('Daily is always Easy');
         return;
       } else {
         // Lock practice when game is complete
