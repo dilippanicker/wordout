@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Pressable } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSequence, Easing } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from 'expo-router';
 
@@ -44,17 +44,26 @@ export function BoardIndicator({
   const borderColorValue = useSharedValue(targetColors.borderColor);
   const backgroundColorValue = useSharedValue(targetColors.backgroundColor);
   const textColorValue = useSharedValue(targetColors.textColor);
+  const scale = useSharedValue(1);
 
   useEffect(() => {
-    const timing = { duration: 300, easing: Easing.inOut(Easing.ease) };
-    borderColorValue.value = withTiming(targetColors.borderColor, timing);
-    backgroundColorValue.value = withTiming(targetColors.backgroundColor, timing);
-    textColorValue.value = withTiming(targetColors.textColor, timing);
+    // Scale pop: 1.0 → 1.1 → 1.0 over 400ms
+    scale.value = withSequence(
+      withTiming(1.1, { duration: 200, easing: Easing.out(Easing.ease) }),
+      withTiming(1, { duration: 200, easing: Easing.in(Easing.ease) })
+    );
+
+    // Color animation: 500ms fade to new colors
+    const colorTiming = { duration: 500, easing: Easing.inOut(Easing.ease) };
+    borderColorValue.value = withTiming(targetColors.borderColor, colorTiming);
+    backgroundColorValue.value = withTiming(targetColors.backgroundColor, colorTiming);
+    textColorValue.value = withTiming(targetColors.textColor, colorTiming);
   }, [solved, isActive, greenCount, hasYellow, darkTheme]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     borderColor: borderColorValue.value,
     backgroundColor: backgroundColorValue.value,
+    transform: [{ scale: scale.value }],
   }), []);
 
   const animatedTextStyle = useAnimatedStyle(() => ({
