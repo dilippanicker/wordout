@@ -60,36 +60,45 @@
 - `switchBoardCount(n)` — saves current state to snapshot (incl. celebrationShown), restores n if previously visited
 - `newGame()` — clears snapshot for current bc, starts fresh
 
-**`dailyStore.ts`** — persisted (`wordout-daily`):
+**`dailyStore.ts`** — persisted (`wordout-daily`, version 2):
 - `DAILY_EPOCH = new Date('2026-01-01').getTime()`
-- `dailyStatus: 'available'|'playing'|'completed'`
-- `dailyDifficulty: Difficulty` — always 'easy'; daily is Easy-only until v1.4
+- `games: { easy, hard, extreme }` — each a `DailyGameState` with `status`, `guesses`, `currentGuess`, `solved`, `waveShown`, `celebrationShown`, `lastWinDate`, `stats`
+- `dailyAnswers: { easy, hard, extreme }` — per-difficulty answers, set together on first daily start of the day via UTC-midnight seed (`Math.imul(dayMs, 2654435761)`, bit-shifted indices 0/1/2)
+- `activeDailyDifficulty: Difficulty` — persisted; which tab is active
 - `activeWordleMode: 'daily'|'practice'`
-- `waveShown: boolean` — persists win-wave shown flag for today's daily
-- `celebrationShown: boolean` — persists end-game popup shown flag for today's daily
-- `checkAndReset()` — resets to 'available' if new day; call on app focus
+- `startOrResumeDailyGame(difficulty)` — starts game only if status === 'available'; computes all three answers at once; dev-mode logs all three words
+- `checkAndReset()` — resets all three games on new day; streak miss detection via `lastWinDate`; resets `activeDailyDifficulty` to 'easy'
+- `setActiveDailyDifficulty(difficulty)` — simple setter; gate logic lives in index.tsx
+- `setWaveShown(difficulty, v)` / `setCelebrationShown(difficulty, v)` — per-difficulty flags
+- Persist version 2: migration from v0 (v1.3.0) and v1 (interim v1.4.0 with single `dailyAnswer`)
 
 **`statsStore.ts`** — persisted (`wordle-stats`):
 - `byMode: Record<string, BoardStats>` — keyed by `'wordle'` or `String(boardCount)`
 
 ### Key Design Decisions (locked)
 
-**Daily mode:**
-- Always Easy difficulty — informational toast shown on change attempt
-- One game per day, same word for everyone
-- Difficulty locked — daily is Easy-only until v1.4 per-difficulty daily games
+**Daily mode (v1.4.0):**
+- Three independent daily games per day: Easy, Hard, Extreme — different word for each
+- Gate mechanic (accessible-list): cycle through reachable difficulties only. Build list: Easy always; add Hard if Easy won; add Extreme if Hard won. Also include any difficulty already in 'playing'/'completed' state. Wrap within that list — NO gate toasts, NO "Win X first" messages.
+- Footer "Play Now" button: after winning Easy, shows "💪 Unlocked! Play Now" if Hard not started; after winning Hard, shows "💀 Unlocked! Play Now" if Extreme not started
+- Peek animation: after win overlay dismisses, header difficulty emoji briefly scales to next difficulty (🐣→💪 or 💪→💀) and back
+- Three independent daily streaks with missed-day detection via `lastWinDate`
+- Stats modal: per-difficulty sub-tabs (🐣/💪/💀) inside the Daily tab
+- Startup funnel: on mount, routes to next unplayed difficulty (Easy if not started; Hard if Easy won; Extreme if Hard won; else restore persisted)
 
 **Practice mode:**
-- Unlimited games, freely change difficulty (resets board on change)
-- Board state persists on mode switch — only ↺ New Game clears
+- Unlimited games, freely change difficulty — snapshot-based (no lock, no confirm dialog)
+- `gameStore.switchDifficulty(d)` saves current state under current difficulty key, restores snapshot for new difficulty or starts fresh — mirrors quordleStore.switchBoardCount
+- Board state persists on mode switch — only ↺ New Game clears (also clears snapshots)
 
 **Never clear rule:**
 - Games never auto-cleared without explicit user action (↺ New Game)
-- Confirmed abandon guard on: New Game, mode arrows, language change, difficulty change mid-game
+- Abandon guard on: New Game, mode arrows (◄►), language change
+- Difficulty change in practice: no confirm, snapshot-based (no data lost)
 
 **Ribbon label layout:**
-- Daily active: `[📅 Today's · Easy ····· 🎮]` — icon before text
-- Daily completed: `[📅 Next word in HH:MM:SS ····· 🎮]`
+- Daily active: `[📅 Today's · Easy 🐣 ····· 🎮]` — includes difficulty emoji
+- Daily completed: `[📅 Next word in HH:MM:SS 🐣 ····· 🎮]` — includes difficulty emoji
 - Practice active: `[📅 ····· Practice · Easy 🎮]` — text before icon
 
 **Board indicators:**
@@ -103,7 +112,8 @@
 **Footer layout:**
 - Playing: `[⏳ N tries left · ? for help] [📊]`
 - Game over (practice): `[? for help] [↺ New Game (green)] [📊]`
-- Game over (daily): `[? for help] [📊]` (countdown in Ribbon, not Footer)
+- Game over (daily, next unstarted): `[? for help] [💪 Unlocked! Play Now (green)] [📊]`
+- Game over (daily, all done or gated): `[? for help] [📊]` (countdown in Ribbon)
 
 **Emoji convention (strict):**
 - 🐣 easy, 💪 hard, 💀 extreme
@@ -122,7 +132,7 @@
 4. **Final state:** `✓`/`✗` dim overlay on board. Always visible on completed boards, no animation.
 
 **Key implementation details:**
-- `GameBoard` receives `key={isDaily ? 'daily' : 'practice'}` (single-board) or `key={\`${boardCount}-${i}\`}` (quordle) — forces remount on mode/bc switch so `prevCount` ref initialises fresh (prevents spurious fill animation on revisit).
+- `GameBoard` receives `key={isDaily ? \`daily-${activeDailyDiff}\` : 'practice'}` (single-board) or `key={\`${boardCount}-${i}\`}` (quordle) — forces remount on mode/bc/daily-difficulty switch so `prevCount` ref initialises fresh (prevents spurious fill animation on revisit).
 - `celebrationShown` is checked in `index.tsx` before firing the end-game popup. Set immediately on first fire, stored in all three game stores.
 - `boardCount` is in the mode-reset `useEffect` deps — syncs `prevGameStatusRef` on bc-switch so returning to a completed bc-game doesn't re-trigger the popup.
 - Wave skip path in `GameBoard`: on remount with `waveShown=true`, `isRevisit=true` → `setWaveDoneLocal(true)` immediately → no bounce → ✓ overlay shows via `elapsed=Infinity` path.
@@ -136,16 +146,19 @@
 - A board with no revealed letters trivially accepts (no constraints) — normal in early turns
 - Single-board (`gameStore`) hard mode is unchanged: that board's constraints always apply
 
-### Difficulty lock rules
-- Daily: always Easy; toast on change attempt: "Daily is always Easy"
-- Practice in-progress: confirm abandon before changing
-- Practice completed: locked until New Game; toast: "Game complete — start a new game to change difficulty"
+### Difficulty rules
+- Daily: header emoji cycles through accessible difficulties (accessible-list approach, no toasts). Settings difficulty panel applies to practice only when in daily mode.
+- Practice single-board: snapshot-based switch via `gameStore.switchDifficulty(d)`. No lock, no confirm dialog.
+- Quordle: lock if game complete (toast); confirmAbandon if in-progress; resets board on change.
 
-### Startup logic
+### Startup logic (v1.4.0)
 On app mount:
 1. `checkAndReset()` — ensure daily state is current
-2. If daily not yet completed today → open Daily Wordout
-3. Otherwise → restore last played mode
+2. Funnel to next unplayed daily difficulty:
+   - Easy `'available'` → open daily Easy
+   - Easy `'completed'` + Hard `'available'` → open daily Hard
+   - Hard `'completed'` + Extreme `'available'` → open daily Extreme
+   - Otherwise → restore persisted `activeWordleMode` + `activeDailyDifficulty`
 
 ### Abandon guard — `utils/abandon.ts`
 `isGameInProgress()` reads stores imperatively. Checks guesses submitted, not just game state existence.

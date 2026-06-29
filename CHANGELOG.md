@@ -4,6 +4,24 @@ All notable changes to Wordout are documented here.
 
 ## [Unreleased]
 
+## [1.4.0] — unreleased
+### Added
+- Per-difficulty daily games: three independent games per day (Easy 🐣, Hard 💪, Extreme 💀), each with a different answer derived from a UTC-midnight seed
+- Daily difficulty cycle: header emoji taps cycle through accessible difficulties only (no gate toasts); accessible list expands as difficulties are won
+- "Unlocked! Play Now" button in footer after winning a daily difficulty (navigates directly to next unstarted game)
+- Peek animation: header difficulty emoji briefly scales to next difficulty emoji after winning a daily game (🐣→💪 or 💪→💀)
+- Per-difficulty daily streaks with missed-day detection
+- Stats modal: 🐣/💪/💀 sub-tabs inside the Daily tab, each showing correct guess distribution and max guesses for that difficulty
+- Startup funnel: on launch, routes to next unplayed daily difficulty rather than always restoring last played
+
+### Changed
+- Practice mode difficulty switching is now snapshot-based: switching difficulty saves current board state and restores it when switching back; no confirm dialog, no lock
+- Celebration overlay now dismisses immediately on tap anywhere (TouchableOpacity); 5s auto-dismiss remains as fallback
+- Daily ribbon label now includes difficulty emoji: "Today's · Hard 💪" / "Next word in HH:MM:SS 💪"
+
+### Fixed
+- Daily difficulty cycle no longer shows "Win Hard first" or "Win Easy first" toasts — gate is structural (accessible list boundary), not message-based
+
 ## [1.3.0] — 2026-06-29
 ### Added
 - Haptic feedback: Warning notification on invalid word or hard mode violation (shake); Medium impact on correct guess (green tiles reveal); Success notification on win celebration

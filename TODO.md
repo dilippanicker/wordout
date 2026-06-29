@@ -1,13 +1,24 @@
 # Wordout — Master TODO
-**Updated: 2026-06-29 (session 8)**
-**Current version: v1.3.0 (versionCode 18) — haptics, tap-to-clear, features documented**
+**Updated: 2026-06-30 (session 9)**
+**Current version: v1.3.0 (versionCode 18) — v1.4.0 implemented, not yet bumped/built**
 
 ---
 
-## 🔴 IMMEDIATE — Build & Play Store
+## 🔴 IMMEDIATE — v1.4.0 Release
 
-- [ ] Check GitHub Actions build result (run 28332145349, triggered 2026-06-29) — confirm APK + AAB produced (was built at v1.2.7; trigger fresh build at v1.2.8)
-- [ ] Trigger GitHub Actions build for v1.2.9 (versionCode 17)
+- [ ] **Push to remote**: `git push origin main` (10 commits not yet pushed)
+- [ ] **Test on web** (`npx expo start`) — key paths:
+  - Cold start: routes to next unplayed daily difficulty (Easy if not yet started)
+  - Easy daily: play to win → "💪 Unlocked! Play Now" appears in footer
+  - Play Now button: tapping starts Hard daily
+  - Header emoji peek: after Easy win, 🐣→💪→🐣 animation fires on overlay dismiss
+  - Difficulty cycle: Easy→Hard (after win), Hard→Easy (wraps when Extreme locked)
+  - Stats modal: 🐣/💪/💀 sub-tabs each show correct distribution
+  - Streak shows `🐣🔥N` on Easy tab, `💪🔥N` on Hard tab
+  - Practice difficulty: tap emoji → snapshot saves, new game starts; tap back → board restored
+  - Celebration overlay: tap anywhere to dismiss immediately
+- [ ] **Version bump**: propose v1.4.0 (versionCode 19), update app.json + CHANGELOG
+- [ ] **Trigger GitHub Actions build** for v1.4.0
 - [ ] Test on device (Samsung S24 Ultra) — priority test cases:
   - Win practice → ✓ overlay appears ONLY AFTER wave fully completes (not during bounce)
   - Win 8-out → ✓ overlay waits for all 40 tiles; no re-animation after overlay auto-dismisses
@@ -45,6 +56,15 @@
 - [ ] Update GitHub Actions workflow to auto-upload to internal track
 
 ---
+
+## ✅ Session 9 — Completed 2026-06-30
+
+- ✅ v1.4.0 daily store: per-difficulty games (`games: {easy, hard, extreme}`), per-difficulty answers (UTC-midnight seed), per-difficulty stats/streaks/waveShown/celebrationShown, missed-day detection, persist v2 migration
+- ✅ v1.4.0 game screen: startup funnel, accessible-list difficulty cycle (no gate toasts), Play Now button, peek animation after daily win, TouchableOpacity overlay dismiss
+- ✅ Practice difficulty switching: snapshot-based (no lock, no confirm dialog), mirrors quordleStore pattern
+- ✅ Stats modal: per-difficulty sub-tabs for daily (🐣/💪/💀)
+- ✅ Play Now button: "Unlocked! Play Now" label
+- ✅ Daily gate logic: three rewrites → final: accessible-list (cycle only within reachable difficulties, no toasts ever)
 
 ## ✅ Session 8 — Completed 2026-06-29
 
