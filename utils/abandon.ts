@@ -11,9 +11,10 @@ export function isGameInProgress(): boolean {
     return gameStatus === 'playing' && guesses.length > 0;
   }
   // Single-board: check whichever sub-mode is active
-  const { activeWordleMode, dailyStatus, dailyGuesses } = useDailyStore.getState();
+  const { activeWordleMode, activeDailyDifficulty, games } = useDailyStore.getState();
   if (activeWordleMode === 'daily') {
-    return dailyStatus === 'playing' && dailyGuesses.length > 0;
+    const game = games[activeDailyDifficulty];
+    return game.status === 'playing' && game.guesses.length > 0;
   }
   const { gameStatus, guesses } = useGameStore.getState();
   return gameStatus === 'playing' && guesses.length > 0;
