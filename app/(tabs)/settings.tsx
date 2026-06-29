@@ -62,31 +62,25 @@ export default function SettingsScreen() {
     if (gameMode === 'wordle') {
       const { activeWordleMode } = useDailyStore.getState();
       if (activeWordleMode === 'daily') {
-        // Daily is always Easy — inform user
-        showDiffLockToast('Daily is always Easy');
+        // Settings difficulty only affects practice mode — apply silently, no board reset needed
+        setDifficulty(d);
         return;
-      } else {
-        // Lock practice when game is complete
-        const { gameStatus } = useGameStore.getState();
-        if (gameStatus !== 'playing') { showDiffLockToast('Game complete — start a new game to change difficulty'); return; }
       }
+      // Practice mode: snapshot-aware switch, no lock, no confirm
+      useGameStore.getState().switchDifficulty(d);
+      setDifficulty(d);
+      return;
     } else if (gameMode === 'quordle') {
-      // B5: lock quordle when game is complete
+      // Quordle: lock when game is complete
       const { gameStatus } = useQuordleStore.getState();
       if (gameStatus !== 'playing') { showDiffLockToast(); return; }
     }
 
-    // B4: reset the practice/quordle board after difficulty changes
+    // Quordle: reset board after difficulty change
     const applyAndReset = () => {
       setDifficulty(d);
-      if (gameMode === 'wordle') {
-        const { activeWordleMode } = useDailyStore.getState();
-        if (activeWordleMode === 'practice') useGameStore.getState().newGame();
-      } else if (gameMode === 'quordle') {
-        // Clear snapshots for all board counts (they're at the old difficulty) then start fresh.
-        useQuordleStore.setState({ snapshots: {} });
-        useQuordleStore.getState().newGame();
-      }
+      useQuordleStore.setState({ snapshots: {} });
+      useQuordleStore.getState().newGame();
     };
 
     if (isGameInProgress()) {
