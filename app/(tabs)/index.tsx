@@ -13,6 +13,7 @@ import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { GameBoard } from '@/components/GameBoard';
+import { BoardIndicator } from '@/components/BoardIndicator';
 import { Keyboard, kbdHeight } from '@/components/Keyboard';
 import { HelpModal } from '@/components/HelpModal';
 import { BottomStrip } from '@/components/BottomStrip';
@@ -681,48 +682,20 @@ export default function WordleScreen() {
               const isActive   = activeBoard === i;
               const greenCount = solved ? 0 : boardCorrectCount(qGuesses, i);
               const hasYellow  = solved ? false : boardHasYellow(qGuesses, i);
-              const squareColor = '#5BA75A';
-              const strokeColor = solved || (!hasYellow && greenCount > 0) ? '#6aaa64'
-                : hasYellow ? '#c9b458' : '#878a8c';
-              const fillColor = solved ? '#6aaa64'
-                : hasYellow ? (darkTheme ? colors.background as string : '#ffffff')
-                : 'transparent';
               return (
-                <Pressable
+                <BoardIndicator
                   key={i}
-                  {...(noFocus as any)}
-                  hitSlop={6}
+                  solved={solved}
+                  isActive={isActive}
+                  greenCount={greenCount}
+                  hasYellow={hasYellow}
                   onPress={() => scrollTo(i)}
                   accessibilityLabel={
                     solved ? `Board ${i + 1} — solved`
                     : isActive ? `Board ${i + 1} — current`
                     : `Board ${i + 1}${greenCount > 0 ? `, ${greenCount} correct` : ''}`
                   }
-                >
-                  <View style={styles.indicatorWrap}>
-                    {isActive ? (
-                      // B9: Active board uses square; shows ✓ when solved, ▶ when not
-                      solved ? (
-                        <View style={[styles.indicatorSquare, { borderColor: '#6aaa64', backgroundColor: '#6aaa64' }]}>
-                          <Text style={styles.indicatorCheckText}>✓</Text>
-                        </View>
-                      ) : (
-                        <View style={[styles.indicatorSquare, { borderColor: squareColor }]}>
-                          <Ionicons name="play" size={10} color={squareColor} />
-                        </View>
-                      )
-                    ) : (
-                      // Non-active board: circle
-                      <View style={[styles.indicatorCircle, { borderColor: strokeColor, backgroundColor: fillColor }]}>
-                        {solved
-                          ? <Text style={styles.indicatorCheckText}>✓</Text>
-                          : greenCount > 0
-                          ? <Text style={styles.indicatorGreenNum}>{greenCount}</Text>
-                          : null}
-                      </View>
-                    )}
-                  </View>
-                </Pressable>
+                />
               );
             })}
           </View>
