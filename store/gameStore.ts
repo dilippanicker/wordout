@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { useSettingsStore, Language, maxGuessesForDifficulty } from './settingsStore';
+import { useSettingsStore, Language, Difficulty, maxGuessesForDifficulty } from './settingsStore';
 import { useStatsStore } from './statsStore';
 import answerListEnUs from '../assets/wordlists/answers_en_us.json';
 import answerListEnGb from '../assets/wordlists/answers_en_gb.json';
@@ -36,6 +36,15 @@ export interface GuessResult {
 
 export type GameStatus = 'playing' | 'won' | 'lost';
 
+interface PracticeSnapshot {
+  answer: string;
+  guesses: GuessResult[];
+  currentGuess: string;
+  gameStatus: GameStatus;
+  waveShown: boolean;
+  celebrationShown: boolean;
+}
+
 interface GameState {
   answer: string;
   guesses: GuessResult[];
@@ -44,6 +53,7 @@ interface GameState {
   toast: string | null;
   waveShown: boolean;
   celebrationShown: boolean;
+  snapshots: Record<string, PracticeSnapshot>;
   addLetter: (letter: string) => void;
   removeLetter: () => void;
   submitGuess: () => void;
@@ -53,6 +63,7 @@ interface GameState {
   setWaveShown: (v: boolean) => void;
   setCelebrationShown: (v: boolean) => void;
   newGame: () => void;
+  switchDifficulty: (difficulty: Difficulty) => void;
 }
 
 function pickAnswer(language: Language): string {
@@ -118,6 +129,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   toast: null,
   waveShown: false,
   celebrationShown: false,
+  snapshots: {},
 
   addLetter: (letter) => {
     const { currentGuess, gameStatus } = get();
@@ -193,7 +205,33 @@ export const useGameStore = create<GameState>((set, get) => ({
       toast: null,
       waveShown: false,
       celebrationShown: false,
+      snapshots: {},
     });
+  },
+
+  switchDifficulty: (newDiff) => {
+    const { difficulty: currDiff } = useSettingsStore.getState();
+    const { answer, guesses, currentGuess, gameStatus, waveShown, celebrationShown, snapshots } = get();
+    // Snapshot current difficulty state before switching
+    const newSnapshots = {
+      ...snapshots,
+      [currDiff]: { answer, guesses, currentGuess, gameStatus, waveShown, celebrationShown },
+    };
+    const snap = snapshots[newDiff];
+    if (snap) {
+      set({ ...snap, snapshots: newSnapshots, toast: null });
+    } else {
+      set({
+        answer: pickAnswer(useSettingsStore.getState().language),
+        guesses: [],
+        currentGuess: '',
+        gameStatus: 'playing',
+        toast: null,
+        waveShown: false,
+        celebrationShown: false,
+        snapshots: newSnapshots,
+      });
+    }
   },
 }));
 
