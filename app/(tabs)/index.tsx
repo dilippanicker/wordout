@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, ColorValue, useWindowDimensions, Platform } from 'react-native';
+import { View, Text, Pressable, TouchableOpacity, ScrollView, StyleSheet, ColorValue, useWindowDimensions, Platform } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
@@ -20,7 +20,7 @@ import { BottomStrip } from '@/components/BottomStrip';
 import { StatsModal } from '@/components/StatsModal';
 import { useGameStore, GuessResult, LetterResult } from '@/store/gameStore';
 import { useQuordleStore, QuordleGuess } from '@/store/quordleStore';
-import { useSettingsStore, boardCountName, BOARD_COUNTS, BoardCount, maxGuessesForDifficulty } from '@/store/settingsStore';
+import { useSettingsStore, boardCountName, BOARD_COUNTS, BoardCount, maxGuessesForDifficulty, Difficulty } from '@/store/settingsStore';
 import { useDailyStore, getDailyIndex } from '@/store/dailyStore';
 import { useStatsStore, emptyBoardStats } from '@/store/statsStore';
 import { isGameInProgress, confirmAbandon } from '@/utils/abandon';
@@ -112,9 +112,10 @@ function buildShareText(guesses: GuessResult[], status: 'won' | 'lost', colorBli
   return `Wordout ${count}/6${flag}\n\n${grid}`;
 }
 
-function buildDailyShareText(guesses: GuessResult[], solved: boolean, colorBlind: boolean): string {
+function buildDailyShareText(guesses: GuessResult[], solved: boolean, colorBlind: boolean, difficulty: Difficulty): string {
   const idx = getDailyIndex();
   const count = solved ? String(guesses.length) : 'X';
+  const maxG = maxGuessesForDifficulty(difficulty, 1);
   const CORRECT = colorBlind ? '🟧' : '🟩';
   const PRESENT = colorBlind ? '🟦' : '🟨';
   const ABSENT = '⬛';
@@ -123,8 +124,9 @@ function buildDailyShareText(guesses: GuessResult[], solved: boolean, colorBlind
       r === 'correct' ? CORRECT : r === 'present' ? PRESENT : ABSENT,
     ).join(''))
     .join('\n');
-  const label = solved ? 'solved in' : 'failed';
-  return `Wordout Daily #${idx} — ${label} ${count}/6\n\n${grid}`;
+  const diffEmoji = DIFFICULTY_EMOJI[difficulty];
+  const label = solved ? `${diffEmoji} solved in` : `${diffEmoji} failed`;
+  return `Wordout Daily #${idx} — ${label} ${count}/${maxG}\n\n${grid}`;
 }
 
 function buildQuordleShareText(guesses: QuordleGuess[], status: 'won' | 'lost', colorBlind: boolean, bc: number): string {
@@ -222,12 +224,16 @@ export default function WordleScreen() {
   const isQuordle = gameMode === 'quordle';
   const isDaily = !isQuordle && dailyStore.activeWordleMode === 'daily';
 
+  // Active daily difficulty and game state
+  const activeDailyDiff = dailyStore.activeDailyDifficulty;
+  const activeDailyGame = dailyStore.games[activeDailyDiff];
+
   // Active game status across all sub-modes
   const activeGameStatus: 'playing' | 'won' | 'lost' = isQuordle
     ? quordleStore.gameStatus
     : isDaily
-    ? (dailyStore.dailyStatus === 'completed'
-        ? (dailyStore.dailySolved ? 'won' : 'lost')
+    ? (activeDailyGame.status === 'completed'
+        ? (activeDailyGame.solved ? 'won' : 'lost')
         : 'playing')
     : wordleStore.gameStatus;
 
@@ -243,13 +249,13 @@ export default function WordleScreen() {
   const activeStats = isQuordle
     ? (statsStore.byMode[String(boardCount)] ?? emptyBoardStats())
     : isDaily
-    ? dailyStore.stats
+    ? activeDailyGame.stats
     : (statsStore.byMode['wordle'] ?? emptyBoardStats());
   const gameStats = {
     played: activeStats.totalGames,
     winPct: activeStats.totalGames > 0 ? Math.round(activeStats.wins / activeStats.totalGames * 100) : 0,
     streak: activeStats.currentStreak,
-    streakEmoji: isDaily ? '🔥' : '⚡',
+    streakEmoji: isDaily ? `${DIFFICULTY_EMOJI[activeDailyDiff]}🔥` : '⚡',
   };
 
   // UI state
@@ -260,10 +266,14 @@ export default function WordleScreen() {
   const [countdown, setCountdown] = useState(() => msToHMS(msUntilMidnight()));
   // Per-board overlays suppressed until end-game popup is dismissed
   const [overlayLocked, setOverlayLocked] = useState(false);
-  // System-level toast (e.g. daily blocked)
+  // System-level toast (e.g. gate blocked)
   const [systemToast, setSystemToast] = useState<string | null>(null);
   const systemToastOpacity = useSharedValue(0);
   const systemToastStyle = useAnimatedStyle(() => ({ opacity: systemToastOpacity.value }));
+  // Peek animation: briefly shows next difficulty emoji in header after daily win
+  const peekScale = useSharedValue(1);
+  const [peekDiffEmoji, setPeekDiffEmoji] = useState<string | null>(null);
+  const peekAnimStyle = useAnimatedStyle(() => ({ transform: [{ scale: peekScale.value }] }));
   const scrollRef = useRef<ScrollView>(null);
   // Countdown updates every second
   useEffect(() => {
@@ -271,18 +281,21 @@ export default function WordleScreen() {
     return () => clearInterval(id);
   }, []);
 
-  // Startup: open daily if not yet completed today; otherwise keep last-played mode
+  // Startup: reset for new day, then funnel to the next unplayed daily difficulty
   useEffect(() => {
     useDailyStore.getState().checkAndReset();
-    const { lastPlayedDate, dailyStatus } = useDailyStore.getState();
-    const d = new Date();
-    const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    const dailyDoneToday = lastPlayedDate === today && dailyStatus === 'completed';
-    if (!dailyDoneToday) {
-      setGameMode('wordle');
-      setBoardCount(1);
+    const { games } = useDailyStore.getState();
+    if (games.easy.status === 'available') {
       useDailyStore.getState().setActiveWordleMode('daily');
+      useDailyStore.getState().setActiveDailyDifficulty('easy');
+    } else if (games.easy.status === 'completed' && games.hard.status === 'available') {
+      useDailyStore.getState().setActiveWordleMode('daily');
+      useDailyStore.getState().setActiveDailyDifficulty('hard');
+    } else if (games.hard.status === 'completed' && games.extreme.status === 'available') {
+      useDailyStore.getState().setActiveWordleMode('daily');
+      useDailyStore.getState().setActiveDailyDifficulty('extreme');
     }
+    // Else: restore last played (activeWordleMode + activeDailyDifficulty as persisted)
   }, []);
 
   // Check for new day whenever screen gains focus
@@ -290,10 +303,13 @@ export default function WordleScreen() {
     dailyStore.checkAndReset();
   }, []));
 
-  // Start/resume daily whenever activeWordleMode switches to 'daily'
+  // Start/resume daily whenever mode switches to daily or active difficulty changes
   useEffect(() => {
-    if (isDaily) dailyStore.startOrResumeDaily();
-  }, [dailyStore.activeWordleMode, isQuordle]);
+    if (isDaily) {
+      const diff = useDailyStore.getState().activeDailyDifficulty;
+      useDailyStore.getState().startOrResumeDailyGame(diff);
+    }
+  }, [dailyStore.activeWordleMode, isQuordle, dailyStore.activeDailyDifficulty]);
 
   // Reset scroll on new quordle game; also fires when boardCount changes (settings B2)
   useEffect(() => {
@@ -357,43 +373,77 @@ export default function WordleScreen() {
 
   function handleDifficultyToggle() {
     if (isDaily) {
-      // Daily is always Easy — inform user, don't cycle
-      showSystemToast('Daily is always Easy');
-      return;
-    } else if (activeGameStatus !== 'playing') {
-      // B5: lock difficulty after any practice/quordle game is complete
-      showSystemToast('Game complete — start a new game to change difficulty');
+      // Cycle through daily difficulty tabs with gate enforcement
+      const currDiff = useDailyStore.getState().activeDailyDifficulty;
+      const idx = DIFFICULTY_CYCLE.indexOf(currDiff);
+      const next = DIFFICULTY_CYCLE[(idx + 1) % DIFFICULTY_CYCLE.length];
+      const { games } = useDailyStore.getState();
+
+      // Completed difficulties are always freely accessible — no gate check
+      if (games[next].status !== 'completed') {
+        if (next === 'hard') {
+          const easy = games.easy;
+          if (easy.status === 'completed' && !easy.solved) {
+            showSystemToast("🐣 lost · can't play 💪");
+            return;
+          }
+          if (easy.status !== 'completed' || !easy.solved) {
+            showSystemToast('Win Easy first 🐣');
+            return;
+          }
+        }
+        if (next === 'extreme') {
+          const hard = games.hard;
+          if (hard.status === 'completed' && !hard.solved) {
+            showSystemToast("💪 lost · can't play 💀");
+            return;
+          }
+          if (hard.status !== 'completed' || !hard.solved) {
+            showSystemToast('Win Hard first 💪');
+            return;
+          }
+        }
+      }
+      useDailyStore.getState().setActiveDailyDifficulty(next);
       return;
     }
+
     const idx = DIFFICULTY_CYCLE.indexOf(difficulty);
     const next = DIFFICULTY_CYCLE[(idx + 1) % DIFFICULTY_CYCLE.length];
-    const applyAndReset = (d: typeof next) => {
-      setDifficulty(d);
-      // B4: always reset the practice board when difficulty changes
-      if (!isDaily) {
-        const { boardCount } = useSettingsStore.getState();
-        if (boardCount > 1) useQuordleStore.getState().newGame();
-        else useGameStore.getState().newGame();
+
+    if (isQuordle) {
+      // Quordle: lock if complete, confirmAbandon if in-progress
+      if (activeGameStatus !== 'playing') {
+        showSystemToast('Game complete — start a new game to change difficulty');
+        return;
       }
-    };
-    if (isGameInProgress()) {
-      confirmAbandon(() => applyAndReset(next));
-    } else {
-      applyAndReset(next);
+      if (isGameInProgress()) {
+        confirmAbandon(() => { setDifficulty(next); useQuordleStore.getState().newGame(); });
+      } else {
+        setDifficulty(next);
+      }
+      return;
     }
+
+    // Single-board practice: snapshot-aware switch, no lock, no confirm
+    useGameStore.getState().switchDifficulty(next);
+    setDifficulty(next);
   }
 
   function handleNewGame() {
-    // B2: completed daily — show toast instead of resetting
-    if (isDaily && dailyStore.dailyStatus === 'completed') {
-      showSystemToast(`Daily solved! Next word in ${msToHMS(msUntilMidnight())}`);
+    if (isDaily) {
+      // Daily games can't be restarted
+      const game = useDailyStore.getState().games[useDailyStore.getState().activeDailyDifficulty];
+      if (game.status === 'completed') {
+        showSystemToast(`Next daily in ${msToHMS(msUntilMidnight())}`);
+      } else {
+        showSystemToast("Daily game can't be restarted");
+      }
       return;
     }
     const doIt = () => {
       if (isQuordle) {
         useQuordleStore.getState().newGame();
-      } else if (isDaily) {
-        dailyStore.resetDailyForToday();
       } else {
         wordleStore.newGame();
       }
@@ -412,10 +462,25 @@ export default function WordleScreen() {
   function dismissEndGame() {
     if (endGameTimerRef.current) { clearTimeout(endGameTimerRef.current); endGameTimerRef.current = null; }
     endGameOpacity.value = withTiming(0, { duration: 300 });
-    setTimeout(() => { setEndGameVisible(false); setOverlayLocked(false); }, 320);
+    setTimeout(() => {
+      setEndGameVisible(false);
+      setOverlayLocked(false);
+      // Peek animation: after daily win, briefly flash the next difficulty emoji
+      if (isDaily && activeDailyGame.solved) {
+        const nextDiff = activeDailyDiff === 'easy' ? 'hard' : activeDailyDiff === 'hard' ? 'extreme' : null;
+        if (nextDiff) {
+          setPeekDiffEmoji(DIFFICULTY_EMOJI[nextDiff]);
+          peekScale.value = withSequence(
+            withTiming(1.7, { duration: 200 }),
+            withDelay(1000, withTiming(1, { duration: 200 })),
+          );
+          setTimeout(() => setPeekDiffEmoji(null), 1450);
+        }
+      }
+    }, 320);
   }
 
-  // B3: When mode or board count changes, clear any showing overlay and sync the status ref to prevent re-trigger.
+  // B3: When mode, board count, or daily difficulty changes, clear overlay and sync status ref.
   useEffect(() => {
     if (endGameTimerRef.current) { clearTimeout(endGameTimerRef.current); endGameTimerRef.current = null; }
     setEndGameVisible(false);
@@ -423,7 +488,7 @@ export default function WordleScreen() {
     setOverlayLocked(false);
     prevGameStatusRef.current = activeGameStatus;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isQuordle, isDaily, boardCount]);
+  }, [isQuordle, isDaily, boardCount, dailyStore.activeDailyDifficulty]);
 
   useEffect(() => {
     const prev = prevGameStatusRef.current;
@@ -431,18 +496,23 @@ export default function WordleScreen() {
     if (activeGameStatus === prev) return;
 
     if (activeGameStatus !== 'playing' && prev === 'playing') {
-      // Check if celebration was already shown for this game (survives bc-switch / mode-switch)
+      // Check if celebration was already shown for this game
       const alreadyShown = isDaily
-        ? useDailyStore.getState().celebrationShown
+        ? useDailyStore.getState().games[useDailyStore.getState().activeDailyDifficulty].celebrationShown
         : isQuordle
         ? useQuordleStore.getState().celebrationShown
         : useGameStore.getState().celebrationShown;
 
       if (!alreadyShown) {
         // Mark immediately so any concurrent re-render can't double-fire
-        if (isDaily) useDailyStore.getState().setCelebrationShown(true);
-        else if (isQuordle) useQuordleStore.getState().setCelebrationShown(true);
-        else useGameStore.getState().setCelebrationShown(true);
+        if (isDaily) {
+          const diff = useDailyStore.getState().activeDailyDifficulty;
+          useDailyStore.getState().setCelebrationShown(diff, true);
+        } else if (isQuordle) {
+          useQuordleStore.getState().setCelebrationShown(true);
+        } else {
+          useGameStore.getState().setCelebrationShown(true);
+        }
 
         setOverlayLocked(true); // suppress per-board overlays until popup dismissed
         const delay = activeGameStatus === 'won' ? 4200 : 3200;
@@ -496,10 +566,10 @@ export default function WordleScreen() {
     if (isDaily) {
       endEmoji = activeGameStatus === 'won' ? '🎉' : '😢';
       endMessage = activeGameStatus === 'won' ? 'Solved!' : 'Better luck next time';
-      endWordsNode = <Text style={styles.endWordText}>{dailyStore.dailyAnswer}</Text>;
+      endWordsNode = <Text style={styles.endWordText}>{dailyStore.dailyAnswers[activeDailyDiff]}</Text>;
       if (activeGameStatus === 'won') {
-        const maxG = maxGuessesForDifficulty('easy', 1);
-        endSolveCount = `Solved in ${dailyStore.dailyGuesses.length}/${maxG} tries ${DIFFICULTY_EMOJI['easy']}`;
+        const maxG = maxGuessesForDifficulty(activeDailyDiff, 1);
+        endSolveCount = `Solved in ${activeDailyGame.guesses.length}/${maxG} tries ${DIFFICULTY_EMOJI[activeDailyDiff]}`;
       }
     } else if (!isQuordle) {
       endEmoji = activeGameStatus === 'won' ? '🎉' : '😢';
@@ -581,17 +651,22 @@ export default function WordleScreen() {
   }
 
   function handleTilePress(col: number) {
-    // Clear from this position to the right (set guess to substring up to col)
-    if (isDaily) useDailyStore.getState().setCurrentGuess(useDailyStore.getState().currentGuess.slice(0, col));
-    else if (isQuordle) useQuordleStore.getState().setCurrentGuess(useQuordleStore.getState().currentGuess.slice(0, col));
-    else useGameStore.getState().setCurrentGuess(useGameStore.getState().currentGuess.slice(0, col));
+    if (isDaily) {
+      const state = useDailyStore.getState();
+      const currentGuess = state.games[state.activeDailyDifficulty].currentGuess;
+      state.setCurrentGuess(currentGuess.slice(0, col));
+    } else if (isQuordle) {
+      useQuordleStore.getState().setCurrentGuess(useQuordleStore.getState().currentGuess.slice(0, col));
+    } else {
+      useGameStore.getState().setCurrentGuess(useGameStore.getState().currentGuess.slice(0, col));
+    }
   }
 
   async function handleShare() {
     if (activeGameStatus === 'playing') return;
     let text: string;
     if (isDaily) {
-      text = buildDailyShareText(dailyStore.dailyGuesses, dailyStore.dailySolved, colorBlindMode);
+      text = buildDailyShareText(activeDailyGame.guesses, activeDailyGame.solved, colorBlindMode, activeDailyDiff);
     } else if (isQuordle) {
       text = buildQuordleShareText(quordleStore.guesses, activeGameStatus, colorBlindMode, quordleStore.boardCount);
     } else {
@@ -604,12 +679,28 @@ export default function WordleScreen() {
     }
   }
 
+  // ── Play Now button (daily progression) ─────────────────────────────────
+  // Show when current daily difficulty is won and the next difficulty hasn't started yet
+  const playNowDiff: Difficulty | null = isDaily
+    ? (activeDailyDiff === 'easy' && activeDailyGame.solved && dailyStore.games.hard.status === 'available'
+        ? 'hard'
+        : activeDailyDiff === 'hard' && activeDailyGame.solved && dailyStore.games.extreme.status === 'available'
+        ? 'extreme'
+        : null)
+    : null;
+  const playNowLabel = playNowDiff ? `${DIFFICULTY_EMOJI[playNowDiff]} Unlocked! Play Now` : null;
+
+  function handlePlayNow() {
+    if (playNowDiff) useDailyStore.getState().setActiveDailyDifficulty(playNowDiff);
+  }
+
   // ── Shared end-game overlay ──────────────────────────────────────────────
   const endGameOverlay = endGameVisible ? (
     <Animated.View style={[StyleSheet.absoluteFill, styles.endGameOverlay, endGameAnimStyle]}>
-      <Pressable
+      <TouchableOpacity
         style={[StyleSheet.absoluteFill, styles.endGamePressable]}
         onPress={dismissEndGame}
+        activeOpacity={1}
         {...(noFocus as any)}
       >
         <View style={styles.endGameHelpRow}>
@@ -634,7 +725,7 @@ export default function WordleScreen() {
           )}
           <Pressable
             style={styles.shareButton}
-            onPress={() => { handleShare(); if (!isDaily) dismissEndGame(); }}
+            onPress={(e) => { e.stopPropagation?.(); handleShare(); if (!isDaily) dismissEndGame(); }}
             {...(noFocus as any)}
           >
             {copyConfirmed
@@ -649,7 +740,7 @@ export default function WordleScreen() {
             <Text style={styles.dismissCountdown}>Closing in {dismissCountdown}…</Text>
           )}
         </View>
-      </Pressable>
+      </TouchableOpacity>
     </Animated.View>
   ) : null;
 
@@ -673,6 +764,8 @@ export default function WordleScreen() {
           onNewGame: handleNewGame, onCyclePrev: cyclePrev, onCycleNext: cycleNext,
           onSettings: () => router.navigate('/(tabs)/settings' as never),
           onDifficultyToggle: handleDifficultyToggle,
+          diffPeekStyle: peekAnimStyle,
+          diffPeekEmoji: peekDiffEmoji,
         })}
 
         {/* Board progress indicators */}
@@ -788,24 +881,29 @@ export default function WordleScreen() {
   }
 
   // ── Wordle / daily layout ────────────────────────────────────────────────
-  // In daily mode, use dailyStore; in practice, use wordleStore.
-  const guesses: GuessResult[] = isDaily ? dailyStore.dailyGuesses : wordleStore.guesses;
-  const currentGuess = isDaily ? dailyStore.currentGuess : wordleStore.currentGuess;
-  const answer = isDaily ? dailyStore.dailyAnswer : wordleStore.answer;
+  // In daily mode, use dailyStore active game; in practice, use wordleStore.
+  const guesses: GuessResult[] = isDaily ? activeDailyGame.guesses : wordleStore.guesses;
+  const currentGuess = isDaily ? activeDailyGame.currentGuess : wordleStore.currentGuess;
+  const answer = isDaily ? dailyStore.dailyAnswers[activeDailyDiff] : wordleStore.answer;
   const keyStatuses = deriveKeyStatuses(guesses);
   const winMessage = WIN_MESSAGES[Math.min(guesses.length - 1, WIN_MESSAGES.length - 1)];
   const resultText = activeGameStatus === 'won' ? winMessage : `The word was ${answer}`;
+
+  // Active daily difficulty label for ribbon
+  const DIFF_LABEL: Record<Difficulty, string> = { easy: 'Easy', hard: 'Hard', extreme: 'Extreme' };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       {renderHeader({
         language, setLanguage,
-        difficulty: isDaily ? 'easy' : difficulty,  // Daily is always Easy (🐣)
+        difficulty: isDaily ? activeDailyDiff : difficulty,
         setDifficulty, darkTheme, setDarkTheme,
         colors, setShowHelp, title: 'Wordout',
         onNewGame: handleNewGame, onCyclePrev: cyclePrev, onCycleNext: cycleNext,
         onSettings: () => router.navigate('/(tabs)/settings' as never),
         onDifficultyToggle: handleDifficultyToggle,
+        diffPeekStyle: peekAnimStyle,
+        diffPeekEmoji: peekDiffEmoji,
       })}
 
       {/* Daily 📅 / Practice 🎮 row — active icon + inline label, inactive faded */}
@@ -828,9 +926,9 @@ export default function WordleScreen() {
             </View>
             {isDaily && (
               <Text style={styles.modeLabel} numberOfLines={1}>
-                {dailyStore.dailyStatus === 'completed'
-                  ? `Next word in ${countdown}`
-                  : `Today's · Easy`}
+                {activeDailyGame.status === 'completed'
+                  ? `Next word in ${countdown} ${DIFFICULTY_EMOJI[activeDailyDiff]}`
+                  : `Today's · ${DIFF_LABEL[activeDailyDiff]} ${DIFFICULTY_EMOJI[activeDailyDiff]}`}
               </Text>
             )}
           </View>
@@ -865,20 +963,24 @@ export default function WordleScreen() {
 
       <View style={styles.boardArea} onLayout={e => setWordleAreaH(e.nativeEvent.layout.height)}>
         <GameBoard
-          key={isDaily ? 'daily' : 'practice'}
+          key={isDaily ? `daily-${activeDailyDiff}` : 'practice'}
           guesses={guesses}
           currentGuess={currentGuess}
           tileSize={wordleTileSize}
-          maxGuesses={maxGuessesForDifficulty(isDaily ? dailyStore.dailyDifficulty : difficulty, 1)}
+          maxGuesses={maxGuessesForDifficulty(isDaily ? activeDailyDiff : difficulty, 1)}
           shakeKey={shakeKey}
           gameOver={activeGameStatus === 'lost'}
           solved={activeGameStatus === 'won'}
           answer={answer}
           suppressOverlay={overlayLocked}
-          waveShown={isDaily ? dailyStore.waveShown : wordleStore.waveShown}
+          waveShown={isDaily ? activeDailyGame.waveShown : wordleStore.waveShown}
           onWaveDone={() => {
-            if (isDaily) useDailyStore.getState().setWaveShown(true);
-            else useGameStore.getState().setWaveShown(true);
+            if (isDaily) {
+              const diff = useDailyStore.getState().activeDailyDifficulty;
+              useDailyStore.getState().setWaveShown(diff, true);
+            } else {
+              useGameStore.getState().setWaveShown(true);
+            }
           }}
           onCurrentGuessTilePress={handleTilePress}
         />
@@ -903,20 +1005,22 @@ export default function WordleScreen() {
         isQuordle={false}
         isDaily={isDaily}
         currentGuessNum={guesses.length}
-        maxGuesses={maxGuessesForDifficulty(isDaily ? dailyStore.dailyDifficulty : difficulty, 1)}
+        maxGuesses={maxGuessesForDifficulty(isDaily ? activeDailyDiff : difficulty, 1)}
         boardCount={1}
         solvedCount={activeGameStatus === 'won' ? 1 : 0}
-        difficulty={difficulty}
+        difficulty={isDaily ? activeDailyDiff : difficulty}
         onOpenStats={() => setStatsModalVisible(true)}
         onOpenHelp={() => setShowHelp(true)}
         onNewGame={handleNewGame}
+        playNowLabel={playNowLabel}
+        onPlayNow={handlePlayNow}
         textColor={colors.text as string}
         backgroundColor={colors.card as string}
         borderColor={colors.border as string}
         gameStats={gameStats}
       />
 
-      <HelpModal visible={showHelp} onClose={() => setShowHelp(false)} difficulty={difficulty} />
+      <HelpModal visible={showHelp} onClose={() => setShowHelp(false)} difficulty={isDaily ? activeDailyDiff : difficulty} />
       <StatsModal visible={statsModalVisible} onClose={() => setStatsModalVisible(false)} />
       {endGameOverlay}
     </SafeAreaView>
@@ -940,6 +1044,9 @@ interface HeaderProps {
   onCycleNext: () => void;
   onSettings: () => void;
   onDifficultyToggle: () => void;
+  // Peek animation: scale-transform style + optional emoji override for the difficulty icon
+  diffPeekStyle?: object;
+  diffPeekEmoji?: string | null;
 }
 
 const DIFFICULTY_CYCLE: import('@/store/settingsStore').Difficulty[] = ['easy', 'hard', 'extreme'];
@@ -948,6 +1055,7 @@ const DIFFICULTY_EMOJI: Record<string, string> = { easy: '🐣', hard: '💪', e
 function renderHeader({
   language, setLanguage, difficulty, setDifficulty, darkTheme, setDarkTheme,
   colors, setShowHelp, title, onNewGame, onCyclePrev, onCycleNext, onSettings, onDifficultyToggle,
+  diffPeekStyle, diffPeekEmoji,
 }: HeaderProps) {
   return (
     <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
@@ -972,7 +1080,9 @@ function renderHeader({
           accessibilityLabel={`Difficulty: ${difficulty} — tap to cycle`}
           onPress={onDifficultyToggle}
         >
-          <Text style={styles.flagEmoji}>{DIFFICULTY_EMOJI[difficulty]}</Text>
+          <Animated.View style={diffPeekStyle}>
+            <Text style={styles.flagEmoji}>{diffPeekEmoji ?? DIFFICULTY_EMOJI[difficulty]}</Text>
+          </Animated.View>
         </Pressable>
         <Pressable
           {...(noFocus as any)}
@@ -1121,7 +1231,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#5BA75A',
     letterSpacing: 0.2,
-    maxWidth: 120,
+    maxWidth: 160,
   },
   // Multi-board progress indicators
   dotRow: {
