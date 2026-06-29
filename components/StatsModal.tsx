@@ -3,9 +3,13 @@ import { View, Text, Pressable, StyleSheet, Modal } from 'react-native';
 import { useTheme } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useStatsStore, emptyBoardStats, BoardStats } from '@/store/statsStore';
-import { useDailyStore } from '@/store/dailyStore';
-import { useSettingsStore, boardCountName } from '@/store/settingsStore';
+import { useDailyStore, DailyGameState } from '@/store/dailyStore';
+import { useSettingsStore, boardCountName, Difficulty, maxGuessesForDifficulty } from '@/store/settingsStore';
 import { HelpModal } from './HelpModal';
+
+const DIFF_EMOJI: Record<Difficulty, string> = { easy: '🐣', hard: '💪', extreme: '💀' };
+const DIFF_LABEL: Record<Difficulty, string> = { easy: 'Easy', hard: 'Hard', extreme: 'Extreme' };
+const DAILY_DIFFS: Difficulty[] = ['easy', 'hard', 'extreme'];
 
 interface Props {
   visible: boolean;
@@ -16,16 +20,17 @@ export function StatsModal({ visible, onClose }: Props) {
   const { colors } = useTheme();
   const { gameMode, boardCount, difficulty } = useSettingsStore();
   const { byMode, resetStats } = useStatsStore();
-  const { stats: dailyStats, activeWordleMode, setActiveWordleMode, resetDailyStats } = useDailyStore();
+  const { games: dailyGames, activeWordleMode, setActiveWordleMode, resetDailyStats } = useDailyStore();
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [dailyDiffTab, setDailyDiffTab] = useState<Difficulty>('easy');
 
   const isQuordle = gameMode === 'quordle' || boardCount > 1;
   const modeKey = gameMode === 'wordle' ? 'wordle' : String(boardCount);
   const practiceStats = byMode[modeKey] ?? emptyBoardStats();
   const maxGuesses = isQuordle ? Math.min(13, 5 + boardCount) : 6;
 
-  const shownStats = (!isQuordle && activeWordleMode === 'daily') ? dailyStats : practiceStats;
+  const showingDaily = !isQuordle && activeWordleMode === 'daily';
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -61,12 +66,37 @@ export function StatsModal({ visible, onClose }: Props) {
             </View>
           )}
 
-          {/* Stats row */}
-          <StatGrid stats={shownStats} textColor={colors.text as string} />
+          {showingDaily ? (
+            <>
+              {/* Per-difficulty sub-tabs: 🐣 / 💪 / 💀 */}
+              <View style={[styles.subTabs, { borderBottomColor: colors.border }]}>
+                {DAILY_DIFFS.map(d => (
+                  <Pressable
+                    key={d}
+                    style={[styles.subTab, dailyDiffTab === d && styles.subTabActive]}
+                    onPress={() => setDailyDiffTab(d)}
+                  >
+                    <Text style={[styles.subTabText, dailyDiffTab === d && styles.subTabTextActive]}>
+                      {DIFF_EMOJI[d]} {DIFF_LABEL[d]}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
 
-          {/* Distribution */}
-          <Text style={[styles.distLabel, { color: colors.text }]}>GUESS DISTRIBUTION</Text>
-          <DistChart stats={shownStats} maxGuesses={maxGuesses} textColor={colors.text as string} />
+              <DailyDiffSection
+                game={dailyGames[dailyDiffTab]}
+                difficulty={dailyDiffTab}
+                textColor={colors.text as string}
+              />
+            </>
+          ) : (
+            <>
+              {/* Practice / quordle stats */}
+              <StatGrid stats={practiceStats} textColor={colors.text as string} />
+              <Text style={[styles.distLabel, { color: colors.text }]}>GUESS DISTRIBUTION</Text>
+              <DistChart stats={practiceStats} maxGuesses={maxGuesses} textColor={colors.text as string} />
+            </>
+          )}
 
           {/* Reset */}
           <Pressable style={styles.resetBtn} onPress={() => setConfirmVisible(true)}>
@@ -103,6 +133,25 @@ export function StatsModal({ visible, onClose }: Props) {
     </Modal>
   );
 }
+
+// ── Per-difficulty daily section ─────────────────────────────────────────────
+
+function DailyDiffSection({ game, difficulty, textColor }: {
+  game: DailyGameState;
+  difficulty: Difficulty;
+  textColor: string;
+}) {
+  const maxGuesses = maxGuessesForDifficulty(difficulty, 1);
+  return (
+    <>
+      <StatGrid stats={game.stats} textColor={textColor} />
+      <Text style={[styles.distLabel, { color: textColor }]}>GUESS DISTRIBUTION</Text>
+      <DistChart stats={game.stats} maxGuesses={maxGuesses} textColor={textColor} />
+    </>
+  );
+}
+
+// ── Shared sub-components ────────────────────────────────────────────────────
 
 function StatGrid({ stats, textColor }: { stats: BoardStats; textColor: string }) {
   const winPct = stats.totalGames > 0 ? Math.round((stats.wins / stats.totalGames) * 100) : 0;
@@ -195,7 +244,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
   },
-  // Tabs
+  // Daily | Practice tabs
   tabs: {
     flexDirection: 'row',
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -215,6 +264,29 @@ const styles = StyleSheet.create({
     color: '#787c7e',
   },
   tabTextActive: {
+    color: '#5BA75A',
+    fontWeight: '700',
+  },
+  // Per-difficulty sub-tabs (🐣 / 💪 / 💀)
+  subTabs: {
+    flexDirection: 'row',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  subTab: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  subTabActive: {
+    borderBottomWidth: 2,
+    borderBottomColor: '#5BA75A',
+  },
+  subTabText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#787c7e',
+  },
+  subTabTextActive: {
     color: '#5BA75A',
     fontWeight: '700',
   },
