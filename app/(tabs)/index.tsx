@@ -373,27 +373,22 @@ export default function WordleScreen() {
 
   function handleDifficultyToggle() {
     if (isDaily) {
-      // Cycle through daily difficulty tabs with gate enforcement
-      const currDiff = useDailyStore.getState().activeDailyDifficulty;
-      const idx = DIFFICULTY_CYCLE.indexOf(currDiff);
-      const next = DIFFICULTY_CYCLE[(idx + 1) % DIFFICULTY_CYCLE.length];
-      const { games } = useDailyStore.getState();
-
-      // Block ONLY when target is 'available' AND the prerequisite was definitively lost.
-      // Completed/in-progress difficulties are always freely resumable/viewable.
-      if (next === 'hard' && games.hard.status === 'available') {
-        if (games.easy.status === 'completed' && !games.easy.solved) {
-          showSystemToast("🐣 lost · can't play 💪");
-          return;
+      const { games, activeDailyDifficulty: currDiff } = useDailyStore.getState();
+      // Build accessible list: include a difficulty if it's played (playing/completed)
+      // OR if the previous difficulty was won — that unlocks the next slot.
+      const accessible: Difficulty[] = [];
+      let prevWon = true; // Easy is always the starting point
+      for (const d of DIFFICULTY_CYCLE) {
+        if (games[d].status === 'playing' || games[d].status === 'completed' || prevWon) {
+          accessible.push(d);
+        } else {
+          break;
         }
+        prevWon = games[d].status === 'completed' && games[d].solved;
       }
-      if (next === 'extreme' && games.extreme.status === 'available') {
-        if (games.hard.status === 'completed' && !games.hard.solved) {
-          showSystemToast("💪 lost · can't play 💀");
-          return;
-        }
-      }
-      useDailyStore.getState().setActiveDailyDifficulty(next);
+      const currIdx = accessible.indexOf(currDiff);
+      const nextDiff = accessible[(currIdx + 1) % accessible.length];
+      useDailyStore.getState().setActiveDailyDifficulty(nextDiff);
       return;
     }
 
