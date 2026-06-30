@@ -1,5 +1,5 @@
 # Wordout — Master TODO
-**Updated: 2026-06-30 (session 10)**
+**Updated: 2026-06-30 (session 11)**
 **Current version: v1.4.0 (versionCode 19)**
 
 ---
@@ -13,7 +13,11 @@
   - Play Now button: tapping starts Hard daily
   - Header emoji peek: after Easy win, 🐣→💪→🐣 animation fires on overlay dismiss
   - Difficulty cycle: Easy→Hard (after win), Hard→Easy (wraps when Extreme locked)
-  - Stats modal: 🐣/💪/💀 sub-tabs each show correct distribution
+  - Win Easy, lose Hard, restart → should land on Hard (not Extreme)
+  - Lose Easy, tap difficulty emoji → toast "🐣 lost · can't play 💪"
+  - Stats modal: opens to Daily tab + active difficulty sub-tab (not Practice/4-out)
+  - Stats modal header: shows "STATISTICS · Wordout" (not "4-out")
+  - Stats modal empty state: "Play your first Easy for stats" when no games played
   - Streak shows `🐣🔥N` on Easy tab, `💪🔥N` on Hard tab
   - Practice difficulty: tap emoji → snapshot saves, new game starts; tap back → board restored
   - Celebration overlay: tap anywhere to dismiss immediately
@@ -56,6 +60,15 @@
 - [ ] Update GitHub Actions workflow to auto-upload to internal track
 
 ---
+
+## ✅ Session 11 — Completed 2026-06-30
+
+- ✅ B1: Startup funnel now checks `games.X.solved` before advancing difficulty — prevented routing to Extreme after losing Hard on app restart
+- ✅ B2: Difficulty icon tap now shows toast when stuck on single lost difficulty ("🐣 lost · can't play 💪")
+- ✅ B3: StatsModal tab no longer mutates `activeWordleMode` store — uses local state, synced imperatively on open
+- ✅ StatsModal `isQuordle` fixed: was `gameMode === 'quordle' || boardCount > 1`; `boardCount` defaults to `4` so Daily tab was always hidden — now `gameMode === 'quordle'` only
+- ✅ StatsModal header fixed: now shows "STATISTICS · Wordout" in single-board/daily mode
+- ✅ StatsModal empty state added: "Play your first Easy/Hard/Extreme for stats" and "Play your first Wordout/N-out for stats"
 
 ## ✅ Session 10 — Completed 2026-06-30
 

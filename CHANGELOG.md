@@ -4,6 +4,17 @@ All notable changes to Wordout are documented here.
 
 ## [Unreleased]
 
+### Added
+- Stats modal empty state: "Play your first Easy/Hard/Extreme for stats" (daily) and "Play your first Wordout/N-out for stats" (practice) shown when no games played for that mode yet
+
+### Fixed
+- Startup funnel now checks `solved` (not just `status`) before advancing to next daily difficulty — prevented routing to Extreme after losing Hard on app restart
+- Difficulty icon tap now shows toast ("🐣 lost · can't play 💪") when stuck on a single lost daily difficulty, instead of silently doing nothing
+- Stats modal Daily tab now correctly shown when active game is daily (was always hidden due to `boardCount > 1` check, and `boardCount` defaults to `4`)
+- Stats modal header now shows "STATISTICS · Wordout" in single-board/daily mode instead of "STATISTICS · 4-out"
+- Stats modal Daily/Practice tab no longer mutates `activeWordleMode` store — tabs are now local-only state, synced from store on open
+- Stats modal difficulty sub-tab now opens to the currently active daily difficulty instead of always defaulting to Easy
+
 ## [1.4.0] — 2026-06-30
 ### Added
 - Per-difficulty daily games: three independent games per day (Easy 🐣, Hard 💪, Extreme 💀), each with a different answer derived from a UTC-midnight seed

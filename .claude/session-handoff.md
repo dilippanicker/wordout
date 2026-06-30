@@ -1,76 +1,91 @@
-# Session Handoff — 2026-06-30 (Session 10)
+# Session Handoff — 2026-06-30 (Session 11)
 
 ## What Happened This Session
 
-Documentation-only session. All v1.4.0 implementation was already committed (Session 9). This session:
-1. Updated all docs to reflect v1.4.0 (CLAUDE.md, TODO.md, README.md, constants/helpContent.ts)
-2. Bumped version to v1.4.0 / versionCode 19 (app.json + CHANGELOG.md)
-3. Triggered GitHub Actions build — run ID 28424810118
+Device testing revealed three bugs in daily mode. All fixed. Also added StatsModal empty state.
 
 ---
 
 ## Files Modified
 
-### `CLAUDE.md`
-- Version bumped to `1.4.0` (versionCode 19)
-- New `### Daily Gate Architecture (v1.4.0)` section added in Architecture (between Stores and Key Design Decisions) — covers per-difficulty state, word selection seed, accessible-list gate rule, peek animation, Play Now button, startup funnel
-- Known Issues: added CECIL proper-noun entry
+### `app/(tabs)/index.tsx`
 
-### `TODO.md`
-- Header updated to `v1.4.0 (versionCode 19)`
-- "v1.3 — Nice to Have" renamed to "Future — Nice to Have"
-- CECIL wordlist cleanup added as first future task
+**Bug 1 — startup funnel missing `solved` check (lines ~291–295):**
+- Old: `games.easy.status === 'completed' && games.hard.status === 'available'`
+- New: `games.easy.status === 'completed' && games.easy.solved && games.hard.status === 'available'`
+- Same fix applied to the Hard → Extreme branch
+- Root cause: `status === 'completed'` is true for both wins AND losses. The funnel was advancing to the next difficulty even when the previous one was lost (e.g. Easy won, Hard lost → funnel routed to Extreme on restart). This also triggered `startOrResumeDailyGame('extreme')` which transitioned Extreme to 'playing', making it appear in the accessible cycle list.
 
-### `README.md`
-- Daily Word bullet updated from "one new word per day, Always Easy difficulty" to three-difficulty description with progression and independent streaks
+**Bug 2 — no feedback when tapping difficulty icon in dead-end state:**
+- Added early-return with `showSystemToast` in `handleDifficultyToggle` when `accessible.length === 1` and the single entry is `completed` with `solved === false`
+- Toast text: `"🐣 lost · can't play 💪"` or `"💪 lost · can't play 💀"`
+- Only fires in the dead-end case (lost the only accessible difficulty). Silent cycling when multiple difficulties are accessible is unchanged.
 
-### `constants/helpContent.ts`
-- New `DAILY_PROGRESSION` export — explains Easy→Hard→Extreme gate for use in HelpModal
-- `RIBBON_ICON_TEXTS[0]` updated to mention three puzzles per day
+### `components/StatsModal.tsx`
 
-### `app.json`
-- `version`: `"1.3.0"` → `"1.4.0"`
-- `versionCode`: `18` → `19`
+**Bug 3a — StatsModal tab click was mutating `activeWordleMode` store:**
+- Removed `setActiveWordleMode` from store destructure
+- Added local `modalModeTab` state, initialized from store, synced on `visible → true`
+- Tab button `onPress` now calls `setModalModeTab` (local) instead of `setActiveWordleMode` (store)
+- Root cause: clicking "Practice" in the stats modal was persisting `activeWordleMode = 'practice'` to AsyncStorage, so the next open always showed Practice tab
 
-### `CHANGELOG.md`
-- `[1.4.0] — unreleased` → `[1.4.0] — 2026-06-30`
+**Bug 3b — `dailyDiffTab` not syncing to active difficulty on open:**
+- `useEffect` on `[visible]` reads `useDailyStore.getState()` imperatively (not from closure)
+- Root cause: `useState` initial values and effect closures are captured at mount time, before Zustand's AsyncStorage rehydration completes. Imperative `getState()` bypasses this.
+
+**Critical gotcha — `isQuordle` was `gameMode === 'quordle' || boardCount > 1`:**
+- `boardCount` defaults to `4` in `settingsStore` initial state (not `1`)
+- `boardCount > 1` was therefore always `true` for any user who never explicitly switched board counts
+- `isQuordle = true` → `showingDaily = false` → Daily tab hidden → modal always showed Practice/4-out
+- Fixed: `isQuordle = gameMode === 'quordle'` only. `gameMode` is the authoritative field.
+
+**StatsModal header title:**
+- Was: `STATISTICS · {boardCountName(boardCount)}` → always "STATISTICS · 4-out" for default users
+- Now: `STATISTICS · {isQuordle ? boardCountName(boardCount) : 'Wordout'}`
+
+**Empty state when `totalGames === 0`:**
+- Daily sub-tab: `"Play your first Easy/Hard/Extreme for stats"` (uses `DIFF_LABEL[difficulty]`)
+- Practice: `"Play your first Wordout/2-out/…/8-out for stats"` (uses `boardCountName(boardCount)`)
+- Replaces StatGrid + DistChart when no games played yet
 
 ---
 
 ## Decisions Made
 
-No code decisions this session. All doc changes follow the spec exactly. `DAILY_PROGRESSION` added as a new export rather than modifying existing strings — HelpModal can wire it in when daily-specific help content is needed.
+- **`isQuordle` uses `gameMode` only**: `boardCount > 1` removed entirely from StatsModal. `gameMode` is set to `'quordle'` by `cycleTo()` whenever `boardCount > 1`, so it's the authoritative source. Checking `boardCount` independently was redundant and broken by the `4` default.
+- **Imperative `getState()` in useEffect**: Preferred over adding `activeWordleMode`/`activeDailyDifficulty` to deps array, which would re-sync tabs every time the store changes mid-session (e.g. switching modes while modal is open). Firing only on `visible` change is the correct intent.
+- **Bug 2 toast only on dead-end**: Per spec — no toast when multiple difficulties are accessible (screen change is the feedback). Only fires when `accessible.length === 1` and that entry was lost.
 
 ---
 
 ## Current State
 
-- v1.4.0 fully committed and pushed to `main`
-- GitHub Actions build in progress — run ID `28424810118`, triggered 2026-06-30
-  - Builds APK (preview) then AAB (production); creates `v1.4.0` GitHub Release with both
-  - Build time ~45 min; monitor at: https://github.com/dilippanicker/wordout/actions/runs/28424810118
-- `DAILY_PROGRESSION` export in `helpContent.ts` is unused — ready for HelpModal wiring
+- All 5 fixes committed and pushed to `main` (commits `db60bbd` → `eb765a7`)
+- v1.4.0 is the current version (versionCode 19) — no version bump needed for bug fixes (these will ship in a patch v1.4.1 or alongside next feature)
+- v1.4.0 GitHub Actions build completed (run ID 28424810118) — APK/AAB available
+- Device testing partially done: bugs found and fixed, but full regression checklist not yet completed
 
 ---
 
 ## Exact Next Steps
 
-1. **Wait for build** — check Actions tab; download APK from release when done
-2. **Test on device** (Samsung S24 Ultra) — priority test cases from TODO.md:
-   - Cold start → routes to next unplayed daily difficulty
-   - Win Easy daily → "💪 Unlocked! Play Now" in footer; peek animation fires on overlay dismiss
-   - Play Now → starts Hard daily
-   - Stats modal → 🐣/💪/💀 sub-tabs show correct distributions and streaks
-   - Practice difficulty cycling: no lock, snapshots preserve completed games
-   - Win practice → ✓ overlay ONLY after wave fully completes
-3. **Play Console upload** — upload v1.4.0 AAB to internal testing track
-4. **Wire DAILY_PROGRESSION** into HelpModal (low priority — cosmetic)
-5. **CECIL wordlist cleanup** — remove from `assets/wordlists/answers_en_us/gb.json`
+1. **Re-test on device** (Samsung S24 Ultra) with the fixes:
+   - Win Easy, lose Hard, force-close, reopen → should land on Hard (not Extreme)
+   - Lose Easy, tap difficulty emoji → should show "🐣 lost · can't play 💪" toast
+   - Open Stats modal while on daily Hard → should show Daily tab / Hard sub-tab
+   - Stats modal header → should show "STATISTICS · Wordout" (not "4-out")
+   - Stats modal with no games played → empty state message shown
+2. **Full regression checklist** from TODO.md (wave animations, popup timing, board persistence)
+3. **Trigger new build** if device tests pass — patch release v1.4.1 or bundle with next feature
+4. **Play Console upload** — upload AAB to internal testing track
+5. **CECIL wordlist cleanup** — remove proper noun from `assets/wordlists/answers_en_us/gb.json`
+6. **Wire DAILY_PROGRESSION** into HelpModal (low priority)
 
 ---
 
 ## Known Issues / Gotchas
 
-- **CECIL in GB answers list**: proper noun at index ~215 in `assets/wordlists/answers_en_us/gb.json`. Pre-existing issue, not introduced by v1.4.0. Will appear as a Hard daily word on the day its index is seeded.
-- **`new-game.tsx` TS error**: pre-existing route type mismatch, non-blocking
-- **`DAILY_PROGRESSION` unused**: exported from helpContent.ts but not yet rendered in HelpModal — intentional, ready when needed
+- **`boardCount` defaults to `4`** in `settingsStore` initial state — any `isQuordle` check that uses `boardCount > 1` will be wrong for default users. Use `gameMode === 'quordle'` only.
+- **CECIL in GB answers list** — proper noun, pre-existing issue
+- **`new-game.tsx` TS error** — pre-existing route type mismatch, non-blocking
+- **`DAILY_PROGRESSION` unused** — exported from `helpContent.ts`, not yet in HelpModal

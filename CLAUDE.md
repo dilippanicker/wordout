@@ -44,9 +44,10 @@
 
 **`settingsStore.ts`** — persisted (`wordle-settings`):
 - `language`, `difficulty: 'easy'|'hard'|'extreme'`, `darkTheme`, `colorBlindMode`
-- `gameMode: 'wordle'|'quordle'`, `boardCount: 1|2|3|4|6|8`
+- `gameMode: 'wordle'|'quordle'`, `boardCount: 1|2|3|4|6|8` — **default `boardCount` is `4`**, not `1`
 - `maxGuessesForDifficulty(difficulty, boardCount)` — extreme = `max(3,(5+boardCount)−2)`, else boardCount===1 ? 6 : min(13,5+boardCount)
 - `boardCountName(n)` → `'Wordout'|'2-out'|'3-out'|'4-out'|'6-out'|'8-out'`
+- **Never use `boardCount > 1` to detect multi-board mode** — use `gameMode === 'quordle'`. `boardCount` starts at 4 so `boardCount > 1` is always true for users who never visited multi-board mode.
 
 **`gameStore.ts`** — practice 1-out logic:
 - `waveShown: boolean` — wave-shown flag; reset in `newGame()`
@@ -282,3 +283,10 @@ Cost awareness: Haiku as executor keeps costs low; Opus advisor only engages whe
 ## Known Issues
 - `new-game.tsx`: route path type mismatch on `<Redirect href>` (non-blocking)
 - `CECIL` in GB answers list — proper noun (name), violates word list rules; needs removal from `assets/wordlists/answers_en_us/gb.json`
+- `DAILY_PROGRESSION` export in `constants/helpContent.ts` — unused, ready for HelpModal wiring
+
+## StatsModal Behaviour (v1.4.0+)
+- `isQuordle` uses `gameMode === 'quordle'` only — never `boardCount > 1` (default is 4)
+- Daily/Practice tabs are local state (`modalModeTab`), synced imperatively via `useDailyStore.getState()` on `visible → true` — does NOT write back to store
+- Difficulty sub-tab (`dailyDiffTab`) similarly synced from `activeDailyDifficulty` on open
+- Empty state shown when `totalGames === 0`: daily uses difficulty label ("Easy/Hard/Extreme"), practice uses board name ("Wordout/2-out/…")
