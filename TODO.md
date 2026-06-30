@@ -1,12 +1,12 @@
 # Wordout — Master TODO
-**Updated: 2026-06-30 (session 9)**
+**Updated: 2026-06-30 (session 10)**
 **Current version: v1.4.0 (versionCode 19)**
 
 ---
 
 ## 🔴 IMMEDIATE — v1.4.0 Release
 
-- [ ] **Push to remote**: `git push origin main` (10 commits not yet pushed)
+- ✅ **Push to remote** — pushed 2026-06-30
 - [ ] **Test on web** (`npx expo start`) — key paths:
   - Cold start: routes to next unplayed daily difficulty (Easy if not yet started)
   - Easy daily: play to win → "💪 Unlocked! Play Now" appears in footer
@@ -17,8 +17,8 @@
   - Streak shows `🐣🔥N` on Easy tab, `💪🔥N` on Hard tab
   - Practice difficulty: tap emoji → snapshot saves, new game starts; tap back → board restored
   - Celebration overlay: tap anywhere to dismiss immediately
-- [ ] **Version bump**: propose v1.4.0 (versionCode 19), update app.json + CHANGELOG
-- [ ] **Trigger GitHub Actions build** for v1.4.0
+- ✅ **Version bump**: v1.4.0 (versionCode 19) — app.json + CHANGELOG updated 2026-06-30
+- ✅ **Trigger GitHub Actions build** for v1.4.0 — run ID 28424810118, in progress
 - [ ] Test on device (Samsung S24 Ultra) — priority test cases:
   - Win practice → ✓ overlay appears ONLY AFTER wave fully completes (not during bounce)
   - Win 8-out → ✓ overlay waits for all 40 tiles; no re-animation after overlay auto-dismisses
@@ -56,6 +56,14 @@
 - [ ] Update GitHub Actions workflow to auto-upload to internal track
 
 ---
+
+## ✅ Session 10 — Completed 2026-06-30
+
+- ✅ Documentation update: CLAUDE.md, TODO.md, README.md, constants/helpContent.ts updated for v1.4.0
+- ✅ New Daily Gate Architecture section added to CLAUDE.md
+- ✅ DAILY_PROGRESSION export added to helpContent.ts (unused, ready for HelpModal)
+- ✅ Version bump: app.json → v1.4.0 / versionCode 19; CHANGELOG [1.4.0] dated
+- ✅ GitHub Actions build triggered (run ID 28424810118)
 
 ## ✅ Session 9 — Completed 2026-06-30
 
