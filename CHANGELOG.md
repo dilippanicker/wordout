@@ -4,7 +4,7 @@ All notable changes to Wordout are documented here.
 
 ## [Unreleased]
 
-## [1.4.0] — unreleased
+## [1.4.0] — 2026-06-30
 ### Added
 - Per-difficulty daily games: three independent games per day (Easy 🐣, Hard 💪, Extreme 💀), each with a different answer derived from a UTC-midnight seed
 - Daily difficulty cycle: header emoji taps cycle through accessible difficulties only (no gate toasts); accessible list expands as difficulties are won
