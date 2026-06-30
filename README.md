@@ -10,7 +10,7 @@ Built automatically on every release via GitHub Actions.
 
 ## Features
 
-- **Daily Word** — one new word per day, same for everyone. Always Easy difficulty.
+- **Daily Word** — three puzzles per day (🐣 Easy / 💪 Hard / 💀 Extreme), each with a unique word. Win Easy to unlock Hard; win Hard to unlock Extreme. Independent streaks per difficulty.
 - **Practice mode** — unlimited games, any board count, any difficulty
 - **Multi-board mode** — solve 2, 3, 4, 6, or 8 words simultaneously; every guess applies to all boards at once
   - 2-out (7 guesses), 3-out (8 guesses), 4-out (9 guesses), 6-out (11 guesses), 8-out (13 guesses)

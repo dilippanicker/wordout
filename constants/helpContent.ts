@@ -40,8 +40,11 @@ export const TOP_ICON_TEXTS = [
   'This help screen',
 ];
 
+export const DAILY_PROGRESSION =
+  'Daily mode has three puzzles per day — 🐣 Easy, 💪 Hard, and 💀 Extreme — each with a different word. Win Easy to unlock Hard; win Hard to unlock Extreme. Tap the difficulty emoji in the header to cycle between your unlocked levels.';
+
 export const RIBBON_ICON_TEXTS = [
-  'Daily word — one new puzzle per day (green when active)',
+  'Daily word — three puzzles per day: Easy, Hard, Extreme (green when active)',
   'Practice mode — unlimited games (green when active)',
 ];
 

@@ -1,6 +1,6 @@
 # Wordout — Master TODO
 **Updated: 2026-06-30 (session 9)**
-**Current version: v1.3.0 (versionCode 18) — v1.4.0 implemented, not yet bumped/built**
+**Current version: v1.4.0 (versionCode 19)**
 
 ---
 
@@ -216,8 +216,9 @@
 
 ---
 
-## 🟢 v1.3 — Nice to Have
+## 🟢 Future — Nice to Have
 
+- [ ] **CECIL wordlist cleanup** — proper noun in GB answers list; remove from `assets/wordlists/answers_en_us/gb.json`
 - [ ] Haptic feedback on correct/wrong guess
 - [ ] Animate board indicator state transitions
 - [ ] Sequential ✓ flash across boards before end-game overlay (multi-board all-won)

@@ -75,6 +75,32 @@
 **`statsStore.ts`** — persisted (`wordle-stats`):
 - `byMode: Record<string, BoardStats>` — keyed by `'wordle'` or `String(boardCount)`
 
+### Daily Gate Architecture (v1.4.0)
+
+Three independent daily games run each day — Easy, Hard, Extreme — each with a different word:
+
+**Per-difficulty state (`dailyStore.ts`)**:
+- `games.{easy|hard|extreme}` — independent `DailyGameState`: status, guesses, currentGuess, solved, waveShown, celebrationShown, lastWinDate, streak, stats
+- Stats per-difficulty, shown in sub-tabs (🐣/💪/💀) within the Daily tab of StatsModal
+- Streaks tracked independently via `lastWinDate`; missed-day detection fires in `checkAndReset()`
+
+**Word selection**:
+All three words computed atomically on first daily start via UTC-midnight seed: `Math.imul(dayMs, 2654435761)` bit-shifted by indices 0/1/2. Guarantees different words per difficulty; all three set in one call to `startOrResumeDailyGame`.
+
+**Accessible-list gate**:
+Build reachable difficulty list before each cycle step:
+1. Easy — always included
+2. Hard — included if Easy is `'completed'` OR Hard is already `'playing'`/`'completed'`
+3. Extreme — included if Hard is `'completed'` OR Extreme is already `'playing'`/`'completed'`
+
+Cycle (m = highest reachable index): header difficulty emoji taps through this list only. NO gate toasts, NO "Win X first" messages.
+
+**Peek animation**: After the win overlay dismisses (first win only), the header emoji briefly scales toward the next difficulty emoji (🐣→💪 or 💪→💀) then snaps back. Only fires when the next difficulty is newly unlocked.
+
+**Play Now button**: After winning Easy (if Hard is `'available'`) or Hard (if Extreme is `'available'`), the footer shows "💪 Unlocked! Play Now" or "💀 Unlocked! Play Now". Tapping starts the next difficulty immediately.
+
+**Startup funnel**: On app mount, automatically routes to next unplayed difficulty: Easy not started → Easy; Easy won + Hard not started → Hard; Hard won + Extreme not started → Extreme; else restore persisted `activeWordleMode` + `activeDailyDifficulty`.
+
 ### Key Design Decisions (locked)
 
 **Daily mode (v1.4.0):**
@@ -200,7 +226,7 @@ Before every build, follow exactly:
 - Never update `app.json` before user confirms
 - Never trigger build without confirmed version bump
 
-**Current version:** `1.3.0` (versionCode 18)
+**Current version:** `1.4.0` (versionCode 19)
 
 ---
 
@@ -255,3 +281,4 @@ Cost awareness: Haiku as executor keeps costs low; Opus advisor only engages whe
 
 ## Known Issues
 - `new-game.tsx`: route path type mismatch on `<Redirect href>` (non-blocking)
+- `CECIL` in GB answers list — proper noun (name), violates word list rules; needs removal from `assets/wordlists/answers_en_us/gb.json`
