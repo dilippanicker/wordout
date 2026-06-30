@@ -107,9 +107,17 @@ export function StatsModal({ visible, onClose }: Props) {
           ) : (
             <>
               {/* Practice / quordle stats */}
-              <StatGrid stats={practiceStats} textColor={colors.text as string} />
-              <Text style={[styles.distLabel, { color: colors.text }]}>GUESS DISTRIBUTION</Text>
-              <DistChart stats={practiceStats} maxGuesses={maxGuesses} textColor={colors.text as string} />
+              {practiceStats.totalGames === 0 ? (
+                <Text style={styles.emptyState}>
+                  Play your first {boardCountName(boardCount)} for stats
+                </Text>
+              ) : (
+                <>
+                  <StatGrid stats={practiceStats} textColor={colors.text as string} />
+                  <Text style={[styles.distLabel, { color: colors.text }]}>GUESS DISTRIBUTION</Text>
+                  <DistChart stats={practiceStats} maxGuesses={maxGuesses} textColor={colors.text as string} />
+                </>
+              )}
             </>
           )}
 
@@ -157,6 +165,9 @@ function DailyDiffSection({ game, difficulty, textColor }: {
   textColor: string;
 }) {
   const maxGuesses = maxGuessesForDifficulty(difficulty, 1);
+  if (game.stats.totalGames === 0) {
+    return <Text style={styles.emptyState}>Play your first {DIFF_LABEL[difficulty]} for stats</Text>;
+  }
   return (
     <>
       <StatGrid stats={game.stats} textColor={textColor} />
@@ -421,5 +432,12 @@ const styles = StyleSheet.create({
   confirmDestructive: {
     color: '#ff3b30',
     fontWeight: '600',
+  },
+  emptyState: {
+    textAlign: 'center',
+    color: '#787c7e',
+    fontSize: 14,
+    paddingVertical: 32,
+    paddingHorizontal: 16,
   },
 });
