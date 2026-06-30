@@ -27,11 +27,13 @@ export function StatsModal({ visible, onClose }: Props) {
   const [modalModeTab, setModalModeTab] = useState<'daily' | 'practice'>(activeWordleMode);
   const [dailyDiffTab, setDailyDiffTab] = useState<Difficulty>(activeDailyDifficulty);
 
-  // Sync tabs to the active game whenever the modal opens
+  // Sync tabs to the active game whenever the modal opens — read imperatively
+  // to avoid stale closure from pre-rehydration mount
   useEffect(() => {
     if (visible) {
-      setModalModeTab(activeWordleMode);
-      setDailyDiffTab(activeDailyDifficulty);
+      const { activeWordleMode: mode, activeDailyDifficulty: diff } = useDailyStore.getState();
+      setModalModeTab(mode);
+      setDailyDiffTab(diff);
     }
   }, [visible]);
 
