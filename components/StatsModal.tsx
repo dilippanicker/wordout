@@ -30,10 +30,15 @@ export function StatsModal({ visible, onClose }: Props) {
   // Sync tabs to the active game whenever the modal opens — read imperatively
   // to avoid stale closure from pre-rehydration mount
   useEffect(() => {
+    console.log('[StatsModal] visible changed ->', visible);
     if (visible) {
       const { activeWordleMode: mode, activeDailyDifficulty: diff } = useDailyStore.getState();
+      console.log('[StatsModal] getState() =>', { mode, diff });
+      console.log('[StatsModal] hook values =>', { activeWordleMode, activeDailyDifficulty });
+      console.log('[StatsModal] isQuordle =>', gameMode === 'quordle' || boardCount > 1, '| gameMode =>', gameMode, '| boardCount =>', boardCount);
       setModalModeTab(mode);
       setDailyDiffTab(diff);
+      console.log('[StatsModal] set modalModeTab ->', mode, '| dailyDiffTab ->', diff);
     }
   }, [visible]);
 
