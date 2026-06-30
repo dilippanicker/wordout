@@ -57,7 +57,7 @@ export function StatsModal({ visible, onClose }: Props) {
             <Pressable style={styles.helpBtn} onPress={() => setShowHelp(true)} hitSlop={12}>
               <Ionicons name="help-circle-outline" size={20} color="#878a8c" />
             </Pressable>
-            <Text style={[styles.title, { color: colors.text }]}>STATISTICS · {boardCountName(boardCount)}</Text>
+            <Text style={[styles.title, { color: colors.text }]}>STATISTICS · {isQuordle ? boardCountName(boardCount) : 'Wordout'}</Text>
             <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={12}>
               <Ionicons name="close" size={20} color={colors.text as string} />
             </Pressable>
