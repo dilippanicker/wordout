@@ -4,7 +4,7 @@ description: Session open ritual — context check, handoff summary, objective s
 ---
 
 1. Run `/context` — if fill is >60%, run `/compact` before anything else
-2. Remind the user: "💡 Type /model haiku now for cost savings. Continuing in 10 seconds..."
+2. Remind the user: "💡 Type `/model haiku` for cost savings. Then run `/advisor` and select Opus 4.8 — this is the ONLY correct way to enable the advisor (`claude config set advisorModel` does NOT work). Confirm it shows a checkmark before proceeding with substantial work. Continuing in 10 seconds..."
 3. Read last 20 lines of `.claude/session-handoff.md` — summarise in exactly 3 bullets
 4. State the current model
 5. If the user has not stated a session objective, ask: "What's the goal for this session?"

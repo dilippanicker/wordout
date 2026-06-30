@@ -268,13 +268,10 @@ Before every build, follow exactly:
 
 CC uses Haiku as executor with Opus as advisor. Set up once at session start:
 
-```
-claude config set model claude-haiku-4-5-20251001
+1. `/model` → select `claude-haiku-4-5-20251001`
+2. `/advisor` → select `Opus 4.8` and confirm it shows a checkmark
 
-claude config set advisorModel claude-opus-4-8
-```
-
-CC cannot switch models programmatically. The advisor setup means Opus is consulted automatically at key moments (before writing, before committing to an approach, when stuck, before declaring done). No manual model switching needed.
+**Important:** `claude config set advisorModel` does NOT work — the only correct way to enable the advisor is via the `/advisor` command picker in the session. The advisor means Opus is consulted automatically at key moments (before writing, before committing to an approach, when stuck, before declaring done). No manual model switching needed.
 
 Cost awareness: Haiku as executor keeps costs low; Opus advisor only engages when needed. Run `/compact` at 50%+ context.
 
