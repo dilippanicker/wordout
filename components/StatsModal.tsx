@@ -30,19 +30,17 @@ export function StatsModal({ visible, onClose }: Props) {
   // Sync tabs to the active game whenever the modal opens — read imperatively
   // to avoid stale closure from pre-rehydration mount
   useEffect(() => {
-    console.log('[StatsModal] visible changed ->', visible);
     if (visible) {
       const { activeWordleMode: mode, activeDailyDifficulty: diff } = useDailyStore.getState();
-      console.log('[StatsModal] getState() =>', { mode, diff });
-      console.log('[StatsModal] hook values =>', { activeWordleMode, activeDailyDifficulty });
-      console.log('[StatsModal] isQuordle =>', gameMode === 'quordle' || boardCount > 1, '| gameMode =>', gameMode, '| boardCount =>', boardCount);
       setModalModeTab(mode);
       setDailyDiffTab(diff);
-      console.log('[StatsModal] set modalModeTab ->', mode, '| dailyDiffTab ->', diff);
     }
   }, [visible]);
 
-  const isQuordle = gameMode === 'quordle' || boardCount > 1;
+  // gameMode is the authoritative field — boardCount > 1 is wrong because the
+  // settings default is boardCount=4, which would force isQuordle=true even in
+  // single-board (wordle) mode for users who never visited multi-board mode.
+  const isQuordle = gameMode === 'quordle';
   const modeKey = gameMode === 'wordle' ? 'wordle' : String(boardCount);
   const practiceStats = byMode[modeKey] ?? emptyBoardStats();
   const maxGuesses = isQuordle ? Math.min(13, 5 + boardCount) : 6;
