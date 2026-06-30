@@ -288,10 +288,10 @@ export default function WordleScreen() {
     if (games.easy.status === 'available') {
       useDailyStore.getState().setActiveWordleMode('daily');
       useDailyStore.getState().setActiveDailyDifficulty('easy');
-    } else if (games.easy.status === 'completed' && games.hard.status === 'available') {
+    } else if (games.easy.status === 'completed' && games.easy.solved && games.hard.status === 'available') {
       useDailyStore.getState().setActiveWordleMode('daily');
       useDailyStore.getState().setActiveDailyDifficulty('hard');
-    } else if (games.hard.status === 'completed' && games.extreme.status === 'available') {
+    } else if (games.hard.status === 'completed' && games.hard.solved && games.extreme.status === 'available') {
       useDailyStore.getState().setActiveWordleMode('daily');
       useDailyStore.getState().setActiveDailyDifficulty('extreme');
     }
@@ -385,6 +385,13 @@ export default function WordleScreen() {
           break;
         }
         prevWon = games[d].status === 'completed' && games[d].solved;
+      }
+      // Single-entry dead end: only one difficulty accessible and it was lost
+      if (accessible.length === 1 && games[accessible[0]].status === 'completed' && !games[accessible[0]].solved) {
+        const lostEmoji = DIFFICULTY_EMOJI[accessible[0]];
+        const nextEmoji = accessible[0] === 'easy' ? DIFFICULTY_EMOJI.hard : DIFFICULTY_EMOJI.extreme;
+        showSystemToast(`${lostEmoji} lost · can't play ${nextEmoji}`);
+        return;
       }
       const currIdx = accessible.indexOf(currDiff);
       const nextDiff = accessible[(currIdx + 1) % accessible.length];

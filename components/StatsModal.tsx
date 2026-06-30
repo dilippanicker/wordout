@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, Pressable, StyleSheet, Modal } from 'react-native';
 import { useTheme } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,17 +20,27 @@ export function StatsModal({ visible, onClose }: Props) {
   const { colors } = useTheme();
   const { gameMode, boardCount, difficulty } = useSettingsStore();
   const { byMode, resetStats } = useStatsStore();
-  const { games: dailyGames, activeWordleMode, setActiveWordleMode, resetDailyStats } = useDailyStore();
+  const { games: dailyGames, activeWordleMode, activeDailyDifficulty, resetDailyStats } = useDailyStore();
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
-  const [dailyDiffTab, setDailyDiffTab] = useState<Difficulty>('easy');
+  // Local tab state — does NOT write back to the store; purely cosmetic navigation
+  const [modalModeTab, setModalModeTab] = useState<'daily' | 'practice'>(activeWordleMode);
+  const [dailyDiffTab, setDailyDiffTab] = useState<Difficulty>(activeDailyDifficulty);
+
+  // Sync tabs to the active game whenever the modal opens
+  useEffect(() => {
+    if (visible) {
+      setModalModeTab(activeWordleMode);
+      setDailyDiffTab(activeDailyDifficulty);
+    }
+  }, [visible]);
 
   const isQuordle = gameMode === 'quordle' || boardCount > 1;
   const modeKey = gameMode === 'wordle' ? 'wordle' : String(boardCount);
   const practiceStats = byMode[modeKey] ?? emptyBoardStats();
   const maxGuesses = isQuordle ? Math.min(13, 5 + boardCount) : 6;
 
-  const showingDaily = !isQuordle && activeWordleMode === 'daily';
+  const showingDaily = !isQuordle && modalModeTab === 'daily';
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -52,16 +62,16 @@ export function StatsModal({ visible, onClose }: Props) {
           {!isQuordle && (
             <View style={[styles.tabs, { borderBottomColor: colors.border }]}>
               <Pressable
-                style={[styles.tab, activeWordleMode === 'daily' && styles.tabActive]}
-                onPress={() => setActiveWordleMode('daily')}
+                style={[styles.tab, modalModeTab === 'daily' && styles.tabActive]}
+                onPress={() => setModalModeTab('daily')}
               >
-                <Text style={[styles.tabText, activeWordleMode === 'daily' && styles.tabTextActive]}>Daily</Text>
+                <Text style={[styles.tabText, modalModeTab === 'daily' && styles.tabTextActive]}>Daily</Text>
               </Pressable>
               <Pressable
-                style={[styles.tab, activeWordleMode === 'practice' && styles.tabActive]}
-                onPress={() => setActiveWordleMode('practice')}
+                style={[styles.tab, modalModeTab === 'practice' && styles.tabActive]}
+                onPress={() => setModalModeTab('practice')}
               >
-                <Text style={[styles.tabText, activeWordleMode === 'practice' && styles.tabTextActive]}>Practice</Text>
+                <Text style={[styles.tabText, modalModeTab === 'practice' && styles.tabTextActive]}>Practice</Text>
               </Pressable>
             </View>
           )}
