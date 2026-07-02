@@ -388,9 +388,10 @@ export default function WordleScreen() {
       }
       // Single-entry dead end: only one difficulty accessible and it was lost
       if (accessible.length === 1 && games[accessible[0]].status === 'completed' && !games[accessible[0]].solved) {
-        const lostEmoji = DIFFICULTY_EMOJI[accessible[0]];
-        const nextEmoji = accessible[0] === 'easy' ? DIFFICULTY_EMOJI.hard : DIFFICULTY_EMOJI.extreme;
-        showSystemToast(`${lostEmoji} lost · can't play ${nextEmoji}`);
+        const msg = accessible[0] === 'easy'
+          ? `Easy ${DIFFICULTY_EMOJI.easy} lost, can't play Hard ${DIFFICULTY_EMOJI.hard}`
+          : `Hard ${DIFFICULTY_EMOJI.hard} lost, can't play Extreme ${DIFFICULTY_EMOJI.extreme}`;
+        showSystemToast(msg);
         return;
       }
       const currIdx = accessible.indexOf(currDiff);
