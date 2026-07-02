@@ -165,7 +165,7 @@ export default function SettingsScreen() {
           <Pressable onPress={() => Linking.openURL('https://github.com/dilippanicker/wordout')}>
             <Text style={styles.githubLink}>GitHub ↗</Text>
           </Pressable>
-          <Text style={styles.credits}>© 2026 Onglipo Labs · MIT License</Text>
+          <Text style={styles.credits}>© 2026 Onglipo Labs. <Text style={{ fontStyle: 'italic' }}>Ohm Shanti</Text> Ω Ω Ω · MIT License</Text>
           <Text style={styles.versionText}>
             {Platform.OS === 'android'
               ? `v${Constants.expoConfig?.version ?? '—'} (build ${Constants.expoConfig?.android?.versionCode ?? '—'})`
