@@ -237,6 +237,11 @@
 
 ---
 
+## 🟡 Technical Debt / Future
+
+- [ ] Migrate away from deprecated edge-to-edge APIs for Android 15 compatibility (Play Console warning on release 20)
+- [ ] Add large screen / tablet support — remove orientation restrictions (Play Console warning on release 20)
+
 ## 🟢 Future — Nice to Have
 
 - [ ] **CECIL wordlist cleanup** — proper noun in GB answers list; remove from `assets/wordlists/answers_en_us/gb.json`
