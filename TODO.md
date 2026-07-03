@@ -1,10 +1,10 @@
 # Wordout — Master TODO
-**Updated: 2026-06-30 (session 11)**
-**Current version: v1.4.0 (versionCode 19)**
+**Updated: 2026-07-03 (session 13)**
+**Current version: v1.4.1 (versionCode 20)**
 
 ---
 
-## 🔴 IMMEDIATE — v1.4.0 Release
+## 🔴 IMMEDIATE — v1.4.1 Release
 
 - ✅ **Push to remote** — pushed 2026-06-30
 - [ ] **Test on web** (`npx expo start`) — key paths:
@@ -14,7 +14,7 @@
   - Header emoji peek: after Easy win, 🐣→💪→🐣 animation fires on overlay dismiss
   - Difficulty cycle: Easy→Hard (after win), Hard→Easy (wraps when Extreme locked)
   - Win Easy, lose Hard, restart → should land on Hard (not Extreme)
-  - Lose Easy, tap difficulty emoji → toast "🐣 lost · can't play 💪"
+  - Lose Easy, tap difficulty emoji → toast "Easy 🐣 lost, can't play Hard 💪"
   - Stats modal: opens to Daily tab + active difficulty sub-tab (not Practice/4-out)
   - Stats modal header: shows "STATISTICS · Wordout" (not "4-out")
   - Stats modal empty state: "Play your first Easy for stats" when no games played
@@ -22,7 +22,9 @@
   - Practice difficulty: tap emoji → snapshot saves, new game starts; tap back → board restored
   - Celebration overlay: tap anywhere to dismiss immediately
 - ✅ **Version bump**: v1.4.0 (versionCode 19) — app.json + CHANGELOG updated 2026-06-30
-- ✅ **Trigger GitHub Actions build** for v1.4.0 — run ID 28424810118, in progress
+- ✅ **Version bump**: v1.4.1 (versionCode 20) — app.json + CHANGELOG updated 2026-07-02
+- ✅ **Trigger GitHub Actions build** for v1.4.0 — completed 2026-06-30
+- ✅ **Trigger GitHub Actions build** for v1.4.1 — run ID 28574666289, completed 2026-07-02
 - [ ] Test on device (Samsung S24 Ultra) — priority test cases:
   - Win practice → ✓ overlay appears ONLY AFTER wave fully completes (not during bounce)
   - Win 8-out → ✓ overlay waits for all 40 tiles; no re-animation after overlay auto-dismisses
@@ -60,6 +62,14 @@
 - [ ] Update GitHub Actions workflow to auto-upload to internal track
 
 ---
+
+## ✅ Session 13 — Completed 2026-07-03
+
+- ✅ Settings footer updated: "© 2026 Onglipo Labs. *Ohm Shanti* Ω Ω Ω · MIT License"
+- ✅ Dead-end gate toast text updated to include difficulty names ("Easy 🐣 lost, can't play Hard 💪")
+- ✅ v1.4.1 (versionCode 20) bumped, built, and released
+- ✅ `/advisor` setup instructions fixed in `open.md` and `CLAUDE.md`
+- ✅ Technical Debt section added to TODO with Android 15 + tablet Play Console warnings
 
 ## ✅ Session 11 — Completed 2026-06-30
 

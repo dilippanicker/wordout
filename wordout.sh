@@ -7,7 +7,8 @@ set -e
 REPO_DIR="$HOME/repos/wordout"
 APK_URL="https://github.com/dilippanicker/wordout/releases/latest/download/wordout.apk"
 AAB_URL="https://github.com/dilippanicker/wordout/releases/latest/download/wordout.aab"
-APK_PATH="$HOME/Downloads/wordout.apk"
+APK_PATH="$REPO_DIR/releases/wordout-latest.apk"
+AAB_PATH="$REPO_DIR/releases/wordout-latest.aab"
 
 cmd="$1"
 
@@ -36,19 +37,25 @@ case "$cmd" in
     ;;
 
   install)
-    echo "Downloading latest APK..."
+    echo "Downloading latest APK + AAB..."
     mkdir -p "$REPO_DIR/releases"
     wget -O "$APK_PATH" "$APK_URL"
-    cp "$APK_PATH" "$REPO_DIR/releases/wordout-latest.apk"
-    echo "Installing on device..."
+    wget -O "$AAB_PATH" "$AAB_URL"
+    echo "Installing APK on device..."
     adb install -r "$APK_PATH"
-    echo "Installed. Local copy saved to releases/wordout-latest.apk"
+    echo "Installed. Copies saved to releases/"
+    ;;
+
+  push)
+    echo "Installing local APK on device (no download)..."
+    adb install -r "$APK_PATH"
+    echo "Done."
     ;;
 
   fetch-aab)
     echo "Downloading latest AAB..."
     mkdir -p "$REPO_DIR/releases"
-    wget -O "$REPO_DIR/releases/wordout-latest.aab" "$AAB_URL"
+    wget -O "$AAB_PATH" "$AAB_URL"
     echo "Saved to releases/wordout-latest.aab"
     ;;
 
@@ -88,8 +95,9 @@ case "$cmd" in
     echo "  status        Show recent workflow runs"
     echo "  logs          Show latest run logs"
     echo "  watch         Watch latest run in real-time"
-    echo "  install       Download latest APK + install on device (saves local copy)"
-    echo "  fetch-aab     Download latest AAB to releases/ dir"
+    echo "  install       Download latest APK + AAB, install APK on device"
+    echo "  push          Install already-downloaded APK on device (no download)"
+    echo "  fetch-aab     Download latest AAB only"
     echo "  web           Start web dev server (cache cleared)"
     echo "  web-dirty     Start web dev server (no cache clear)"
     echo "  dev-android   Start dev server on connected Android device (live reload)"
