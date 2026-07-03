@@ -255,6 +255,7 @@
 ## 🟢 Future — Nice to Have
 
 - [ ] **CECIL wordlist cleanup** — proper noun in GB answers list; remove from `assets/wordlists/answers_en_us/gb.json`
+- [ ] **Deploy Wordout as a web app** — `npx expo export --platform web` generates static dist/ folder, deploy to onglipo.in/wordout or wordout.onglipo.in. Consider adding PWA manifest so users can install from browser. Haptics and AsyncStorage already work on web.
 - [ ] Haptic feedback on correct/wrong guess
 - [ ] Animate board indicator state transitions
 - [ ] Sequential ✓ flash across boards before end-game overlay (multi-board all-won)
