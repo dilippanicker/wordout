@@ -29,6 +29,7 @@ interface SettingsState {
   enterOnRight: boolean;
   gameMode: GameMode;
   boardCount: BoardCount;
+  tutorialSeen: boolean;
   setLanguage: (lang: Language) => void;
   setDifficulty: (d: Difficulty) => void;
   setDarkTheme: (on: boolean) => void;
@@ -36,6 +37,7 @@ interface SettingsState {
   setEnterOnRight: (on: boolean) => void;
   setGameMode: (mode: GameMode) => void;
   setBoardCount: (n: BoardCount) => void;
+  setTutorialSeen: (seen: boolean) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -48,6 +50,7 @@ export const useSettingsStore = create<SettingsState>()(
       enterOnRight: false,
       gameMode: 'wordle',
       boardCount: 4,
+      tutorialSeen: false,
       setLanguage: (language) => set({ language }),
       setDifficulty: (difficulty) => set({ difficulty }),
       setDarkTheme: (darkTheme) => set({ darkTheme }),
@@ -55,6 +58,7 @@ export const useSettingsStore = create<SettingsState>()(
       setEnterOnRight: (enterOnRight) => set({ enterOnRight }),
       setGameMode: (gameMode) => set({ gameMode }),
       setBoardCount: (boardCount) => set({ boardCount }),
+      setTutorialSeen: (tutorialSeen) => set({ tutorialSeen }),
     }),
     {
       name: 'wordle-settings',

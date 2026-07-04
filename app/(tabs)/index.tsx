@@ -18,6 +18,7 @@ import { Keyboard, kbdHeight } from '@/components/Keyboard';
 import { HelpModal } from '@/components/HelpModal';
 import { BottomStrip } from '@/components/BottomStrip';
 import { StatsModal } from '@/components/StatsModal';
+import { TutorialOverlay } from '@/components/TutorialOverlay';
 import { useGameStore, GuessResult, LetterResult } from '@/store/gameStore';
 import { useQuordleStore, QuordleGuess } from '@/store/quordleStore';
 import { useSettingsStore, boardCountName, BOARD_COUNTS, BoardCount, maxGuessesForDifficulty, Difficulty } from '@/store/settingsStore';
@@ -263,6 +264,7 @@ export default function WordleScreen() {
   const [copyConfirmed, setCopyConfirmed] = useState(false);
   const [activeBoard, setActiveBoard] = useState(0);
   const [statsModalVisible, setStatsModalVisible] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
   const [countdown, setCountdown] = useState(() => msToHMS(msUntilMidnight()));
   // Per-board overlays suppressed until end-game popup is dismissed
   const [overlayLocked, setOverlayLocked] = useState(false);
@@ -297,6 +299,16 @@ export default function WordleScreen() {
     }
     // Else: restore last played (activeWordleMode + activeDailyDifficulty as persisted)
   }, []);
+
+  // First-launch tutorial: fires once unless the user opted out via "Don't show again"
+  useEffect(() => {
+    if (!useSettingsStore.getState().tutorialSeen) setShowTutorial(true);
+  }, []);
+
+  function handleWatchTutorial() {
+    setStatsModalVisible(false);
+    setShowTutorial(true);
+  }
 
   // Check for new day whenever screen gains focus
   useFocusEffect(useCallback(() => {
@@ -865,9 +877,10 @@ export default function WordleScreen() {
           gameStats={gameStats}
         />
 
-        <HelpModal visible={showHelp} onClose={() => setShowHelp(false)} difficulty={difficulty} />
-        <StatsModal visible={statsModalVisible} onClose={() => setStatsModalVisible(false)} />
+        <HelpModal visible={showHelp} onClose={() => setShowHelp(false)} difficulty={difficulty} onWatchTutorial={handleWatchTutorial} />
+        <StatsModal visible={statsModalVisible} onClose={() => setStatsModalVisible(false)} onWatchTutorial={handleWatchTutorial} />
         {endGameOverlay}
+        {showTutorial && <TutorialOverlay onClose={() => setShowTutorial(false)} />}
       </SafeAreaView>
     );
   }
@@ -1012,9 +1025,10 @@ export default function WordleScreen() {
         gameStats={gameStats}
       />
 
-      <HelpModal visible={showHelp} onClose={() => setShowHelp(false)} difficulty={isDaily ? activeDailyDiff : difficulty} />
-      <StatsModal visible={statsModalVisible} onClose={() => setStatsModalVisible(false)} />
+      <HelpModal visible={showHelp} onClose={() => setShowHelp(false)} difficulty={isDaily ? activeDailyDiff : difficulty} onWatchTutorial={handleWatchTutorial} />
+      <StatsModal visible={statsModalVisible} onClose={() => setStatsModalVisible(false)} onWatchTutorial={handleWatchTutorial} />
       {endGameOverlay}
+      {showTutorial && <TutorialOverlay onClose={() => setShowTutorial(false)} />}
     </SafeAreaView>
   );
 }

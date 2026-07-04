@@ -6,15 +6,16 @@ import {
   SINGLE_BOARD_RULES, COLOR_KEY, COLOR_BLIND_NOTE, MULTI_BOARD_RULES,
   RIBBON_DESCRIPTION, BOARD_IND_TEXTS, TOP_ICON_TEXTS, RIBBON_ICON_TEXTS,
   FOOTER_ICON_TEXTS, FEEDBACK_PROMPT, FEEDBACK_LINK_TEXT, OPEN_SOURCE_PROMPT,
-  OPEN_SOURCE_LINK_TEXT, MADE_BY,
+  OPEN_SOURCE_LINK_TEXT, MADE_BY, WATCH_TUTORIAL_LABEL,
 } from '@/constants/helpContent';
 
-import { Difficulty } from '@/store/settingsStore';
+import { Difficulty, useSettingsStore } from '@/store/settingsStore';
 
 interface HelpModalProps {
   visible: boolean;
   onClose: () => void;
   difficulty: Difficulty;
+  onWatchTutorial?: () => void;
 }
 
 const TILE_SIZE = 44;
@@ -123,9 +124,15 @@ const TOP_ICON_ROWS: IconRowDef[] = TOP_ICON_RENDER_FNS.map((renderIcon, i) => (
 const RIBBON_ICON_ROWS: IconRowDef[] = RIBBON_ICON_RENDER_FNS.map((renderIcon, i) => ({ renderIcon, text: RIBBON_ICON_TEXTS[i] }));
 const FOOTER_ICON_ROWS: IconRowDef[] = FOOTER_ICON_RENDER_FNS.map((renderIcon, i) => ({ renderIcon, text: FOOTER_ICON_TEXTS[i] }));
 
-export function HelpModal({ visible, onClose, difficulty }: HelpModalProps) {
+export function HelpModal({ visible, onClose, difficulty, onWatchTutorial }: HelpModalProps) {
   const { colors } = useTheme();
   const { height: screenHeight } = useWindowDimensions();
+
+  function handleWatchTutorial() {
+    onClose();
+    useSettingsStore.getState().setTutorialSeen(false);
+    onWatchTutorial?.();
+  }
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -138,6 +145,12 @@ export function HelpModal({ visible, onClose, difficulty }: HelpModalProps) {
               <Text style={styles.closeIcon}>✕</Text>
             </Pressable>
           </View>
+
+          {onWatchTutorial && (
+            <Pressable style={styles.watchTutorialBtn} onPress={handleWatchTutorial}>
+              <Text style={styles.watchTutorialText}>{WATCH_TUTORIAL_LABEL}</Text>
+            </Pressable>
+          )}
 
           <ScrollView
             style={[styles.scrollView, { maxHeight: screenHeight * 0.72 }]}
@@ -314,6 +327,19 @@ const styles = StyleSheet.create({
   closeIcon: {
     fontSize: 18,
     color: '#878a8c',
+  },
+  watchTutorialBtn: {
+    marginHorizontal: 24,
+    marginTop: 16,
+    backgroundColor: '#5BA75A',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  watchTutorialText: {
+    color: '#ffffff',
+    fontWeight: '700',
+    fontSize: 15,
   },
   scrollView: {},
   scrollContent: {

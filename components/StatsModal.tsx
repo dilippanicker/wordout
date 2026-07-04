@@ -14,9 +14,10 @@ const DAILY_DIFFS: Difficulty[] = ['easy', 'hard', 'extreme'];
 interface Props {
   visible: boolean;
   onClose: () => void;
+  onWatchTutorial?: () => void;
 }
 
-export function StatsModal({ visible, onClose }: Props) {
+export function StatsModal({ visible, onClose, onWatchTutorial }: Props) {
   const { colors } = useTheme();
   const { gameMode, boardCount, difficulty } = useSettingsStore();
   const { byMode, resetStats } = useStatsStore();
@@ -130,7 +131,7 @@ export function StatsModal({ visible, onClose }: Props) {
         </Pressable>
       </Pressable>
 
-      <HelpModal visible={showHelp} onClose={() => setShowHelp(false)} difficulty={difficulty} />
+      <HelpModal visible={showHelp} onClose={() => setShowHelp(false)} difficulty={difficulty} onWatchTutorial={onWatchTutorial} />
 
       {/* Reset confirmation */}
       <Modal visible={confirmVisible} transparent animationType="fade" onRequestClose={() => setConfirmVisible(false)}>

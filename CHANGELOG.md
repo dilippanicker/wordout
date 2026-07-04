@@ -4,6 +4,13 @@ All notable changes to Wordout are documented here.
 
 ## [Unreleased]
 
+## [1.5.1] — 2026-07-04
+### Added
+- First-launch animated tutorial overlay (`TutorialOverlay.tsx`) — auto-plays a scripted RAISE/CLOUT/FROST demo game with tile flips, a colour legend, and a win flash, ending in a "Don't show again" checkbox + "Got it!" button
+- `tutorialSeen` flag added to `settingsStore` (persisted, default `false`) — gates the tutorial to first launch unless opted out
+- "▶ Watch how to play" button at the top of the Help modal — replays the tutorial on demand and resets `tutorialSeen`
+- Tapping the tutorial's backdrop skips straight to the end state
+
 ## [1.5.0] — 2026-07-04
 ### Changed
 - **Word lists rebuilt from NYT Wordle source** with comprehensive curation

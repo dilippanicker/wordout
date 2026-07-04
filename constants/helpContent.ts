@@ -1,5 +1,7 @@
 // Help screen text content — edit here to update help without touching component code
 
+export const WATCH_TUTORIAL_LABEL = '▶ Watch how to play';
+
 export const SINGLE_BOARD_RULES = [
   'Guess the word in **6 tries.**',
   'Each guess must be a valid 5-letter word. After each guess, the colour of the tiles will change to show how close you were.',
