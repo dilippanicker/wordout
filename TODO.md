@@ -1,8 +1,23 @@
 # Wordout — Master TODO
-**Updated: 2026-07-04 (session 14)**
-**Current version: v1.5.0 (versionCode 21)**
+**Updated: 2026-07-04 (session 15)**
+**Current version: v1.5.1 (versionCode 22)**
 
 ---
+
+## ✅ Session 15 — Completed 2026-07-04
+
+- ✅ **First-launch animated tutorial overlay** (`components/TutorialOverlay.tsx`) — scripted RAISE/CLOUT/FROST demo with tile flips, colour legend, win flash, "Don't show again" checkbox + "Got it!" button
+- ✅ **`tutorialSeen` flag** added to `settingsStore` (persisted, default `false`)
+- ✅ **"▶ Watch how to play" button** added to top of Help modal — replays tutorial on demand, resets `tutorialSeen`
+- ✅ **Backdrop tap-to-skip** — jumps straight to end state from any point in the animation
+- ✅ **Verified end-to-end via headless Playwright** against the running web dev server — full animation, backdrop skip, checkbox persistence across reload, and Help modal re-trigger all confirmed working, no console errors
+- ✅ **Version bump** — v1.5.0 (versionCode 21) → v1.5.1 (versionCode 22)
+
+## 🔴 NEW — Follow-up from Session 15
+
+- [ ] **Trigger GitHub Actions build** for v1.5.1 (versionCode 22)
+- [ ] **Device regression test of tutorial overlay** on a real Android device — Playwright verification was web-only; check flip animation smoothness and layout on smaller real screens
+- [ ] (Optional, not currently planned) Wire "Watch how to play" into `app/(tabs)/settings.tsx`'s HelpModal instance — currently hidden there since that route has no path back to the game screen's tutorial state
 
 ## ✅ Session 14 — Completed 2026-07-04
 

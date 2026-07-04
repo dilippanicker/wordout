@@ -50,6 +50,7 @@
 **`settingsStore.ts`** — persisted (`wordle-settings`):
 - `language`, `difficulty: 'easy'|'hard'|'extreme'`, `darkTheme`, `colorBlindMode`
 - `gameMode: 'wordle'|'quordle'`, `boardCount: 1|2|3|4|6|8` — **default `boardCount` is `4`**, not `1`
+- `tutorialSeen: boolean` (default `false`) — gates the first-launch tutorial overlay; set `true` only when the user checks "Don't show again" and taps "Got it!"
 - `maxGuessesForDifficulty(difficulty, boardCount)` — extreme = `max(3,(5+boardCount)−2)`, else boardCount===1 ? 6 : min(13,5+boardCount)
 - `boardCountName(n)` → `'Wordout'|'2-out'|'3-out'|'4-out'|'6-out'|'8-out'`
 - **Never use `boardCount > 1` to detect multi-board mode** — use `gameMode === 'quordle'`. `boardCount` starts at 4 so `boardCount > 1` is always true for users who never visited multi-board mode.
@@ -199,6 +200,15 @@ On app mount:
 ### Help content
 Text strings extracted to `constants/helpContent.ts` — edit there without touching `HelpModal.tsx`.
 
+### First-launch tutorial — `components/TutorialOverlay.tsx`
+Full-screen overlay, purely presentational (no store reads/writes for the demo board itself). Auto-plays a scripted RAISE → CLOUT → FROST demo game once per install, gated by `settingsStore.tutorialSeen`.
+- Mounted conditionally from `app/(tabs)/index.tsx` (`{showTutorial && <TutorialOverlay onClose={...} />}`) — mounting IS the trigger; a mount-only effect checks `tutorialSeen` imperatively (same synchronous-`getState()`-on-mount convention as the daily-funnel effect, not hydration-guarded)
+- Driven by one cancellable `async runSequence()` (not a reducer — the script is strictly linear) using a `wait(ms)` helper and a `cancelledRef` checked after every `await`. All timings are constants at the top of the file for easy tuning.
+- Row rendering reuses `GameBoard.tsx`'s exact idiom (`Tile`/`FlipTile` with real `TileStatus` values) — colours always match the live game, including dark theme and colour-blind mode. Never hardcode tile hex values here.
+- Tapping the backdrop calls `skip()` — cancels the sequence and jumps straight to the end state (all 3 rows revealed, legend visible, checkbox + "Got it!" shown)
+- "Got it!" with the checkbox checked sets `tutorialSeen = true`; unchecked, the tutorial fires again next launch
+- Replayable from `HelpModal`'s "▶ Watch how to play" button (top of the modal, only rendered when the optional `onWatchTutorial` prop is passed — `app/(tabs)/settings.tsx`'s `HelpModal` instance has no path back to the game screen's tutorial state, so the button is hidden there by design)
+
 ---
 
 ## Build Pipeline
@@ -232,7 +242,7 @@ Before every build, follow exactly:
 - Never update `app.json` before user confirms
 - Never trigger build without confirmed version bump
 
-**Current version:** `1.4.0` (versionCode 19)
+**Current version:** `1.5.1` (versionCode 22)
 
 ---
 
