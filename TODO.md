@@ -1,10 +1,19 @@
 # Wordout — Master TODO
-**Updated: 2026-07-03 (session 13)**
-**Current version: v1.4.1 (versionCode 20)**
+**Updated: 2026-07-04 (session 14)**
+**Current version: v1.5.0 (versionCode 21)**
 
 ---
 
-## 🔴 IMMEDIATE — v1.4.1 Release
+## ✅ Session 14 — Completed 2026-07-04
+
+- ✅ **Word list rebuild from NYT Wordle source** — 2,315 US answers + 10,484 US guesses (174 removals)
+- ✅ **UK English variants generated** — 2,314 answers + 8,554 guesses (from SOWPODS)
+- ✅ **UK spelling conversions** — FIBER→FIBRE, METER→METRE, PRIZE→PRISE
+- ✅ **Word list regeneration tooling** — wordlist/regenerate.py + source/ files committed
+- ✅ **Version bump** — v1.4.1 (versionCode 20) → v1.5.0 (versionCode 21)
+- ✅ **Verified import paths** — assets/wordlists/ matches all game store imports exactly
+
+## 🔴 IMMEDIATE — v1.5.0 Release
 
 - ✅ **Push to remote** — pushed 2026-06-30
 - [ ] **Test on web** (`npx expo start`) — key paths:
@@ -254,7 +263,6 @@
 
 ## 🟢 Future — Nice to Have
 
-- [ ] **CECIL wordlist cleanup** — proper noun in GB answers list; remove from `assets/wordlists/answers_en_us/gb.json`
 - [ ] **Deploy Wordout as a web app** — `npx expo export --platform web` generates static dist/ folder, deploy to onglipo.in/wordout or wordout.onglipo.in. Consider adding PWA manifest so users can install from browser. Haptics and AsyncStorage already work on web.
 - [ ] Haptic feedback on correct/wrong guess
 - [ ] Animate board indicator state transitions

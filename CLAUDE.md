@@ -12,9 +12,14 @@
 - `npx expo start --android`
 
 ## Word lists
-- `assets/wordlists/answers_en_us/gb.json` — ~1,500 curated answers
-- `assets/wordlists/guesses_en_us/gb.json` — ~9,000 valid guesses
-- No plurals, no proper nouns, no 3rd-person verb forms
+- `assets/wordlists/answers_en_us.json` — 2,315 answers (US English)
+- `assets/wordlists/answers_en_gb.json` — 2,314 answers (UK English)
+- `assets/wordlists/guesses_en_us.json` — 10,484 guesses (US English)
+- `assets/wordlists/guesses_en_gb.json` — 8,554 guesses (UK English)
+- **Source:** NYT Wordle answers/guesses + SOWPODS (Norvig) for UK
+- **Filtering:** No proper nouns (157 removed), no offensive words (17 removed), no -ED/-ING/-S forms
+- **UK variants:** FIBER→FIBRE, METER→METRE, PRIZE→PRISE
+- **Regeneration:** `python3 wordlist/regenerate.py` (reads from `wordlist/source/`)
 - Bundled JSON, not fetched at runtime
 
 ---
