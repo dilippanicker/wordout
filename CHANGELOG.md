@@ -4,6 +4,23 @@ All notable changes to Wordout are documented here.
 
 ## [Unreleased]
 
+## [1.5.0] — 2026-07-04
+### Changed
+- **Word lists rebuilt from NYT Wordle source** with comprehensive curation
+  - Filtered from 2,315 NYT answers + 10,657 NYT guesses
+  - Removed 17 offensive/blocklist words
+  - Removed 157 proper nouns (verified against NLTK names corpus)
+  - Removed -ED/-ING/-S forms where base exists in same list
+- **UK English variants added**
+  - UK answers (2,314) derived from US answers + SOWPODS guess list
+  - UK spellings: FIBER→FIBRE, METER→METRE, PRIZE→PRISE
+  - UK guess list from SOWPODS (8,554 5-letter words)
+- **Word list regeneration tooling added** (wordlist/regenerate.py)
+
+### Stats
+- EN_US: 2,315 answers + 10,484 guesses (12,799 total)
+- EN_GB: 2,314 answers + 8,554 guesses (10,868 total)
+
 ## [1.4.1] — 2026-07-02
 ### Added
 - Stats modal empty state: "Play your first Easy/Hard/Extreme for stats" (daily) and "Play your first Wordout/N-out for stats" (practice) shown when no games played for that mode yet
