@@ -1,24 +1,31 @@
 {
-  "version": "1.0.0",
-  "generated": "2026-06-22",
+  "version": "2.0.0",
+  "generated": "2026-07-04T10:53:33.375967",
   "word_length": 5,
+  "source": "NYT Wordle + SOWPODS (Norvig)",
   "counts": {
     "us": {
-      "answers": 1518,
-      "guesses": 9058
+      "answers": 2315,
+      "guesses": 10484
     },
     "gb": {
-      "answers": 1517,
-      "guesses": 9057
+      "answers": 2314,
+      "guesses": 8554
     }
   },
   "rules": [
     "5-letter words only",
-    "No proper nouns (person names, place names)",
-    "No plurals",
-    "No 3rd-person verb forms (walks, takes)",
-    "Minimum frequency threshold for answers",
-    "Manual blocklist for offensive/inappropriate words",
-    "Separate American/British English variants"
-  ]
+    "No proper nouns (verified against NLTK names corpus)",
+    "No offensive/blocklist words (17 removed)",
+    "No -ED forms where base exists in same list",
+    "No -ING forms where base exists in same list",
+    "No simple plurals where singular exists in same list",
+    "Separate American/British English variants",
+    "UK spellings: FIBER\u2192FIBRE, METER\u2192METRE, PRIZE\u2192PRISE"
+  ],
+  "removals": {
+    "blocklist_count": 17,
+    "proper_nouns_removed": 157,
+    "total_from_guesses": 173
+  }
 }
