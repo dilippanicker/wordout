@@ -19,6 +19,7 @@ description: Pre-commit review for Wordout React Native project
 - All persistent state goes through Zustand stores
 - AsyncStorage persist config not broken
 - Store schema changes would break persisted user data — flag these as Must Fix
+- dailyStore schema changes require persist version bump — flag these as Must Fix
 - gameStore (single board), quordleStore (multi-board), settingsStore, statsStore all intact
 
 **Word lists**
@@ -34,6 +35,7 @@ description: Pre-commit review for Wordout React Native project
 - No .env files staged
 - No node_modules staged
 - No large binary files (APK, AAB) staged
+- releases/ directory not staged (APK/AAB files should never be committed)
 - app.json versionCode incremented if this is a release build
 - Commit message follows: `type: description` format
   (types: feat, fix, chore, docs, style, refactor)

@@ -28,7 +28,12 @@ Run all steps in order. Do not skip any step even if there were no code changes.
    - Add entry under current version (or [Unreleased])
    - Format: `- [Added/Changed/Fixed/Removed] description`
 
-5. **Commit and push all changes** (mandatory — never close with uncommitted changes):
+5. **Update `README.md`** if new features were added, word lists changed, or user-facing behaviour changed:
+   - Keep it accurate for new contributors and users
+
+6. **Update `docs/playstore.md`** if release status, version, or store assets changed
+
+7. **Commit and push all changes** (mandatory — never close with uncommitted changes):
    ```
    git add -A
    git commit -m "chore: session close — <brief description of what changed>"
@@ -38,6 +43,6 @@ Run all steps in order. Do not skip any step even if there were no code changes.
    - `chore: session close — update handoff and TODO for v1.2.1`
    - `chore: session close — update CLAUDE.md and close command`
 
-6. **Report `/cost`** for this session
+8. **Report `/cost`** for this session
 
 Confirm with: "Session closed. Handoff written. Safe to /exit."
