@@ -3,6 +3,9 @@
 All notable changes to Wordout are documented here.
 
 ## [Unreleased]
+### Fixed
+- Tutorial overlay layout instability — the card grew/reflowed mid-animation as the legend and "Got it!" button faded in; they now render statically from mount, so only tile colours/letters animate
+- Tutorial overlay had no escape during the animation — "Got it!" now cancels the running sequence and closes immediately whenever it's tapped, including mid-animation
 
 ## [1.5.1] — 2026-07-04
 ### Added

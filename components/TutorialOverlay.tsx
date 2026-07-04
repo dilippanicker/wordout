@@ -23,7 +23,6 @@ const LETTER_TYPE_MS = 200;
 const PRE_ENTER_PAUSE_MS = 500;
 const TILE_STAGGER_MS = 180; // matches GameBoard's STAGGER
 const FLIP_ROW_MS = TILE_STAGGER_MS * (COLS - 1) + 450; // matches GameBoard's FLIP_DONE_MS formula
-const LEGEND_FADE_MS = 400;
 const AFTER_RAISE_PAUSE_MS = 1500;
 const AFTER_CLOUT_PAUSE_MS = 1500;
 const WIN_FLASH_MS = 400;
@@ -42,17 +41,13 @@ export function TutorialOverlay({ onClose }: TutorialOverlayProps) {
   const [typedText, setTypedText] = useState('');
   const [submittedCount, setSubmittedCount] = useState(0);
   const [flippingRow, setFlippingRow] = useState(-1);
-  const [showLegend, setShowLegend] = useState(false);
-  const [showEnd, setShowEnd] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
 
   const cancelledRef = useRef(false);
   const backdropOpacity = useSharedValue(0);
-  const legendOpacity = useSharedValue(0);
   const winFlashScale = useSharedValue(1);
 
   const backdropStyle = useAnimatedStyle(() => ({ opacity: backdropOpacity.value }));
-  const legendStyle = useAnimatedStyle(() => ({ opacity: legendOpacity.value }));
   const winFlashStyle = useAnimatedStyle(() => ({ transform: [{ scale: winFlashScale.value }] }));
 
   useEffect(() => {
@@ -88,8 +83,6 @@ export function TutorialOverlay({ onClose }: TutorialOverlayProps) {
       setFlippingRow(-1);
 
       if (row === 0) {
-        setShowLegend(true);
-        legendOpacity.value = withTiming(1, { duration: LEGEND_FADE_MS });
         await wait(AFTER_RAISE_PAUSE_MS);
       } else if (row === 1) {
         await wait(AFTER_CLOUT_PAUSE_MS);
@@ -102,7 +95,6 @@ export function TutorialOverlay({ onClose }: TutorialOverlayProps) {
       }
       if (cancelledRef.current) return;
     }
-    setShowEnd(true);
   }
 
   function skip() {
@@ -111,13 +103,11 @@ export function TutorialOverlay({ onClose }: TutorialOverlayProps) {
     setTypedText('');
     setSubmittedCount(SCRIPT.length);
     setFlippingRow(-1);
-    setShowLegend(true);
-    legendOpacity.value = 1;
     winFlashScale.value = 1;
-    setShowEnd(true);
   }
 
   function handleGotIt() {
+    cancelledRef.current = true;
     if (dontShowAgain) useSettingsStore.getState().setTutorialSeen(true);
     onClose();
   }
@@ -157,44 +147,40 @@ export function TutorialOverlay({ onClose }: TutorialOverlayProps) {
 
             <View style={styles.board}>{rows}</View>
 
-            {showLegend && (
-              <Animated.View style={[styles.legend, { backgroundColor: dark ? '#2c2c2e' : '#f7f7f8' }, legendStyle]}>
-                <View style={styles.legendRow}>
-                  <Text style={styles.legendEmoji}>🟩</Text>
-                  <Text style={[styles.legendText, { color: colors.text }]}>Right letter, right position</Text>
-                </View>
-                <View style={styles.legendRow}>
-                  <Text style={styles.legendEmoji}>🟨</Text>
-                  <Text style={[styles.legendText, { color: colors.text }]}>Right letter, wrong position</Text>
-                </View>
-                <View style={styles.legendRow}>
-                  <Text style={styles.legendEmoji}>⬛</Text>
-                  <Text style={[styles.legendText, { color: colors.text }]}>Not in the word</Text>
-                </View>
-              </Animated.View>
-            )}
-
-            {showEnd && (
-              <View style={styles.endRow}>
-                <Pressable
-                  style={styles.checkboxRow}
-                  onPress={(e) => { e.stopPropagation?.(); setDontShowAgain(v => !v); }}
-                  hitSlop={8}
-                >
-                  <View style={[styles.checkbox, dontShowAgain && styles.checkboxChecked]}>
-                    {dontShowAgain && <Ionicons name="checkmark" size={14} color="#ffffff" />}
-                  </View>
-                  <Text style={[styles.checkboxLabel, { color: colors.text }]}>Don't show again</Text>
-                </Pressable>
-
-                <Pressable
-                  style={styles.gotItButton}
-                  onPress={(e) => { e.stopPropagation?.(); handleGotIt(); }}
-                >
-                  <Text style={styles.gotItText}>Got it!</Text>
-                </Pressable>
+            <View style={[styles.legend, { backgroundColor: dark ? '#2c2c2e' : '#f7f7f8' }]}>
+              <View style={styles.legendRow}>
+                <Text style={styles.legendEmoji}>🟩</Text>
+                <Text style={[styles.legendText, { color: colors.text }]}>Right letter, right position</Text>
               </View>
-            )}
+              <View style={styles.legendRow}>
+                <Text style={styles.legendEmoji}>🟨</Text>
+                <Text style={[styles.legendText, { color: colors.text }]}>Right letter, wrong position</Text>
+              </View>
+              <View style={styles.legendRow}>
+                <Text style={styles.legendEmoji}>⬛</Text>
+                <Text style={[styles.legendText, { color: colors.text }]}>Not in the word</Text>
+              </View>
+            </View>
+
+            <View style={styles.endRow}>
+              <Pressable
+                style={styles.checkboxRow}
+                onPress={(e) => { e.stopPropagation?.(); setDontShowAgain(v => !v); }}
+                hitSlop={8}
+              >
+                <View style={[styles.checkbox, dontShowAgain && styles.checkboxChecked]}>
+                  {dontShowAgain && <Ionicons name="checkmark" size={14} color="#ffffff" />}
+                </View>
+                <Text style={[styles.checkboxLabel, { color: colors.text }]}>Don't show again</Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.gotItButton}
+                onPress={(e) => { e.stopPropagation?.(); handleGotIt(); }}
+              >
+                <Text style={styles.gotItText}>Got it!</Text>
+              </Pressable>
+            </View>
           </Pressable>
         </View>
       </Pressable>

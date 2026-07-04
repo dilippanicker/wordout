@@ -1,8 +1,18 @@
 # Wordout — Master TODO
-**Updated: 2026-07-04 (session 15)**
+**Updated: 2026-07-04 (session 17)**
 **Current version: v1.5.1 (versionCode 22)**
 
 ---
+
+## ✅ Session 17 — Completed 2026-07-04
+
+- ✅ **Tutorial overlay layout instability fixed** (`components/TutorialOverlay.tsx`) — legend, "Don't show again" checkbox, and "Got it!" button now render statically from mount (removed `showLegend`/`showEnd` gating + `legendOpacity` fade-in); only tile colours/letters animate progressively, so the card no longer grows/reflows mid-sequence
+- ✅ **Tutorial overlay escape-during-animation fixed** — "Got it!" now cancels the running sequence (`cancelledRef.current = true`) and closes immediately whenever tapped, including mid-animation, instead of only working once the sequence reached its end state
+- ✅ **Verified live in Chromium** via a scratch Playwright driver against the running Expo web dev server — confirmed static layout at frame one, mid-animation tap-to-close, no console errors, and no regression to backdrop tap-to-skip
+
+## 🔴 NEW — Follow-up from Session 17
+
+- [ ] **Device regression test** of both tutorial fixes on a real Android device — verification this session was web-only (headless Chromium)
 
 ## ✅ Session 15 — Completed 2026-07-04
 

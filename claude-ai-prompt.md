@@ -12,8 +12,8 @@ to restore full project context instantly.
 
 - **Claude Code (CC)** = Developer
   - Implements specs in the actual codebase
-  - Updates session-handoff.md, TODO.md, CHANGELOG.md after each session
-  - Cannot switch models programmatically — reminds user to run /model haiku at session start
+  - Updates session-handoff.md, TODO.md, CHANGELOG.md, README.md, docs/playstore.md, CLAUDE.md after each session via /close
+  - Cannot switch models programmatically
 
 ## Starting a new session
 1. Open claude.ai → new chat
@@ -33,13 +33,14 @@ to restore full project context instantly.
 
 ## Who I am
 - **Dilip Panicker**, solo developer, Bangalore (Chikhuraganahalli, Clover Fields)
-- **Onglipo Labs** — my indie dev brand
+- **Onglipo Labs** — my indie dev brand ("Ohm Shanti Ω Ω Ω" — pun on electrical unit Ohm, Om Shanti mantra, and wife Shanti's name)
 - Stack: Python, React Native, TypeScript, bash, vim
 - Hardware: Samsung S24 Ultra (192.168.68.107), LG Gram SuperSlim (192.168.68.113, Ubuntu 24.04 + Windows 11)
 - Server: DigitalOcean VPS, Ubuntu, Nginx/Apache, git-webhook systemd deploys
 - Git identity: dilip.panicker@gmail.com
-- ADB over WiFi: `adb-phone` alias connects to S24 Ultra at 192.168.68.107:5555
+- ADB over WiFi: connects to S24 Ultra at 192.168.68.107:5555
 - After reboot, reconnect ADB via USB once: `adb tcpip 5555`, then disconnect cable
+- tmux alias: `tcc='tmux new-session -A -s cc'`; tmux copy: Ctrl+B [ → Space to begin selection → navigate → y to yank → Ctrl+B ] to paste; ~/.tmux.conf sets mode-keys vi, history-limit 10000, explicit bind for copy-mode-vi y to copy-selection-and-cancel
 
 ## My Working Style
 - Give me the recommendation first, reasoning after
@@ -56,9 +57,9 @@ to restore full project context instantly.
 3. **I create the repo** — drop files in, CC reads them
 4. **Claude.ai writes** — kickoff CC prompt
 5. **I paste into CC** — CC implements
-6. **CC closes session** — updates session-handoff.md, TODO.md, CHANGELOG.md, commits and pushes via /close
-7. **I paste CC summary here** — you stay in sync, plan next session
-8. **After CC commits** — trigger GitHub Actions build manually from Actions tab
+6. **CC closes session** — updates handoff, TODO, CHANGELOG, CLAUDE.md, README, playstore.md, commits and pushes via /close
+7. **I paste CC summary here** — you update claude-ai-prompt.md, plan next session
+8. **After CC commits** — trigger GitHub Actions build manually: `./wordout.sh build`
 
 **IMPORTANT: CC always commits at end of session via /close. Never commit manually before CC closes. Build triggers only after CC has committed.**
 
@@ -69,8 +70,8 @@ When CC deviates from spec, bring it here before accepting.
 ```
 .claude/
   commands/
-    open.md      — session start ritual (model switch reminder, handoff read, objective)
-    close.md     — session end ritual (update handoff, TODO, CHANGELOG, commit, push, report cost)
+    open.md      — session start ritual (model reminder, advisor setup, handoff read, objective)
+    close.md     — session end ritual (update handoff, TODO, CHANGELOG, CLAUDE.md, README, playstore.md, commit, push, report cost)
     review.md    — pre-commit review checklist
   session-handoff.md  — auto-updated by /close
 
@@ -80,19 +81,22 @@ CHANGELOG.md     — version history, updated each session
 ```
 
 ## CC Model Selection (cost optimization)
-- CC cannot switch models programmatically — it reminds user to run /model haiku at session start
-- User switches manually when CC recommends
-- Use Sonnet for: complex logic, animations, hard bugs, architecture, store changes
+- CC cannot switch models programmatically — user switches manually via /model picker
+- Advisor setup: run /advisor and select Opus 4.8 — this is the ONLY correct way (claude config set advisorModel does NOT work)
+- Current recommended setup: Sonnet 5 as executor + Opus 4.8 as advisor
+- Use Sonnet 5 for: complex logic, animations, hard bugs, architecture, store changes
 - Use Haiku for: simple edits, config, file changes, cleanup, docs
-- CC announces recommended switches: "Switching to Sonnet recommended — animation logic is complex"
+- Advisor (Opus 4.8) engages automatically at key moments — no manual trigger needed
 
 ## Build & Deploy (Wordout)
-- **Primary build: GitHub Actions** — trigger manually from Actions tab: `gh workflow run "Build APK"`
+- **Primary build: GitHub Actions** — `./wordout.sh build` or `gh workflow run "Build APK"`
 - Do NOT use local EAS builds — Java/Gradle environment issues on LG Gram
 - Build takes ~45 min, produces APK + AAB, creates GitHub Release automatically
-- Quick install on device: `wget -O ~/Downloads/wordout.apk https://github.com/dilippanicker/wordout/releases/latest/download/wordout.apk && adb install -r ~/Downloads/wordout.apk`
-- Web testing: `npx expo start --web` (no --clear unless stale cache suspected)
+- Install on device: `./wordout.sh install` (downloads APK + AAB to releases/, installs APK)
+- Push already-downloaded APK: `./wordout.sh push`
+- Web testing: `./wordout.sh web` (cache cleared) or `./wordout.sh web-dirty`
 - Always web test first, then device test, then build for Play Store
+- wordout.sh lives in ~/repos/wordout/ — commands: build, status, logs, watch, install, push, fetch-aab, web, web-dirty, dev-android, adb-connect, build-install
 
 ---
 
@@ -103,15 +107,15 @@ CHANGELOG.md     — version history, updated each session
 - Repo: https://github.com/dilippanicker/wordout
 - Package: com.dilippanicker.wordout
 - Tech: Expo SDK 56, React Native, TypeScript, Zustand, EAS Build
+- Tagline: "Your daily word fix · Free"
 
 **Play Store status:**
-- Publisher: Onglipo, identity verified
-- Internal + closed testing live, 12/12 testers opted in ✅
+- Publisher: Onglipo Labs, identity verified
+- Closed testing live (Alpha), v1.4.1 (versionCode 20) active
 - Production access: ~July 10 2026
-- Last uploaded to Play Store: versionCode 4 (v1.0.3)
-- Next upload: v1.2.8 (versionCode 16) AAB — ready to upload to closed testing
+- 12 testers opted in, notifications sent for v1.4.1
 
-**Current version: v1.2.8 (versionCode 16)**
+**Current version: v1.5.1 (versionCode 22)**
 
 **Screen zones (naming convention — use these names everywhere):**
 - **Header** — top bar: 🇬🇧 🐣 ↺ | ◄ Wordout ► | ☽ ⚙ ?
@@ -119,77 +123,89 @@ CHANGELOG.md     — version history, updated each session
 - **Board** — tile grid
 - **Keyboard** — on-screen keyboard
 - **Footer** — ⏳ tries left / new game button / 📊 stats
+- **Toast** — floating message above Keyboard, auto-dismisses
 
 **Modes:** Wordout(1), 2-out(2), 3-out(3), 4-out(4), 6-out(6), 8-out(8)
 **Tile colours:** green #5BA75A, yellow #C9A227, dark #3a3a3a
 **Icon:** parchment (#FFF8EE) bg, RAISE/CLOUT tiles hinting FROST (easter egg)
-**Feature graphic:** 1024×500, dark bg, RAISE/CLOUT tiles left, selling points right
+**Feature graphic:** 1024×500 SVG/PNG, dark bg, STOMP solve board left (PASTE/SPORT/STOOL/NYMPH/STO😊P), selling points right. Tagline: "Your daily word fix · Free" in yellow italic.
 
 **Emoji convention (strict — do not mix):**
 - 🐣 easy mode
 - 💪 hard mode
 - 💀 extreme mode
-- 🔥 daily streak only (consecutive days solving daily word)
+- 🔥 daily streak (per difficulty — 🐣🔥 🔥💪 💪🔥 etc)
 - ⚡ practice streak (consecutive practice wins, resets on loss)
 - 🏆 personal best only
 - 📅 daily mode
-- 🎮 practice mode (replaced ∞ in v1.2.3)
+- 🎮 practice mode
 
-**What's built and working (v1.2.8):**
-- Daily Word mode — one word per day, always Easy difficulty
-- Daily is always Easy — toast shown on change attempt: "Daily is always Easy · Try changing difficulty in Practice"
-- Practice mode — unlimited, random words, all board counts, any difficulty
-- Startup: opens daily Wordout if not yet completed today, else last played mode
-- Ribbon: 📅 Today's · Easy (daily active) | Practice · Easy 🎮 (practice active)
-- Daily completed Ribbon shows: 📅 Next word in HH:MM:SS
-- Header: 🇬🇧 🐣 ↺ | ◄ Wordout ► | ☽ ⚙ ?
-- Solid triangle arrows in header (CSS border-trick, no SVG library)
-- Footer playing: "⏳ N tries left · ? for help" (? for help in green #5BA75A)
-- Footer game over (practice): green ↺ New Game button + 📊
-- Footer game over (daily): 📊 only (countdown in Ribbon)
-- Footer solved board (n-out mid-game): "Board N solved in M ✓"
-- Stats modal: "STATISTICS · Wordout" / "STATISTICS · 4-out" etc.
-- End-of-game celebration overlay: 5s auto-dismiss with green countdown "Closing in 5…4…3…2…1…"
-- Win overlay: "Solved in X/N tries 🐣"
-- Animations: tile fill (every guess), wave (once per board on first solve), celebration overlay (once per game)
-- No re-animation on board revisit — waveShown/celebrationShown flags persisted in stores
-- Hard mode n-out: per-board constraint enforcement (guess accepted if any unsolved board accepts it)
-- Games never cleared without explicit ↺ New Game
-- Practice board resets on difficulty change
-- Difficulty locked on completed game (practice or daily)
-- Extreme mode 💀: maxGuesses = max(3, (5+boardCount)-2)
-- Board indicators: ▶ square (active), ✓ filled square (active+solved), ○ circle (unsolved), ✓ filled circle (solved non-active)
-- ? help icon on every screen and modal
-- Help text in constants/helpContent.ts (edit there, not HelpModal.tsx)
-- Duplicate guess rejection with toast
-- No auto-clear after invalid word shake
-- Tap tile to clear from that position rightward — v1.3
+**What's built and working (v1.5.1):**
 
-**v1.3.0 planned:**
-- Haptic feedback
-- Tap tile to clear rightward, cursor lands there
-- Animated board indicator transitions
-- Maestro smoke tests (critical path automated tests)
+*Core game:*
+- Daily Word mode — three independent daily games per day: Easy 🐣 / Hard 💪 / Extreme 💀
+- Same word for all difficulties, different words per difficulty (Knuth hash seed from UTC midnight timestamp)
+- Daily gate: Win Easy to unlock Hard today; Win Hard to unlock Extreme today
+- Lose Easy → Hard locked today; toast "Easy 🐣 lost, can't play Hard 💪"
+- Lose Hard → Extreme locked today; toast "Hard 💪 lost, can't play Extreme 💀"
+- Difficulty cycle: taps through accessible difficulties only (1 to m rule), always ascending Easy→Hard→Extreme→Easy, silently skips locked
+- Dead-end toast when only one accessible difficulty and it was lost
+- Peek animation after win: difficulty emoji peeks at next level (scale 1.7, 1000ms) then snaps back
+- Play Now button: "💪 Unlocked! Play Now" / "💀 Unlocked! Play Now" in footer after win
+- Startup funnel: Easy not played → open Easy; Easy won + Hard not played → open Hard; Hard won + Extreme not played → open Extreme; else restore last played
+- Practice mode — unlimited, random words, all board counts, any difficulty, snapshot-based switching
+- Practice difficulty switching: snapshots board state, no abandon confirm needed
+- Per-difficulty streaks: 🐣🔥N / 💪🔥N / 💀🔥N
+- Stats modal: Daily tab shows Easy/Hard/Extreme sub-tabs independently; isQuordle check uses gameMode === 'quordle' only (not boardCount)
+- Empty state in stats: "Play your first Easy for stats" etc. when totalGames === 0
+- Stats modal defaults to current active game's mode and difficulty on open (imperative getState() read to avoid rehydration race)
+- Haptic feedback: Medium (correct guess), Warning (wrong guess/hard mode violation), Success (win)
+- Tap tile to clear rightward — cursor lands at tapped position
+- Touch overlay to dismiss celebration early (cancels 5s timer)
+- Celebration overlay: "Closing in 5…4…3…2…1…" auto-dismiss
 
-**v1.3.1 planned:**
-- GitHub Actions → Play Store auto-publish pipeline
+*Tutorial:*
+- First-launch animated tutorial overlay (TutorialOverlay.tsx)
+- Shows RAISE → CLOUT → FROST demo sequence, auto-plays, skippable by tapping backdrop
+- Legend box fades in after RAISE row: 🟩 right position / 🟨 wrong position / ⬛ not in word
+- "Don't show again" checkbox + "Got it!" button
+- tutorialSeen: boolean in settingsStore (default false)
+- Help modal top button: "▶ Watch how to play" — resets tutorialSeen and replays tutorial
 
-**v1.4.0 planned (major architectural release):**
-- Per-difficulty daily games (Easy/Hard/Extreme same word, independent states)
-- Per-difficulty stats breakdown
+*UI/UX:*
+- Settings footer: © 2026 Onglipo Labs. *Ohm Shanti* Ω Ω Ω · MIT License (Ω in #B85C00)
+- Header difficulty emoji in daily mode switches between accessible difficulties
+- Ribbon: "📅 Today's · Easy 🐣" / completed: "📅 Next word in HH:MM:SS 🐣"
+- Stats title: "STATISTICS · Wordout" (single board) / "STATISTICS · 4-out" (multi-board)
+- Hard mode n-out: per-board constraint enforcement
+
+*Word lists (v1.5.0):*
+- Rebuilt from NYT Wordle source (nyt_answers.txt + nyt_guesses.txt) + SOWPODS for UK guesses
+- US: 2,315 answers / 10,484 guesses
+- UK: 2,314 answers / 8,554 guesses (FIBER→FIBRE, METER→METRE, PRIZE→PRISE)
+- 174 words removed (17 blocklist + 157 proper nouns)
+- Regeneration script: `python3 wordlist/regenerate.py`
+- Known issue: CECIL is a proper noun that slipped in — scheduled for cleanup
 
 **Design decisions (locked):**
 - App name: Wordout (not WordOut, not WORDOUT)
-- Mode names: Wordout, 2-out, 3-out, 4-out, 6-out, 8-out (Quadout deprecated)
-- Daily = single board (Wordout only) until v1.4
-- Daily = always Easy until v1.4
+- Mode names: Wordout, 2-out, 3-out, 4-out, 6-out, 8-out
+- Daily = single board (Wordout only)
 - ? help icon top right on every screen/modal — rule
 - Games never cleared without explicit user request
 - Win/loss animations fire only once per game
-- Word count pills removed from Settings footer
 - No difficulty emoji in footer text
 - "Better luck next time" shows only on full game loss, not single board loss
 - Hard mode n-out: per-board constraint, not global
+- Quordle difficulty snapshot deferred to post-user-feedback
+- Multiboard difficulty stats deferred to post-user-feedback (do not implement without explicit request)
+- Web deployment planned but not yet done (npx expo export --platform web → onglipo.in/wordout)
+- Auto-publish to Play Store deferred until after first production release (API access unlocks then)
+
+**Roadmap:**
+- v1.5.x: Bug fixes, wordlist cleanup (CECIL etc)
+- v1.6.0: First-time onboarding tutorial ✅ (done in v1.5.1)
+- Future: Playwright tests (compute daily word from seed independently — no hardcoding), web deployment, auto-publish pipeline, large screen/tablet support
 
 ### SwarDB
 - Definitive Indian film music database — swardb.com
@@ -204,7 +220,7 @@ CHANGELOG.md     — version history, updated each session
 
 ### Gisty
 - Chrome extension for single-click AI page summarisation
-- Status: v1.3.0 live on Chrome Web Store, v1.4.0 pending review
+- Status: v1.4.0 pending Chrome Web Store review
 
 ---
 
@@ -228,7 +244,7 @@ Tell me the idea. I will:
    - TODO.md (tiered task list)
    - CHANGELOG.md (version history)
    - .claude/commands/open.md (model switch reminder + handoff read)
-   - .claude/commands/close.md (update handoff/TODO/CHANGELOG/commit/push/cost)
+   - .claude/commands/close.md (update handoff/TODO/CHANGELOG/README/playstore.md/commit/push/cost)
    - .claude/commands/review.md (project-specific checklist)
    - .claude/session-handoff.md (initial state)
 3. Write kickoff CC prompt with Haiku-safe vs Sonnet task labels
