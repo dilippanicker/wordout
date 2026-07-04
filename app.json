@@ -12,7 +12,7 @@
     },
     "android": {
       "package": "com.dilippanicker.wordout",
-      "versionCode": 22,
+      "versionCode": 23,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFF8EE"
