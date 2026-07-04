@@ -4,6 +4,8 @@
 
 Implemented a first-launch animated tutorial overlay end-to-end (design proposal → confirmation → implementation → browser verification → version bump → release).
 
+**Note:** `/close` was invoked a second time immediately after the first close, with zero code changes in between (`git status` clean, no new commits). This re-run confirmed the working tree was already clean and pushed — nothing below changed as a result. Treat this handoff as still describing Session 15's work.
+
 ---
 
 ## Files Modified
