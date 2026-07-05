@@ -55,7 +55,7 @@ No new feature/bugfix code was written this session — entirely docs + one buil
 
 1. **Device regression test** of the Enter/Backspace swap toggle and ⏎ label on a real Android device — still outstanding from the v1.5.5/v1.5.6 code session; never verified in a live browser or on-device.
 2. **(Low priority, post-1.5.6-upload)** Wire `DAILY_PROGRESSION` (`constants/helpContent.ts`) into `HelpModal.tsx` — text confirmed accurate, just needs a UI section.
-3. No Play Store upload has actually happened for v1.5.6 yet — CLAUDE.md's Play Store section states current *testing-track* reality per explicit user instruction, but production upload/promotion is still a manual step outside this repo.
+3. v1.5.6 is already live on the closed-testing track (per CLAUDE.md's Play Store section) — what's still pending is promotion to production, expected ~July 10 2026, a manual step outside this repo.
 
 ---
 
