@@ -2,6 +2,13 @@
 
 All notable changes to Wordout are documented here.
 
+## [1.5.6] — 2026-07-05
+### Fixed
+- Enter key was typed as a literal "⏎" character into the board instead of submitting — functional key value now stays "ENTER" internally, with "⏎" used only for display
+- Removed leftover green border/highlight on the Enter key that should have been reverted with the label change
+- "Enter Key on Right" setting relabeled to "Swap ⏎ and ⌫ positions" with its now-redundant subtitle removed
+- Default for the swap setting corrected to OFF (⏎ on the right, the natural position) — toggling ON now correctly swaps ⏎ to the left
+
 ## [1.5.5] — 2026-07-05
 ### Changed
 - Enter key label changed from "ENTER" to "⏎" for cleaner visual in the keyboard
