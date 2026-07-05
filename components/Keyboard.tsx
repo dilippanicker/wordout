@@ -50,7 +50,7 @@ export function Keyboard({ onKey, keyStatuses = {}, keyHeight = 60 }: KeyboardPr
   const darkTheme = useSettingsStore(s => s.darkTheme);
   const colorBlindMode = useSettingsStore(s => s.colorBlindMode);
   const enterOnRight = useSettingsStore(s => s.enterOnRight);
-  const ROWS = enterOnRight ? ROWS_ENTER_RIGHT : ROWS_ENTER_LEFT;
+  const ROWS = enterOnRight ? ROWS_ENTER_LEFT : ROWS_ENTER_RIGHT;
 
   return (
     <View style={[styles.keyboard, { height: kbdHeight(keyHeight) }]}>
