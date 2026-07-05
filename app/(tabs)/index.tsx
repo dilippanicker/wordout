@@ -857,7 +857,7 @@ export default function WordleScreen() {
           </Animated.View>
         </View>
 
-        <Keyboard onKey={handleKey} keyStatuses={qKeyStatuses} keyHeight={keyHeight} enterActive={qCurrent.length === 5} />
+        <Keyboard onKey={handleKey} keyStatuses={qKeyStatuses} keyHeight={keyHeight} />
 
         <BottomStrip
           gameStatus={activeGameStatus}
@@ -1006,7 +1006,7 @@ export default function WordleScreen() {
         </Animated.View>
       </View>
 
-      <Keyboard onKey={handleKey} keyStatuses={keyStatuses} keyHeight={keyHeight} enterActive={currentGuess.length === 5} />
+      <Keyboard onKey={handleKey} keyStatuses={keyStatuses} keyHeight={keyHeight} />
 
       <BottomStrip
         gameStatus={activeGameStatus}

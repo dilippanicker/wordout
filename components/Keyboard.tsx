@@ -7,13 +7,17 @@ const noFocus = { tabIndex: -1, onMouseDown: (e: any) => e.preventDefault() };
 const ROWS_ENTER_LEFT = [
   ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
   ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
-  ['⏎', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '⌫'],
+  ['ENTER', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '⌫'],
 ];
 const ROWS_ENTER_RIGHT = [
   ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
   ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
-  ['⌫', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '⏎'],
+  ['⌫', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', 'ENTER'],
 ];
+
+function keyLabel(key: string): string {
+  return key === 'ENTER' ? '⏎' : key;
+}
 
 const ROW_GAP = 8;
 const KBD_PADDING = 6;
@@ -22,7 +26,6 @@ interface KeyboardProps {
   onKey?: (key: string) => void;
   keyStatuses?: Partial<Record<string, TileStatus>>;
   keyHeight?: number;
-  enterActive?: boolean;
 }
 
 function keyBg(status: TileStatus | undefined, dark: boolean, colorBlind: boolean): string {
@@ -43,7 +46,7 @@ export function kbdHeight(keyHeight: number): number {
   return 3 * keyHeight + 3 * ROW_GAP + KBD_PADDING;
 }
 
-export function Keyboard({ onKey, keyStatuses = {}, keyHeight = 60, enterActive = false }: KeyboardProps) {
+export function Keyboard({ onKey, keyStatuses = {}, keyHeight = 60 }: KeyboardProps) {
   const darkTheme = useSettingsStore(s => s.darkTheme);
   const colorBlindMode = useSettingsStore(s => s.colorBlindMode);
   const enterOnRight = useSettingsStore(s => s.enterOnRight);
@@ -55,7 +58,6 @@ export function Keyboard({ onKey, keyStatuses = {}, keyHeight = 60, enterActive 
         <View key={i} style={styles.row}>
           {row.map((key) => {
             const status = keyStatuses[key];
-            const isActiveEnter = key === '⏎' && enterActive;
             return (
               <Pressable
                 {...(noFocus as any)}
@@ -63,14 +65,12 @@ export function Keyboard({ onKey, keyStatuses = {}, keyHeight = 60, enterActive 
                 style={[
                   styles.key,
                   key.length > 1 && styles.wideKey,
-                  isActiveEnter
-                    ? styles.enterActive
-                    : { backgroundColor: keyBg(status, darkTheme, colorBlindMode) },
+                  { backgroundColor: keyBg(status, darkTheme, colorBlindMode) },
                 ]}
                 onPress={() => onKey?.(key)}
               >
-                <Text style={[styles.keyText, isActiveEnter ? styles.enterActiveText : { color: keyTextColor(status, darkTheme) }]}>
-                  {key}
+                <Text style={[styles.keyText, { color: keyTextColor(status, darkTheme) }]}>
+                  {keyLabel(key)}
                 </Text>
               </Pressable>
             );
@@ -105,13 +105,5 @@ const styles = StyleSheet.create({
   keyText: {
     fontSize: 13,
     fontWeight: 'bold',
-  },
-  enterActive: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: '#5BA75A',
-  },
-  enterActiveText: {
-    color: '#5BA75A',
   },
 });
