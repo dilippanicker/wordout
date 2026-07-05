@@ -2,6 +2,11 @@
 
 All notable changes to Wordout are documented here.
 
+## [1.5.5] — 2026-07-05
+### Changed
+- Enter key label changed from "ENTER" to "⏎" for cleaner visual in the keyboard
+- "Enter Key on Right" is now the default for new users — existing users retain their preference via the toggle
+
 ## [1.5.4] — 2026-07-05
 ### Changed
 - Share button hidden in practice mode (single-board and n-out) — share is only meaningful for daily games where everyone plays the same word
