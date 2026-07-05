@@ -1,8 +1,22 @@
 # Wordout — Master TODO
-**Updated: 2026-07-04 (session 17)**
-**Current version: v1.5.1 (versionCode 22)**
+**Updated: 2026-07-05 (session 18)**
+**Current version: v1.5.3 (versionCode 25)**
 
 ---
+
+## ✅ Session 18 — Completed 2026-07-05
+
+- ✅ **N-out keyboard letter status scoping fixed** (`app/(tabs)/index.tsx`) — `deriveQuordleKeyStatuses` now takes a `boardIndex` param and reads only that board's `boardResults`, instead of unioning letter statuses across all boards. Wired to `activeBoard` state, so switching boards (swipe or indicator-dot tap) updates the keyboard to match — mirrors single-board behaviour exactly, since only one board is visible at a time in n-out mode
+- ✅ **`new-game.tsx` route-type error fixed** — `href="/(tabs)/"` → `href="/(tabs)"`; `tsc --noEmit` now fully clean (previously the one known pre-existing error)
+- ✅ **Enter key highlight added** (`components/Keyboard.tsx`) — Enter key shows a green outline (`#5BA75A`, transparent background, green text) once the current guess reaches 5 letters, in both single-board and n-out modes; reverts to normal on submit or backspace. Deliberately a distinct outlined style, not the app's filled "correct" tile green (`#6aaa64`)
+- ✅ Verified all three changes end-to-end in a live browser via the scratch Playwright driver (`/tmp/pw-driver`, outside repo) against the running `npx expo start` web server — confirmed keyboard scoping switches correctly between boards, Enter highlight timing correct at 4/5 letters and after submit, no console errors
+- ✅ Version bumps: v1.5.1 → v1.5.2 (versionCode 24, bundling the keyboard-scoping + new-game.tsx fixes + previous session's tutorial fixes), then v1.5.2 → v1.5.3 (versionCode 25, Enter key highlight) — both pushed to `main`, no builds triggered
+- ✅ CLAUDE.md Known Issues: removed the now-resolved `new-game.tsx` entry; added new "Keyboard Behaviour" section documenting the active-board scoping and `enterActive` prop for future sessions
+
+## 🔴 NEW — Follow-up from Session 18
+
+- [ ] **Device regression test** of the n-out keyboard scoping fix and the Enter key highlight on a real Android device — this session's verification was web-only (headless Chromium via Playwright)
+- [ ] **Trigger GitHub Actions build** for v1.5.3 (versionCode 25) — not triggered this session (version bump + doc updates only)
 
 ## ✅ Session 17 — Completed 2026-07-04
 
