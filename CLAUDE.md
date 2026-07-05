@@ -244,10 +244,9 @@ Before every build, follow exactly:
 
 ## Play Store
 - Publisher: Onglipo, package: `com.dilippanicker.wordout`
-- Internal + closed testing live, 12/12 testers opted in
+- v1.5.6 (versionCode 28) live on closed testing, 12/12 testers opted in
 - Production access: ~July 10 2026
-- Last uploaded: versionCode 4 (v1.0.3) — upload v1.5.6 AAB next
-- See `docs/playstore.md` for setup checklist
+- Upload/release status tracked manually until release — not maintained in docs
 
 ---
 
@@ -273,15 +272,13 @@ Executor handles implementation; advisor engages automatically at key decision p
 - Update `CLAUDE.md` if: new components, changed defaults/behavior, bug fixes affecting usage, new patterns/decisions, or stale info to remove
 - Update `CHANGELOG.md`: new entry under current version, format `- [Added/Changed/Fixed/Removed] description`
 - Update `README.md` also when word lists change (counts, source), in addition to other user-facing changes
-- Update `docs/playstore.md` if release status, version, or assets changed
 - Commit message convention: `chore: session close — <what changed>`
 - **Push policy: commit always; push only when explicitly asked**
 
 ---
 
 ## Known Issues
-- `CECIL` in GB answers list — proper noun (name), violates word list rules; needs removal from `assets/wordlists/answers_en_gb.json`
-- `DAILY_PROGRESSION` export in `constants/helpContent.ts` — unused, ready for HelpModal wiring
+- `DAILY_PROGRESSION` export in `constants/helpContent.ts` — unused; candidate HelpModal section explaining daily difficulty progression
 
 ## StatsModal Behaviour (v1.4.0+)
 - `isQuordle` uses `gameMode === 'quordle'` (see settingsStore rule)

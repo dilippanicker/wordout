@@ -1,8 +1,28 @@
 # Wordout — Master TODO
-**Updated: 2026-07-05 (session 19)**
-**Current version: v1.5.4 (versionCode 26)**
+**Updated: 2026-07-05 (session 20)**
+**Current version: v1.5.6 (versionCode 28)**
 
 ---
+
+## ✅ Session 20 — Completed 2026-07-05
+
+- ✅ **Enter key relabeled to "⏎"** (`components/Keyboard.tsx`) — v1.5.5. Initially changed the key's functional value to the glyph, which broke submit (glyph got typed as a literal character); fixed in v1.5.6 by separating the display label (`keyLabel()`) from the internal key value, which stays `'ENTER'`
+- ✅ **"Enter Key on Right" setting relabeled** to "Swap ⏎ and ⌫ positions" (`app/(tabs)/settings.tsx`), redundant subtitle removed
+- ✅ **`enterOnRight` default and toggle polarity fixed** (`store/settingsStore.ts`, `components/Keyboard.tsx`) — default corrected to `false` (⏎ sits right, the natural position); toggling ON now correctly swaps ⏎ to the left (previously the ternary was inverted and the default was `true`)
+- ✅ **`enterActive` green-outline highlight fully reverted** (`components/Keyboard.tsx`, `app/(tabs)/index.tsx`) — the v1.5.3 feature (green outline + text on Enter once guess hits 5 letters) was removed entirely: prop, both call sites, and styles
+- ✅ CLAUDE.md "Keyboard Behaviour" section corrected — removed the now-false `enterActive` documentation, added accurate notes on the ENTER label/value split and `enterOnRight` polarity
+- ✅ Version bumps: v1.5.4 → v1.5.5 (versionCode 27) → v1.5.6 (versionCode 28)
+- ✅ **GitHub Actions build for v1.5.6 (versionCode 28) succeeded** — run `28749535782` (47m11s); GitHub Release `v1.5.6` published with `wordout.aab` and `wordout.apk` attached
+- ✅ **CLAUDE.md deduped** (~336→302 lines, commit `a072c5b`) — fixed stale Play Store/word-list-path/Model Selection facts, collapsed the daily-gate mechanics to a single source of truth, deleted the fully-shipped "v1.3.0 Features" section (preserving its two still-relevant facts elsewhere)
+- ✅ **Known Issues: `CECIL` line removed** — verified gone from `assets/wordlists/answers_en_gb.json` (fixed by the word list rebuild, `grep` confirms no match)
+- ✅ **Known Issues: `DAILY_PROGRESSION` line reworded** — confirmed it's the daily gate explanation text (`constants/helpContent.ts`); reworded to "unused; candidate HelpModal section explaining daily difficulty progression"
+- ✅ **`docs/playstore.md` deleted** — had drifted stale repeatedly (still showed "v1.2.7 ready to upload" / "last uploaded v1.0.3" as of session 19) since it duplicated state that changes faster than docs get updated. Play Store status is now tracked as a short "current reality" snippet directly in CLAUDE.md's "Play Store" section instead of a separate checklist doc; the `/close` Session lifecycle step and stray references updated to match
+
+## 🔴 NEW — Follow-up from Session 20
+
+- [ ] **Device regression test** of the Enter/Backspace swap toggle and the ⏎ label on a real Android device — v1.5.5/v1.5.6 fixes were not verified in a live browser or device this session
+- [ ] `.claude/session-handoff.md` and this TODO both lagged two versions (1.5.5, 1.5.6) behind CHANGELOG.md before this backfill — no session-close ritual was run for those two version bumps
+- [ ] **(Low priority, post-1.5.6-upload) Wire `DAILY_PROGRESSION` into HelpModal** — text already written and confirmed accurate (`constants/helpContent.ts`), just needs a section added to `HelpModal.tsx`
 
 ## ✅ Session 19 — Completed 2026-07-05
 
@@ -18,7 +38,7 @@
 ## 🔴 NEW — Follow-up from Session 19
 
 - [ ] **Manual/browser verification** of the share changes — this session was typecheck-only (`tsc --noEmit`), no dev server run. Verify: share button absent on practice end-game overlays (single-board and n-out), present and correct on daily end-game overlay
-- [ ] **Trigger GitHub Actions build** for v1.5.4 (versionCode 26) — not triggered this session
+- ✅ **Trigger GitHub Actions build** — superseded; v1.5.5/v1.5.6 shipped before a build was triggered for v1.5.4, so the build triggered in session 20 covers v1.5.6 instead
 - [ ] **`docs/playstore.md` is stale** — still shows "v1.2.7 ready to upload" / "last uploaded v1.0.3"; pre-existing drift, not introduced this session, but needs a real upload pass whenever Play Store publishing is next prioritized
 
 ## ✅ Session 18 — Completed 2026-07-05
