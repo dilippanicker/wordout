@@ -157,7 +157,7 @@ export default function SettingsScreen() {
         <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <SwitchRow label="Dark Theme" value={darkTheme} onChange={setDarkTheme} textColor={colors.text as string} />
           <SwitchRow label="Color Blind Mode" description="High-contrast orange and blue" value={colorBlindMode} onChange={setColorBlindMode} textColor={colors.text as string} />
-          <SwitchRow label="Enter Key on Right" description="Move ⌫ left, ENTER right" value={enterOnRight} onChange={setEnterOnRight} textColor={colors.text as string} last />
+          <SwitchRow label="Swap ⏎ and ⌫ positions" value={enterOnRight} onChange={setEnterOnRight} textColor={colors.text as string} last />
         </View>
 
         {/* ── Footer ────────────────────────────────────────────────── */}
