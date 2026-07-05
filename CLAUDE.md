@@ -82,6 +82,8 @@
 **`statsStore.ts`** — persisted (`wordle-stats`):
 - `byMode: Record<string, BoardStats>` — keyed by `'wordle'` or `String(boardCount)`
 
+`setCurrentGuess()` is defined on all three game stores (`gameStore`, `quordleStore`, `dailyStore`) — powers tap-tile-to-clear-rightward in every mode.
+
 ### Daily Gate Architecture (v1.4.0)
 
 Three independent daily games run each day — Easy, Hard, Extreme — each with a different word:
@@ -110,14 +112,14 @@ Cycle (m = highest reachable index): header difficulty emoji taps through this l
 
 ### Key Design Decisions (locked)
 
-**Daily mode (v1.4.0):**
-- Three independent daily games per day: Easy, Hard, Extreme — different word for each
-- Gate mechanic (accessible-list): cycle through reachable difficulties only. Build list: Easy always; add Hard if Easy won; add Extreme if Hard won. Also include any difficulty already in 'playing'/'completed' state. Wrap within that list — NO gate toasts, NO "Win X first" messages.
-- Footer "Play Now" button: after winning Easy, shows "💪 Unlocked! Play Now" if Hard not started; after winning Hard, shows "💀 Unlocked! Play Now" if Extreme not started
-- Peek animation: after win overlay dismisses, header difficulty emoji briefly scales to next difficulty (🐣→💪 or 💪→💀) and back
-- Three independent daily streaks with missed-day detection via `lastWinDate`
-- Stats modal: per-difficulty sub-tabs (🐣/💪/💀) inside the Daily tab
-- Startup funnel: on mount, routes to next unplayed difficulty (Easy if not started; Hard if Easy won; Extreme if Hard won; else restore persisted)
+**Daily mode (v1.4.0)** — decisions; see "Daily Gate Architecture" above for mechanics:
+- Three independent daily games per day, each a different word
+- Gate via accessible-list cycling only — no gate toasts, no "Win X first" messages
+- Footer surfaces a "Play Now" button for a newly-unlocked difficulty
+- Peek animation previews the next difficulty right after a win
+- Streaks and missed-day detection tracked independently per difficulty
+- Stats modal has per-difficulty sub-tabs
+- Startup funnels to the next unplayed difficulty
 
 **Practice mode:**
 - Unlimited games, freely change difficulty — snapshot-based (no lock, no confirm dialog)
@@ -141,6 +143,7 @@ Cycle (m = highest reachable index): header difficulty emoji taps through this l
 - Green circle + number — correct position letters found
 - Yellow circle + number — yellows also found
 - Green filled circle + ✓ — non-active, solved
+- Rendering is deliberately static (no scale-pop or color-transition animation) — imperceptible at 24×24px; don't re-add
 
 **Footer layout:**
 - Playing: `[⏳ N tries left · ? for help] [📊]`
@@ -183,15 +186,6 @@ Cycle (m = highest reachable index): header difficulty emoji taps through this l
 - Daily: header emoji cycles through accessible difficulties (accessible-list approach, no toasts). Settings difficulty panel applies to practice only when in daily mode.
 - Practice single-board: snapshot-based switch via `gameStore.switchDifficulty(d)`. No lock, no confirm dialog.
 - Quordle: lock if game complete (toast); confirmAbandon if in-progress; resets board on change.
-
-### Startup logic (v1.4.0)
-On app mount:
-1. `checkAndReset()` — ensure daily state is current
-2. Funnel to next unplayed daily difficulty:
-   - Easy `'available'` → open daily Easy
-   - Easy `'completed'` + Hard `'available'` → open daily Hard
-   - Hard `'completed'` + Extreme `'available'` → open daily Extreme
-   - Otherwise → restore persisted `activeWordleMode` + `activeDailyDifficulty`
 
 ### Abandon guard — `utils/abandon.ts`
 `isGameInProgress()` reads stores imperatively. Checks guesses submitted, not just game state existence.
@@ -244,7 +238,7 @@ Before every build, follow exactly:
 - Never update `app.json` before user confirms
 - Never trigger build without confirmed version bump
 
-**Current version:** `1.5.4` (versionCode 26)
+**Current version:** `1.5.6` (versionCode 28)
 
 ---
 
@@ -252,45 +246,18 @@ Before every build, follow exactly:
 - Publisher: Onglipo, package: `com.dilippanicker.wordout`
 - Internal + closed testing live, 12/12 testers opted in
 - Production access: ~July 10 2026
-- Last uploaded: versionCode 4 (v1.0.3) — upload v1.2.7 AAB next
+- Last uploaded: versionCode 4 (v1.0.3) — upload v1.5.6 AAB next
 - See `docs/playstore.md` for setup checklist
-
----
-
-## v1.3.0 Features
-
-### Haptic Feedback
-- Uses `expo-haptics` (built into Expo, no new dependency)
-- **Warning notification** on invalid word or hard mode violation (unified via toast system in `index.tsx`)
-- **Medium impact** on correct guess (green tiles) — fires after `FLIP_DONE_MS` in `GameBoard`
-- **Success notification** on game win (celebration overlay in `index.tsx`)
-- Gracefully degrades on web (no-op)
-
-### Tap Tile to Clear Rightward
-- Filled tiles in current guess are pressable (via `Tile` component's `onPress` prop)
-- Tap clears tile at position + all tiles to the right: `setCurrentGuess(guess.slice(0, col))`
-- New `setCurrentGuess` method added to all three game stores (gameStore, quordleStore, dailyStore)
-- Works in single-board (Wordout), multi-board (Quordle), and daily modes
-- Cursor position implicit: new guess length determines where typing resumes
-
-### Board Indicators
-- Extracted to `components/BoardIndicator.tsx` (static rendering)
-- Initially implemented scale pop (1.0 → 1.1 → 1.0) + 500ms color animations
-- **Decision:** Reverted to static rendering — at 24×24px size, animations imperceptible even with pop effect
-- Static indicators clean, immediate visual feedback sufficient
 
 ---
 
 ## Model Selection
 
-CC uses Haiku as executor with Opus as advisor. Set up once at session start:
+Pattern: current-gen mid-tier model as executor, Opus-class advisor. Verify both at session start via the `/model` and `/advisor` checkmarks (current setup, non-binding example: Sonnet 5 + Opus 4.8).
 
-1. `/model` → select `claude-haiku-4-5-20251001`
-2. `/advisor` → select `Opus 4.8` and confirm it shows a checkmark
+**Important:** `claude config set advisorModel` does NOT work — the only correct way to enable the advisor is via the `/advisor` command picker in the session.
 
-**Important:** `claude config set advisorModel` does NOT work — the only correct way to enable the advisor is via the `/advisor` command picker in the session. The advisor means Opus is consulted automatically at key moments (before writing, before committing to an approach, when stuck, before declaring done). No manual model switching needed.
-
-Cost awareness: Haiku as executor keeps costs low; Opus advisor only engages when needed. Run `/compact` at 50%+ context.
+Executor handles implementation; advisor engages automatically at key decision points (before writing, before committing to an approach, when stuck, before declaring done). Run `/compact` at 50%+ context.
 
 ---
 
@@ -313,18 +280,20 @@ Cost awareness: Haiku as executor keeps costs low; Opus advisor only engages whe
 ---
 
 ## Known Issues
-- `CECIL` in GB answers list — proper noun (name), violates word list rules; needs removal from `assets/wordlists/answers_en_us/gb.json`
+- `CECIL` in GB answers list — proper noun (name), violates word list rules; needs removal from `assets/wordlists/answers_en_gb.json`
 - `DAILY_PROGRESSION` export in `constants/helpContent.ts` — unused, ready for HelpModal wiring
 
 ## StatsModal Behaviour (v1.4.0+)
-- `isQuordle` uses `gameMode === 'quordle'` only — never `boardCount > 1` (default is 4)
+- `isQuordle` uses `gameMode === 'quordle'` (see settingsStore rule)
 - Daily/Practice tabs are local state (`modalModeTab`), synced imperatively via `useDailyStore.getState()` on `visible → true` — does NOT write back to store
 - Difficulty sub-tab (`dailyDiffTab`) similarly synced from `activeDailyDifficulty` on open
 - Empty state shown when `totalGames === 0`: daily uses difficulty label ("Easy/Hard/Extreme"), practice uses board name ("Wordout/2-out/…")
 
-## Keyboard Behaviour (`components/Keyboard.tsx`, v1.5.3+)
+## Keyboard Behaviour (`components/Keyboard.tsx`, v1.5.6+)
 - `deriveKeyStatuses(guesses)` (single-board) and `deriveQuordleKeyStatuses(guesses, boardIndex)` (n-out, `app/(tabs)/index.tsx`) both fold letter statuses by priority (correct > present > absent). The n-out version takes an explicit `boardIndex` and reads only `guess.boardResults[boardIndex]` — **scoped to the currently active board only, never a union across boards.** Since only one board is visible at a time in n-out mode (unlike Quordle/Octordle showing all boards simultaneously), the keyboard mirrors single-board behavior exactly, keyed off `activeBoard` state. Switching boards (swipe via `onMomentumScrollEnd`, or tapping a `BoardIndicator` dot via `scrollTo(i)`) both update `activeBoard`, so the keyboard re-derives and updates automatically.
-- `Keyboard` accepts `enterActive?: boolean` — when true, the `ENTER` key overrides its normal status styling with a green outline (`borderWidth: 2, borderColor: '#5BA75A'`, transparent background) and green text, instead of the app's usual filled "correct" tile green (`#6aaa64`) — a deliberate distinct color, not reused from `keyBg`'s `'correct'` case. Callers pass `enterActive={currentGuess.length === 5}` (or `qCurrent.length === 5` for n-out) — wire this at every `<Keyboard>` call site if new ones are added.
+- **Enter key is always `'ENTER'` internally** — `keyLabel(key)` maps it to the display glyph `'⏎'` only at render time (`Text` content), so `onKey`/`keyStatuses` lookups keyed on `'ENTER'` stay correct. Do not change the key's functional value to `'⏎'` — v1.5.5 did this and it broke submit (the glyph got typed as a literal character); fixed in v1.5.6.
+- **No `enterActive` prop** — the green-outline highlight on 5-letter guesses (added v1.5.3) was fully reverted in v1.5.6, including the prop, both call sites, and its styles. Do not re-add it without a fresh explicit request.
+- `enterOnRight: boolean` (`settingsStore`, default `false`) — settings label "Swap ⏎ and ⌫ positions". `false` (default) renders `ROWS_ENTER_RIGHT` (⌫ left, ⏎ right — the natural position); `true` renders `ROWS_ENTER_LEFT` (⏎ left, ⌫ right, swapped). Toggle polarity was inverted until v1.5.6 — verify against this description before "fixing" it again.
 
 ## Share Behaviour (`app/(tabs)/index.tsx`, v1.5.4+)
 - **Share is daily-only** — the share button (in the shared `endGameOverlay`, used by both single-board and n-out layouts) is gated on `isDaily`, hiding it for every practice game including quordle/n-out. Rationale: share is only meaningful when everyone played the same word, which is true only for daily games. Deliberately not gated on the raw `activeWordleMode === 'daily'` flag, since that alone doesn't account for quordle (`isDaily = !isQuordle && activeWordleMode === 'daily'` already handles this correctly).
