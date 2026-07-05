@@ -4,5 +4,5 @@ import { Redirect } from 'expo-router';
 // The tab's tabPress listener always calls e.preventDefault() so the
 // user never actually lands here — navigation goes to index instead.
 export default function NewGameScreen() {
-  return <Redirect href="/(tabs)/" />;
+  return <Redirect href="/(tabs)" />;
 }

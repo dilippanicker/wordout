@@ -48,16 +48,16 @@ function deriveKeyStatuses(guesses: GuessResult[]): Record<string, TileStatus> {
   return map;
 }
 
-function deriveQuordleKeyStatuses(guesses: QuordleGuess[]): Record<string, TileStatus> {
+function deriveQuordleKeyStatuses(guesses: QuordleGuess[], boardIndex: number): Record<string, TileStatus> {
   const map: Record<string, TileStatus> = {};
   for (const guess of guesses) {
+    const results = guess.boardResults[boardIndex];
+    if (!results) continue;
     for (let i = 0; i < 5; i++) {
       const letter = guess.word[i];
-      for (let b = 0; b < guess.boardResults.length; b++) {
-        const result = guess.boardResults[b][i] as TileStatus;
-        if (!map[letter] || STATUS_PRIORITY[result] > STATUS_PRIORITY[map[letter]]) {
-          map[letter] = result;
-        }
+      const result = results[i] as TileStatus;
+      if (!map[letter] || STATUS_PRIORITY[result] > STATUS_PRIORITY[map[letter]]) {
+        map[letter] = result;
       }
     }
   }
@@ -751,7 +751,7 @@ export default function WordleScreen() {
   // ── Multi-board layout ───────────────────────────────────────────────────
   if (isQuordle) {
     const { guesses: qGuesses, currentGuess: qCurrent, solvedBoards, boardCount: bc, maxGuesses } = quordleStore;
-    const qKeyStatuses = deriveQuordleKeyStatuses(qGuesses);
+    const qKeyStatuses = deriveQuordleKeyStatuses(qGuesses, activeBoard);
     const solvedCount = solvedBoards.filter(Boolean).length;
 
     const qAvailH = totalH - KBD_H - DOTS_H;

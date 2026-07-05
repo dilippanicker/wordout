@@ -244,7 +244,7 @@ Before every build, follow exactly:
 - Never update `app.json` before user confirms
 - Never trigger build without confirmed version bump
 
-**Current version:** `1.5.1` (versionCode 22)
+**Current version:** `1.5.2` (versionCode 24)
 
 ---
 
@@ -295,7 +295,6 @@ Cost awareness: Haiku as executor keeps costs low; Opus advisor only engages whe
 ---
 
 ## Known Issues
-- `new-game.tsx`: route path type mismatch on `<Redirect href>` (non-blocking)
 - `CECIL` in GB answers list — proper noun (name), violates word list rules; needs removal from `assets/wordlists/answers_en_us/gb.json`
 - `DAILY_PROGRESSION` export in `constants/helpContent.ts` — unused, ready for HelpModal wiring
 

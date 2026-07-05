@@ -2,10 +2,12 @@
 
 All notable changes to Wordout are documented here.
 
-## [Unreleased]
+## [1.5.2] — 2026-07-05
 ### Fixed
 - Tutorial overlay layout instability — the card grew/reflowed mid-animation as the legend and "Got it!" button faded in; they now render statically from mount, so only tile colours/letters animate
 - Tutorial overlay had no escape during the animation — "Got it!" now cancels the running sequence and closes immediately whenever it's tapped, including mid-animation
+- N-out keyboard now shows only the active board's letter statuses instead of the union across all boards — matches single-board behaviour and updates when the active board is switched
+- `new-game.tsx` route-type mismatch on `<Redirect href>` resolved
 
 ## [1.5.1] — 2026-07-04
 ### Added
