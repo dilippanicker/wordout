@@ -1,8 +1,25 @@
 # Wordout — Master TODO
-**Updated: 2026-07-05 (session 18)**
-**Current version: v1.5.3 (versionCode 25)**
+**Updated: 2026-07-05 (session 19)**
+**Current version: v1.5.4 (versionCode 26)**
 
 ---
+
+## ✅ Session 19 — Completed 2026-07-05
+
+- ✅ **GitHub Actions build caching added** (`.github/workflows/build-apk.yml`) — explicit Gradle (`~/.gradle`) and npm (`~/.npm`) cache steps moved to right after checkout, before Setup Node/Java/Android SDK; removed the duplicate Gradle cache step and the redundant `cache: npm` on `setup-node`
+- ✅ **`/close` command genericised** (`.claude/commands/close.md`) — step 6 no longer hardcodes `docs/playstore.md`, now reads "any project-specific deployment or release documentation"
+- ✅ **Share button hidden in practice mode** (`app/(tabs)/index.tsx`) — gated on `isDaily` (not raw `activeWordleMode`) so it's hidden for single-board practice AND quordle/n-out practice, since quordle can never be `isDaily` under current architecture. User confirmed this is intended even though it makes the n-out share fixes below currently unreachable via the UI
+- ✅ **N-out share header max-guesses bug fixed** — `buildQuordleShareText` now takes a `difficulty` param and uses `maxGuessesForDifficulty(difficulty, bc)` instead of a hardcoded `Math.min(13, 5+bc)` (was showing "3-out 6/8" instead of "3-out 6/6" on Extreme)
+- ✅ **N-out share header difficulty emoji added** — header now reads e.g. `"3-out 💀 6/6"`
+- ✅ CLAUDE.md: added new "Share Behaviour" section documenting the `isDaily` gate rationale and which share-builder functions are/aren't fixed and why
+- ✅ README.md: "Share results" bullet qualified as daily-only
+- ✅ Version bump v1.5.3 → v1.5.4 (versionCode 26)
+
+## 🔴 NEW — Follow-up from Session 19
+
+- [ ] **Manual/browser verification** of the share changes — this session was typecheck-only (`tsc --noEmit`), no dev server run. Verify: share button absent on practice end-game overlays (single-board and n-out), present and correct on daily end-game overlay
+- [ ] **Trigger GitHub Actions build** for v1.5.4 (versionCode 26) — not triggered this session
+- [ ] **`docs/playstore.md` is stale** — still shows "v1.2.7 ready to upload" / "last uploaded v1.0.3"; pre-existing drift, not introduced this session, but needs a real upload pass whenever Play Store publishing is next prioritized
 
 ## ✅ Session 18 — Completed 2026-07-05
 

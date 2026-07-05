@@ -23,7 +23,7 @@ Built automatically on every release via GitHub Actions.
 - **Color blind mode** — high-contrast orange and blue
 - **Dark / light theme**
 - **Stats tracking** with guess distribution per game mode
-- **Share results** as emoji grid
+- **Share results** as emoji grid (daily games only — everyone plays the same word)
 - **Win / lose animations** with haptic feedback
 - **Haptic feedback** on correct guesses, wrong guesses, and wins
 - **Tap any tile to clear rightward** — cursor lands at tapped position
