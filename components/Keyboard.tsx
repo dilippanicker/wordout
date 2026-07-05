@@ -7,12 +7,12 @@ const noFocus = { tabIndex: -1, onMouseDown: (e: any) => e.preventDefault() };
 const ROWS_ENTER_LEFT = [
   ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
   ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
-  ['ENTER', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '⌫'],
+  ['⏎', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '⌫'],
 ];
 const ROWS_ENTER_RIGHT = [
   ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
   ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
-  ['⌫', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', 'ENTER'],
+  ['⌫', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '⏎'],
 ];
 
 const ROW_GAP = 8;
@@ -55,7 +55,7 @@ export function Keyboard({ onKey, keyStatuses = {}, keyHeight = 60, enterActive 
         <View key={i} style={styles.row}>
           {row.map((key) => {
             const status = keyStatuses[key];
-            const isActiveEnter = key === 'ENTER' && enterActive;
+            const isActiveEnter = key === '⏎' && enterActive;
             return (
               <Pressable
                 {...(noFocus as any)}

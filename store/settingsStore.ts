@@ -47,7 +47,7 @@ export const useSettingsStore = create<SettingsState>()(
       difficulty: 'easy',
       darkTheme: false,
       colorBlindMode: false,
-      enterOnRight: false,
+      enterOnRight: true,
       gameMode: 'wordle',
       boardCount: 4,
       tutorialSeen: false,
