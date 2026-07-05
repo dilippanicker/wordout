@@ -22,6 +22,7 @@ interface KeyboardProps {
   onKey?: (key: string) => void;
   keyStatuses?: Partial<Record<string, TileStatus>>;
   keyHeight?: number;
+  enterActive?: boolean;
 }
 
 function keyBg(status: TileStatus | undefined, dark: boolean, colorBlind: boolean): string {
@@ -42,7 +43,7 @@ export function kbdHeight(keyHeight: number): number {
   return 3 * keyHeight + 3 * ROW_GAP + KBD_PADDING;
 }
 
-export function Keyboard({ onKey, keyStatuses = {}, keyHeight = 60 }: KeyboardProps) {
+export function Keyboard({ onKey, keyStatuses = {}, keyHeight = 60, enterActive = false }: KeyboardProps) {
   const darkTheme = useSettingsStore(s => s.darkTheme);
   const colorBlindMode = useSettingsStore(s => s.colorBlindMode);
   const enterOnRight = useSettingsStore(s => s.enterOnRight);
@@ -54,6 +55,7 @@ export function Keyboard({ onKey, keyStatuses = {}, keyHeight = 60 }: KeyboardPr
         <View key={i} style={styles.row}>
           {row.map((key) => {
             const status = keyStatuses[key];
+            const isActiveEnter = key === 'ENTER' && enterActive;
             return (
               <Pressable
                 {...(noFocus as any)}
@@ -61,11 +63,13 @@ export function Keyboard({ onKey, keyStatuses = {}, keyHeight = 60 }: KeyboardPr
                 style={[
                   styles.key,
                   key.length > 1 && styles.wideKey,
-                  { backgroundColor: keyBg(status, darkTheme, colorBlindMode) },
+                  isActiveEnter
+                    ? styles.enterActive
+                    : { backgroundColor: keyBg(status, darkTheme, colorBlindMode) },
                 ]}
                 onPress={() => onKey?.(key)}
               >
-                <Text style={[styles.keyText, { color: keyTextColor(status, darkTheme) }]}>
+                <Text style={[styles.keyText, isActiveEnter ? styles.enterActiveText : { color: keyTextColor(status, darkTheme) }]}>
                   {key}
                 </Text>
               </Pressable>
@@ -101,5 +105,13 @@ const styles = StyleSheet.create({
   keyText: {
     fontSize: 13,
     fontWeight: 'bold',
+  },
+  enterActive: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: '#5BA75A',
+  },
+  enterActiveText: {
+    color: '#5BA75A',
   },
 });

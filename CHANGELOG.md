@@ -2,6 +2,10 @@
 
 All notable changes to Wordout are documented here.
 
+## [1.5.3] — 2026-07-05
+### Added
+- Enter key highlights with a green outline and green text once the current guess reaches 5 letters, in both single-board and n-out modes — reverts to normal on submit or when a letter is removed
+
 ## [1.5.2] — 2026-07-05
 ### Fixed
 - Tutorial overlay layout instability — the card grew/reflowed mid-animation as the legend and "Got it!" button faded in; they now render statically from mount, so only tile colours/letters animate
