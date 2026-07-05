@@ -2,6 +2,14 @@
 
 All notable changes to Wordout are documented here.
 
+## [1.5.4] — 2026-07-05
+### Changed
+- Share button hidden in practice mode (single-board and n-out) — share is only meaningful for daily games where everyone plays the same word
+
+### Fixed
+- N-out share header showed wrong max guesses on Extreme difficulty (e.g. "3-out 6/8" instead of "3-out 6/6") — now uses `maxGuessesForDifficulty` instead of a hardcoded formula
+- N-out share header missing difficulty emoji — now shows e.g. "3-out 💀 6/6"
+
 ## [1.5.3] — 2026-07-05
 ### Added
 - Enter key highlights with a green outline and green text once the current guess reaches 5 letters, in both single-board and n-out modes — reverts to normal on submit or when a letter is removed
