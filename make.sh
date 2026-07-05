@@ -1,6 +1,6 @@
 #!/bin/bash
 # Wordout dev helper script
-# Usage: ./wordout.sh <command>
+# Usage: ./make.sh <command>
 
 set -e
 
@@ -9,16 +9,27 @@ APK_URL="https://github.com/dilippanicker/wordout/releases/latest/download/wordo
 AAB_URL="https://github.com/dilippanicker/wordout/releases/latest/download/wordout.aab"
 APK_PATH="$REPO_DIR/releases/wordout-latest.apk"
 AAB_PATH="$REPO_DIR/releases/wordout-latest.aab"
+DEVICE_IP="192.168.68.107:5555"
 
 cmd="$1"
 
 cd "$REPO_DIR" 2>/dev/null || { echo "Repo not found at $REPO_DIR"; exit 1; }
 
+adb_connect() {
+  echo "Connecting to S24 Ultra at $DEVICE_IP..."
+  adb connect "$DEVICE_IP" 2>/dev/null || true
+  sleep 1
+  if ! adb devices | grep -q "$DEVICE_IP"; then
+    echo "⚠️  Could not connect to device. Is WiFi ADB enabled on the phone?"
+    exit 1
+  fi
+}
+
 case "$cmd" in
   build)
     echo "Triggering GitHub Actions build..."
     gh workflow run "Build APK"
-    echo "Build started. Check status with: ./wordout.sh status"
+    echo "Build started. Check status with: ./make.sh status"
     ;;
 
   status)
@@ -41,22 +52,24 @@ case "$cmd" in
     mkdir -p "$REPO_DIR/releases"
     wget -O "$APK_PATH" "$APK_URL"
     wget -O "$AAB_PATH" "$AAB_URL"
+    adb_connect
     echo "Installing APK on device..."
     adb install -r "$APK_PATH"
-    echo "Installed. Copies saved to releases/"
+    echo "✅ Installed. Copies saved to releases/"
     ;;
 
   push)
     echo "Installing local APK on device (no download)..."
+    adb_connect
     adb install -r "$APK_PATH"
-    echo "Done."
+    echo "✅ Done."
     ;;
 
   fetch-aab)
     echo "Downloading latest AAB..."
     mkdir -p "$REPO_DIR/releases"
     wget -O "$AAB_PATH" "$AAB_URL"
-    echo "Saved to releases/wordout-latest.aab"
+    echo "✅ Saved to releases/wordout-latest.aab"
     ;;
 
   web)
@@ -71,24 +84,25 @@ case "$cmd" in
 
   dev-android)
     echo "Starting dev server on connected Android device..."
+    adb_connect
     npx expo start --android
     ;;
 
   adb-connect)
-    echo "Connecting to S24 Ultra over WiFi..."
-    adb connect 192.168.68.107:5555
+    adb_connect
+    echo "✅ Connected."
     ;;
 
   build-install)
     echo "Triggering build, then waiting to install..."
     gh workflow run "Build APK"
-    echo "Build started. Run './wordout.sh watch' to monitor, then './wordout.sh install' when done."
+    echo "Build started. Run './make.sh watch' to monitor, then './make.sh install' when done."
     ;;
 
   *)
     echo "Wordout dev helper"
     echo ""
-    echo "Usage: ./wordout.sh <command>"
+    echo "Usage: ./make.sh <command>"
     echo ""
     echo "Commands:"
     echo "  build         Trigger GitHub Actions build"
