@@ -31,7 +31,7 @@ Run all steps in order. Do not skip any step even if there were no code changes.
 5. **Update `README.md`** if new features were added, word lists changed, or user-facing behaviour changed:
    - Keep it accurate for new contributors and users
 
-6. **Update `docs/playstore.md`** if release status, version, or store assets changed
+6. **Update any project-specific deployment or release documentation** if release status, version, or assets changed
 
 7. **Commit and push all changes** (mandatory — never close with uncommitted changes):
    ```
