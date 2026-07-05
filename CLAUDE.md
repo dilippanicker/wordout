@@ -294,6 +294,24 @@ Cost awareness: Haiku as executor keeps costs low; Opus advisor only engages whe
 
 ---
 
+## Session lifecycle
+
+### On /open
+- Read `.claude/session-handoff.md` for prior session context
+- Remind about Model Selection setup (see above)
+
+### On /close
+- Overwrite `.claude/session-handoff.md`: files changed, decisions + why, in-progress state, exact next step, gotchas
+- Update `TODO.md`: mark completed items ✅ with date, add new items, re-prioritize
+- Update `CLAUDE.md` if: new components, changed defaults/behavior, bug fixes affecting usage, new patterns/decisions, or stale info to remove
+- Update `CHANGELOG.md`: new entry under current version, format `- [Added/Changed/Fixed/Removed] description`
+- Update `README.md` also when word lists change (counts, source), in addition to other user-facing changes
+- Update `docs/playstore.md` if release status, version, or assets changed
+- Commit message convention: `chore: session close — <what changed>`
+- **Push policy: commit always; push only when explicitly asked**
+
+---
+
 ## Known Issues
 - `CECIL` in GB answers list — proper noun (name), violates word list rules; needs removal from `assets/wordlists/answers_en_us/gb.json`
 - `DAILY_PROGRESSION` export in `constants/helpContent.ts` — unused, ready for HelpModal wiring
