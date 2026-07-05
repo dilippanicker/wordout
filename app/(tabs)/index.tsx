@@ -130,18 +130,19 @@ function buildDailyShareText(guesses: GuessResult[], solved: boolean, colorBlind
   return `Wordout Daily #${idx} — ${label} ${count}/${maxG}\n\n${grid}`;
 }
 
-function buildQuordleShareText(guesses: QuordleGuess[], status: 'won' | 'lost', colorBlind: boolean, bc: number): string {
+function buildQuordleShareText(guesses: QuordleGuess[], status: 'won' | 'lost', colorBlind: boolean, bc: number, difficulty: Difficulty): string {
   const CORRECT = colorBlind ? '🟧' : '🟩';
   const PRESENT = colorBlind ? '🟦' : '🟨';
   const ABSENT = '⬛';
   const count = status === 'won' ? String(guesses.length) : 'X';
-  const maxGuesses = Math.min(13, 5 + bc);
+  const maxGuesses = maxGuessesForDifficulty(difficulty, bc);
   const name = boardCountName(bc);
+  const header = `${name} ${DIFFICULTY_EMOJI[difficulty]} ${count}/${maxGuesses}`;
   if (bc === 1) {
     const grid = guesses.map(({ boardResults }) =>
       boardResults[0].map(r => r === 'correct' ? CORRECT : r === 'present' ? PRESENT : ABSENT).join('')
     ).join('\n');
-    return `${name} ${count}/${maxGuesses}\n\n${grid}`;
+    return `${header}\n\n${grid}`;
   }
   const LABELS = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣'];
   const boards = Array.from({ length: bc }, (_, b) => {
@@ -150,7 +151,7 @@ function buildQuordleShareText(guesses: QuordleGuess[], status: 'won' | 'lost', 
     ).join('')).join('\n');
     return `${LABELS[b]}\n${grid}`;
   });
-  return `${name} ${count}/${maxGuesses}\n\n${boards.join('\n\n')}`;
+  return `${header}\n\n${boards.join('\n\n')}`;
 }
 
 async function copyToClipboard(text: string): Promise<boolean> {
@@ -672,7 +673,7 @@ export default function WordleScreen() {
     if (isDaily) {
       text = buildDailyShareText(activeDailyGame.guesses, activeDailyGame.solved, colorBlindMode, activeDailyDiff);
     } else if (isQuordle) {
-      text = buildQuordleShareText(quordleStore.guesses, activeGameStatus, colorBlindMode, quordleStore.boardCount);
+      text = buildQuordleShareText(quordleStore.guesses, activeGameStatus, colorBlindMode, quordleStore.boardCount, difficulty);
     } else {
       text = buildShareText(wordleStore.guesses, activeGameStatus, colorBlindMode, difficulty === 'hard');
     }
@@ -727,19 +728,21 @@ export default function WordleScreen() {
               <Text style={styles.endCountdownValue}>{countdown}</Text>
             </>
           )}
-          <Pressable
-            style={styles.shareButton}
-            onPress={(e) => { e.stopPropagation?.(); handleShare(); if (!isDaily) dismissEndGame(); }}
-            {...(noFocus as any)}
-          >
-            {copyConfirmed
-              ? <Text style={styles.shareButtonText}>Copied! ✓</Text>
-              : <View style={styles.shareButtonInner}>
-                  <Text style={styles.shareButtonText}>Share</Text>
-                  <Ionicons name="share-social-outline" size={16} color="#fff" />
-                </View>
-            }
-          </Pressable>
+          {isDaily && (
+            <Pressable
+              style={styles.shareButton}
+              onPress={(e) => { e.stopPropagation?.(); handleShare(); }}
+              {...(noFocus as any)}
+            >
+              {copyConfirmed
+                ? <Text style={styles.shareButtonText}>Copied! ✓</Text>
+                : <View style={styles.shareButtonInner}>
+                    <Text style={styles.shareButtonText}>Share</Text>
+                    <Ionicons name="share-social-outline" size={16} color="#fff" />
+                  </View>
+              }
+            </Pressable>
+          )}
           {dismissCountdown > 0 && (
             <Text style={styles.dismissCountdown}>Closing in {dismissCountdown}…</Text>
           )}
