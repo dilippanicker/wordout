@@ -261,7 +261,7 @@ Before every build, follow exactly:
 
 ## Model Selection
 
-Pattern: current-gen mid-tier model as executor, Opus-class advisor. Verify both at session start via the `/model` and `/advisor` checkmarks (current setup, non-binding example: Sonnet 5 + Opus 4.8).
+Pattern: `opusplan` session model (Opus plans, Sonnet executes — automatic) + Opus-class advisor + Haiku-pinned Explore agent (`~/.claude/agents/Explore.md`). Set globally in `~/.claude/settings.json`; verify at session start via the `/model` and `/advisor` checkmarks. Rationale and details: `~/repos/claude-workflow/HOWTO.md` Roles section.
 
 **Important:** `claude config set advisorModel` does NOT work — the only correct way to enable the advisor is via the `/advisor` command picker in the session.
 
