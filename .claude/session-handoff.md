@@ -14,8 +14,9 @@ Also: global permission `defaultMode` switched bypassPermissions → `auto` (+ p
 
 ## Exact next step
 
-1. **v1.5.7 APK device spot-check** (2 min): win-wave + revisit on the new build — first device run of the refactored GameBoard (`components/boardSequencing.ts`). Web + 21 unit tests confirm identical behavior; hardware eyes close the loop.
-2. Then normal feature work resumes. Candidates: daily-word collision fix (task chip queued; needs cutover-date anchoring), `DAILY_PROGRESSION` HelpModal wiring, or rolling the workflow skills to swardb/gisty (adoption checklist in `~/repos/claude-workflow/HOWTO.md`).
+v1.5.7 device spot-check DONE (wave + revisit verified on S24 Ultra, 2026-07-06) — the session-21/22 workflow arc is fully closed. Normal feature work resumes. Candidates: daily-word collision fix (task chip queued; needs cutover-date anchoring), `DAILY_PROGRESSION` HelpModal wiring, or rolling the workflow skills to swardb/gisty (adoption checklist in `~/repos/claude-workflow/HOWTO.md`).
+
+Note: next session is the first with the new model stack (`opusplan` + advisor + Haiku Explore agent) and auto permission mode — confirm the plan-mode Opus/Sonnet flip and accept the one-time auto-mode dialog.
 
 ## Gotchas
 

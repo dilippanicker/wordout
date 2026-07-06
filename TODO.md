@@ -14,7 +14,7 @@
 
 ## 🔴 NEW — Follow-up from Session 22
 
-- [ ] **v1.5.7 APK device spot-check** — 2 minutes: win-wave + revisit on the new build (first device run of the refactored GameBoard; web + 21 unit tests say identical, eyes on hardware close the loop)
+- ✅ **v1.5.7 APK device spot-check** — done 2026-07-06: installed via `./make.sh push`, win-wave + revisit verified on S24 Ultra. Refactored GameBoard confirmed behavior-identical on hardware.
 - [ ] **Verify advisor settings key** — `~/.claude/settings.json` has `"advisorModel": "opus"` and the current settings schema documents it; CLAUDE.md's "only the /advisor picker works" note may be stale. Verify in a session, then update CLAUDE.md's Model Selection section
 - [ ] **Play Store: upload v1.5.7** to closed testing when next doing store work (v1.5.6/vc28 currently live there)
 
