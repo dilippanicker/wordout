@@ -50,3 +50,6 @@ assets/images.zip
 builds/
 claude-ai-prompt.md
 releases/
+
+# Claude workflow
+.claude/smoke-status.json

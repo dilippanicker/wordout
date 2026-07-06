@@ -2,6 +2,15 @@
 
 All notable changes to Wordout are documented here.
 
+## [Unreleased]
+### Added
+- Unit test suites: store invariants (`__tests__/store-invariants.test.ts`) and animation sequencing regressions (`__tests__/board-sequencing.test.ts`) — 36 tests, run with `npm test`
+- CI: `test.yml` workflow (typecheck + tests on every push/PR) and a fail-fast test job gating the APK/AAB build
+### Changed
+- Animation sequencing decisions extracted from `GameBoard.tsx` into pure functions (`components/boardSequencing.ts`) — behavior-identical refactor, verified on web
+### Fixed
+- CLAUDE.md incorrectly claimed daily words are guaranteed distinct per difficulty — documented the real behavior (rare collisions, 267 unreachable answers) as a Known Issue pending a derivation fix
+
 ## [1.5.6] — 2026-07-05
 ### Fixed
 - Enter key was typed as a literal "⏎" character into the board instead of submitting — functional key value now stays "ENTER" internally, with "⏎" used only for display

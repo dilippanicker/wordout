@@ -1,8 +1,28 @@
 # Wordout — Master TODO
-**Updated: 2026-07-05 (session 20)**
+**Updated: 2026-07-06 (session 21)**
 **Current version: v1.5.6 (versionCode 28)**
 
 ---
+
+## ✅ Session 21 — Completed 2026-07-06 (workflow overhaul)
+
+- ✅ **Workflow diagnosis** — three-source analysis (git log, CHANGELOG, docs) written to `reflection-notes.md`; 6 ranked improvements, 5 implemented this session
+- ✅ **`/release` global skill** (`~/.claude/skills/release/SKILL.md`) — bump → confirm → CHANGELOG → commit/push → `gh workflow run` → report links; verified by dry-run + live trigger/cancel (run `28773885805`, cancelled ~20s in, no release published)
+- ✅ **`/smoke` global skill** + `.claude/smoke-checklist.md` (2 automated checks, 10 manual items annotated with the regression each guards) + `.claude/launch.json`; status recorded in gitignored `.claude/smoke-status.json` which `/release` reads as its gate; verified end-to-end on web
+- ✅ **Store-invariant tests** (`__tests__/store-invariants.test.ts`, 15 tests) — jest-expo infra, `npm test`; covers maxGuesses formulas, the `boardCount > 1` trap, hard-mode per-board independence, snapshot round-trips, daily derivation/reset/guess-limit
+- ✅ **CI fail-fast** — new `test.yml` (typecheck + jest on push/PR) and a `test` job in `build-apk.yml` that the build `needs:` — broken invariant dies in ~2 min, not after 45
+- ✅ **Drift guard** in global `/open`/`/close` + `### Doc sync (drift check)` list in CLAUDE.md; verified against real files + mutation test; remediation documented (backfill from git log, never a retroactive /close)
+- ✅ **Animation sequencing extracted** to `components/boardSequencing.ts` (pure functions) + `__tests__/board-sequencing.test.ts` (21 regression tests replaying the v1.0.1→v1.2.8 chain); GameBoard now renders what the functions decide — behavior-identical, verified live on web (flip, wave, ✓ overlay timing, no-replay-on-revisit at 59ms)
+- ✅ **Release-notes coupling documented** — build workflow awk-extracts the `## [x.y.z]` CHANGELOG section into the GitHub Release body; heading format is load-bearing (noted in CLAUDE.md Build Pipeline + /release skill)
+- ✅ **Found 2 real bugs via invariant testing**: daily words collide across difficulties on 8 days/decade (2026-01-27 was easy=hard=ABACK) and 267 answers are unreachable (`& 0x7FF` mask) — CLAUDE.md corrected, fix task queued
+- ✅ **`~/repos/claude-workflow/HOWTO.md` updated** with all new layers + adoption checklists (committed there: `8917d41`, `6449bee`)
+
+## 🔴 NEW — Follow-up from Session 21
+
+- [ ] **First real `/release` + `/smoke` run in a fresh session** — skills become invocable next session; this session's changes are a legitimate release candidate and would validate the whole pipeline end-to-end (including the CI test gate, which first fires on next push)
+- [ ] **Device smoke pass** — the `[device]` checklist items (wave feel on 6/8-out, share text, enter key) consolidate all the outstanding per-session "device regression test" items below
+- [ ] **Fix daily word collisions + unreachable answers** (`getDailyAnswers`) — task chip queued; needs a cutover-date-anchored derivation change
+- [ ] (Optional, deferred by decision) Item 6 of reflection-notes: parallelize APK/AAB CI jobs, repair local Java/Gradle env
 
 ## ✅ Session 20 — Completed 2026-07-05
 

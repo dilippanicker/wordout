@@ -13,13 +13,20 @@ import * as Haptics from 'expo-haptics';
 import { Tile, TileStatus } from './Tile';
 import { FlipTile } from './FlipTile';
 import { GuessResult, LetterResult } from '@/store/gameStore';
-
-const COLS = 5;
-const STAGGER = 180; // ms between each tile flip
-// Time (ms) after submit until the last tile's flip finishes + small buffer.
-// Last tile starts at STAGGER * (COLS-1) = 720ms, flip takes 400ms → done at 1120ms + 50ms buffer.
-const FLIP_DONE_MS = STAGGER * (COLS - 1) + 450;
-const WAVE_STAGGER = 80; // ms between each tile in the win wave
+import {
+  COLS,
+  STAGGER,
+  FLIP_DONE_MS,
+  isRevisit,
+  isLastWaveTile,
+  loseShakeDuration,
+  overlayPlan,
+  shouldWaveRow,
+  tileModeForSubmittedRow,
+  waveDuration,
+  waveTileDelay,
+} from './boardSequencing';
+// (COLS/STAGGER/FLIP_DONE_MS remain in use for tile layout, flip delays, haptics and the lose shake.)
 
 // Wraps one tile; bounces up-then-spring-back with a per-tile delay.
 // onDone fires via runOnJS when the spring settles — used on the last tile to signal wave complete.
@@ -184,14 +191,10 @@ export function GameBoard({
   // Win overlay: fade in after wave animation completes (delay on first solve, immediate on remount/re-show).
   useEffect(() => {
     if (solved && !suppressOverlay) {
-      const ts = solvedTimestampRef.current;
-      const elapsed = ts <= 0 ? Infinity : (Date.now() - ts);
-      const waveDuration = FLIP_DONE_MS + count * COLS * WAVE_STAGGER + 400;
-      if (elapsed < waveDuration) {
-        winOverlayOpacity.value = withDelay(waveDuration - elapsed, withTiming(1, { duration: 300 }));
-      } else {
-        winOverlayOpacity.value = withTiming(1, { duration: 200 });
-      }
+      const plan = overlayPlan(solvedTimestampRef.current, Date.now(), waveDuration(count));
+      winOverlayOpacity.value = plan.delayMs > 0
+        ? withDelay(plan.delayMs, withTiming(1, { duration: plan.fadeMs }))
+        : withTiming(1, { duration: plan.fadeMs });
     } else {
       winOverlayOpacity.value = 0;
     }
@@ -200,14 +203,10 @@ export function GameBoard({
   // Lose overlay: fade in after board shake completes (delay on first loss, immediate on remount/re-show).
   useEffect(() => {
     if (gameOver && !solved && !suppressOverlay) {
-      const ts = lostTimestampRef.current;
-      const elapsed = ts <= 0 ? Infinity : (Date.now() - ts);
-      const shakeDuration = FLIP_DONE_MS + 7 * 130 + 300; // ~2380ms
-      if (elapsed < shakeDuration) {
-        loseOverlayOpacity.value = withDelay(shakeDuration - elapsed, withTiming(1, { duration: 300 }));
-      } else {
-        loseOverlayOpacity.value = withTiming(1, { duration: 200 });
-      }
+      const plan = overlayPlan(lostTimestampRef.current, Date.now(), loseShakeDuration());
+      loseOverlayOpacity.value = plan.delayMs > 0
+        ? withDelay(plan.delayMs, withTiming(1, { duration: plan.fadeMs }))
+        : withTiming(1, { duration: plan.fadeMs });
     } else {
       loseOverlayOpacity.value = 0;
     }
@@ -273,9 +272,9 @@ export function GameBoard({
     }
   }, [count, guesses, boardResults]);
 
-  // isRevisit: store says wave was already shown but this instance hasn't played it yet → skip animation
+  // revisit: store says wave was already shown but this instance hasn't played it yet → skip animation
   // Computed each render using refs (stable during animation, no re-render triggered by ref changes)
-  const isRevisit = waveShownRef.current && !waveSentRef.current;
+  const revisit = isRevisit(waveShownRef.current, waveSentRef.current);
 
   // Revisit path: store already flagged wave shown for this game — skip animation, go straight to done.
   // Fresh-solve path: wave fires via BounceTile; stableHandleWaveDone is called via runOnJS from
@@ -298,7 +297,7 @@ export function GameBoard({
       if (hasSubmitted) {
         const letter = word[col] ?? '';
         const status = (result[col] ?? 'absent') as TileStatus;
-        if (row === animatingRow && !waveDoneLocal) {
+        if (tileModeForSubmittedRow(row, animatingRow, waveDoneLocal) === 'flip') {
           return <FlipTile key={col} letter={letter} status={status} delay={col * STAGGER} tileWidth={effectiveTileW} tileHeight={effectiveTileH} />;
         }
         return <Tile key={col} letter={letter} status={status} tileWidth={effectiveTileW} tileHeight={effectiveTileH} />;
@@ -322,20 +321,17 @@ export function GameBoard({
     });
 
     // Wave fires only on first solve: animatingRow guard prevents accidental triggers,
-    // isRevisit (ref-based) prevents re-animation when switching back to a solved board.
-    // The last tile (row=count-1, col=COLS-1) receives stableHandleWaveDone via onDone so that
+    // revisit (ref-based) prevents re-animation when switching back to a solved board.
+    // The last wave tile receives stableHandleWaveDone via onDone so that
     // onWaveDone + setWaveDoneLocal fire only after the spring animation actually completes.
-    if (solved && row < count && animatingRow === count - 1 && !waveDoneLocal && !isRevisit) {
+    if (shouldWaveRow({ solved, row, count, animatingRow, waveDoneLocal, revisit })) {
       return (
         <View key={row} style={styles.row}>
-          {tiles.map((tile, col) => {
-            const isLastTile = row === count - 1 && col === COLS - 1;
-            return (
-              <BounceTile key={col} delay={FLIP_DONE_MS + (row * COLS + col) * WAVE_STAGGER} onDone={isLastTile ? stableHandleWaveDone : undefined}>
-                {tile}
-              </BounceTile>
-            );
-          })}
+          {tiles.map((tile, col) => (
+            <BounceTile key={col} delay={waveTileDelay(row, col)} onDone={isLastWaveTile(row, col, count) ? stableHandleWaveDone : undefined}>
+              {tile}
+            </BounceTile>
+          ))}
         </View>
       );
     }

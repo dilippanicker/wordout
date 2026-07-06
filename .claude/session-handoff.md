@@ -1,66 +1,37 @@
-# Session Handoff — 2026-07-06 (Session 20)
+# Session Handoff — 2026-07-06 (Session 21: workflow overhaul)
 
-## What Happened This Session
+## What this session did
 
-Started by backfilling documentation for two version bumps (v1.5.5, v1.5.6) that had shipped without a corresponding TODO/handoff update, then triggered and confirmed the pending GitHub Actions build. The rest of the session was a CLAUDE.md redundancy/staleness cleanup pass, done in small user-directed steps.
+Diagnosed the project's workflow friction (three-source analysis → `reflection-notes.md`, 6 ranked items) and implemented items 1–5. No game-behavior changes shipped; the one code refactor (GameBoard) is behavior-identical and test-covered. Current version remains **v1.5.6 (versionCode 28)** — nothing was released.
 
-1. **Pushed pending commit** — `d6e0646` (skills migration), 1 commit ahead of `origin/main` from the previous session.
-2. **Triggered GitHub Actions build** for v1.5.6 (versionCode 28) — run `28749535782`. **Confirmed successful** (47m11s): GitHub Release `v1.5.6` published with `wordout.aab` and `wordout.apk` attached.
-3. **CLAUDE.md dedupe/staleness pass** (committed separately as `a072c5b`, ~336→302 lines):
-   - Fixed stale facts: Play Store "next upload" version, a wrong word-list file path in Known Issues, Model Selection section (was pinned to Haiku/Opus 4.8, rewritten as a pattern — current-gen mid-tier executor + Opus-class advisor — with the pinned models kept only as a non-binding example)
-   - Deduplicated: daily-gate mechanics now live only in "Daily Gate Architecture"; "Key Design Decisions → Daily mode" reduced to one line per decision; "Startup logic (v1.4.0)" section deleted (mechanics already in Daily Gate Architecture); `boardCount > 1` anti-pattern rule kept once (settingsStore section), StatsModal now just points to it
-   - Deleted the fully-shipped "v1.3.0 Features" section, preserving its two still-relevant facts as single bullets (Board indicators legend; Stores section)
-   - Left untouched per instruction: Animation sequence, Keyboard Behaviour, Share Behaviour, TutorialOverlay, Version Bumping Protocol, Session lifecycle, Known Issues (besides the path fix)
-4. **Known Issues cleanup** (this commit): removed the `CECIL` line after verifying via `grep` that it's actually gone from `assets/wordlists/answers_en_gb.json` (fixed by the word list rebuild, not previously noticed); reworded the `DAILY_PROGRESSION` line after confirming its content is exactly the daily-gate explanation text — now reads "unused; candidate HelpModal section explaining daily difficulty progression", with a low-priority TODO item added for wiring it into `HelpModal.tsx`.
-5. **Deleted `docs/playstore.md`** (this commit) — it had drifted stale repeatedly (still showed "v1.2.7 ready to upload" / "last uploaded v1.0.3" as of session 19) because Play Store state changes faster than a separate doc gets updated. Replaced with a short "current reality" snippet directly in CLAUDE.md's "Play Store" section (v1.5.6/vc28 live on closed testing, 12/12 testers, ~July 10 2026 production access — tracked manually, not in docs). The `/close` Session lifecycle bullet that referenced `docs/playstore.md` was fully removed (not reworded to point elsewhere) per explicit follow-up instruction.
+## New workflow (generic skills global, project layer in this repo)
 
-No new feature/bugfix code was written this session — entirely docs + one build trigger. The v1.5.5/v1.5.6 *code* changes were made in an earlier, undocumented session (commits `4647a2e`, `eda4ace`, `8f99c7a`, `0073190`, `65b788c`, `cce4405`).
+- **`/release`** (`~/.claude/skills/release/SKILL.md`) — bump/confirm/CHANGELOG/commit/push/`gh workflow run`/report. Reads this repo's Version Bumping Protocol + Build Pipeline sections. CHANGELOG heading `## [x.y.z]` is load-bearing (awk-extracted into GitHub Release notes).
+- **`/smoke`** (`~/.claude/skills/smoke/SKILL.md`) — runs `.claude/smoke-checklist.md` (2 automated + 10 manual items), records to gitignored `.claude/smoke-status.json`; `/release` warns if missing/stale.
+- **Drift guard** in global `/open`/`/close` — checks the `### Doc sync (drift check)` list in CLAUDE.md. Missing close = backfill from git log as first task, never a retroactive /close.
+- **Tests**: `npm test` — 36 tests (store invariants + board sequencing). CI: `test.yml` on push/PR + fail-fast `test` job gating the build in `build-apk.yml`.
 
----
+## Files changed (all committed this close, none pushed)
 
-## Files Modified
+- New: `reflection-notes.md`, `components/boardSequencing.ts`, `__tests__/store-invariants.test.ts`, `__tests__/board-sequencing.test.ts`, `__mocks__/@react-native-async-storage/async-storage.js`, `.claude/smoke-checklist.md`, `.claude/launch.json`, `.github/workflows/test.yml`
+- Modified: `components/GameBoard.tsx` (pure-function substitution only), `package.json` (jest deps/config/test script), `package-lock.json`, `.gitignore` (smoke-status.json), `.github/workflows/build-apk.yml` (test job + needs), `CLAUDE.md` (Commands, Doc sync, Build Pipeline notes, animation section pointer, daily-word Known Issue, /release pointer), `CHANGELOG.md` (Unreleased section), `TODO.md`
+- Outside repo: `~/.claude/skills/{release,smoke}/SKILL.md` (new), `~/.claude/skills/{open,close}/SKILL.md` (drift check added), `~/repos/claude-workflow/HOWTO.md` (updated + committed there)
 
-### `CLAUDE.md`
-- Two commits: `a072c5b` (dedupe pass, see above) and this session's close commit (Known Issues CECIL/DAILY_PROGRESSION, Play Store section rewrite, `docs/playstore.md` reference removed from `/close` steps).
+## Decisions made (and why)
 
-### `TODO.md`
-- Session 20 section expanded with all of the above; build-trigger item updated from "in progress" to confirmed-successful with release details; `docs/playstore.md`-staleness follow-up item resolved (file deleted, not fixed-in-place); added a low-priority "wire DAILY_PROGRESSION into HelpModal" backlog item.
+- Generic-first: skills are global, discovering project specifics from CLAUDE.md — matches the /open//close migration pattern; swardb/gisty adopt by adding declarations (see HOWTO.md adoption checklist).
+- `/release` smoke gate **warns, doesn't block** — user keeps override for trivial releases.
+- Daily-word distinctness NOT asserted in tests — the derivation genuinely collides (8 days/decade) and masks off 267 answers; documented as Known Issue, fix task queued (needs cutover-date anchoring so an in-progress day doesn't change under players).
+- Item 6 (build-wait: parallelize APK/AAB, local Java/Gradle repair) deferred by explicit decision.
 
-### `.claude/session-handoff.md`
-- This file.
+## Exact next step
 
-### `docs/playstore.md`
-- Deleted.
+Open a fresh session (skills load at session start) and do the first real end-to-end run: `/open` (exercises drift check) → device smoke pass via `/smoke` (the `[device]` items consolidate all outstanding device-regression TODOs) → `/release` to ship this session's changes as the next version — that validates the entire pipeline including the new CI test gate (which has never run; first firing is on next push).
 
----
+## Gotchas
 
-## Decisions Made
-
-- **Play Store status is now tracked only as a short snippet in CLAUDE.md, not a separate doc** — the separate doc consistently went stale faster than anyone remembered to update it; a single short snippet co-located with the rest of the project's living documentation is easier to keep current.
-- **The `/close` Session lifecycle bullet referencing `docs/playstore.md` was deleted outright, not replaced** — first pass reworded it to point at CLAUDE.md's Play Store section instead, but a direct follow-up instruction asked for outright removal since the file (and thus the need for a `/close`-time reminder about it) no longer exists.
-- **CLAUDE.md dedupe stopped at 302 lines, not the ~250 target** — the specified reduction items (dedup daily-gate docs, delete v1.3.0 Features, shorten Model Selection) only accounted for ~34 net lines; the bulk of the remaining file is content explicitly marked "do not touch" (animation internals, Keyboard/Share Behaviour, TutorialOverlay) because it encodes regression traps. Flagged to the user rather than trimming protected sections without approval.
-- **No re-verification of v1.5.5/v1.5.6 runtime behavior this session** — only documented; device/browser verification remains outstanding.
-
----
-
-## Current State
-
-- Working tree: `CLAUDE.md`, `TODO.md`, `.claude/session-handoff.md` modified and `docs/playstore.md` deleted, all committed as part of this `/close` (see commit below). `main` is ahead of `origin/main` by this close commit plus the earlier `a072c5b` dedupe commit — not pushed (push policy: commit always, push only when explicitly asked).
-- GitHub Release `v1.5.6` (versionCode 28) is live with both APK and AAB — this is the current buildable state.
-- CHANGELOG.md needed no changes this session (no user-facing/version changes, pure docs + build-trigger).
-
----
-
-## Exact Next Steps
-
-1. **Device regression test** of the Enter/Backspace swap toggle and ⏎ label on a real Android device — still outstanding from the v1.5.5/v1.5.6 code session; never verified in a live browser or on-device.
-2. **(Low priority, post-1.5.6-upload)** Wire `DAILY_PROGRESSION` (`constants/helpContent.ts`) into `HelpModal.tsx` — text confirmed accurate, just needs a UI section.
-3. v1.5.6 is already live on the closed-testing track (per CLAUDE.md's Play Store section) — what's still pending is promotion to production, expected ~July 10 2026, a manual step outside this repo.
-
----
-
-## Known Issues / Gotchas
-
-- Remaining known issues: `boardCount` defaults to 4 (never use `boardCount > 1` to detect multi-board mode), `tutorialSeen` hydration race, `onWatchTutorial` not wired in `settings.tsx`. `CECIL` and the old `DAILY_PROGRESSION` wording are resolved as of this session.
-- **Process gap from a prior session:** `/close` was skipped for whatever session produced the v1.5.5/v1.5.6 commits, leaving TODO.md/session-handoff.md two versions behind CHANGELOG.md until this session's backfill. Worth spot-checking at the start of future sessions that CHANGELOG, TODO, and handoff all agree on the current version.
-- Scratch Playwright driver at `/tmp/pw-driver` (outside repo) remains the ad-hoc browser-verification pattern for this app when needed — still no committed project skill for it.
+- `.claude/smoke-status.json` currently records a pass for commit `89ec1e9` — stale the moment this close commits; `/release` will correctly warn. Run `/smoke` fresh.
+- TypeScript 6 doesn't auto-inject `@types` globals — test files must `import { ... } from '@jest/globals'` (no `@types/jest` dep; don't add one).
+- Expo web ignores `PORT` env and prompts interactively when 8081 is busy — `.claude/launch.json` pins `--port 8090` for the preview server.
+- jest + jest-expo live in devDependencies deliberately (`npx expo install` had put them in dependencies).
+- Today's daily easy word was ABACK (also one of the collision words for 2026-01-27 — coincidence, but a nice reminder the bug is real).

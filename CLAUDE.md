@@ -10,6 +10,7 @@
 ## Commands
 - `npx expo start` — web dev server (port 8081)
 - `npx expo start --android`
+- `npx jest` — store-invariant tests (`__tests__/store-invariants.test.ts`); executable versions of the invariants documented in this file. Also run in CI (`test.yml` on push, and as a fail-fast job before the APK build). Add a test here when documenting a new store invariant.
 
 ## Word lists
 - `assets/wordlists/answers_en_us.json` — 2,315 answers (US English)
@@ -94,7 +95,7 @@ Three independent daily games run each day — Easy, Hard, Extreme — each with
 - Streaks tracked independently via `lastWinDate`; missed-day detection fires in `checkAndReset()`
 
 **Word selection**:
-All three words computed atomically on first daily start via UTC-midnight seed: `Math.imul(dayMs, 2654435761)` bit-shifted by indices 0/1/2. Guarantees different words per difficulty; all three set in one call to `startOrResumeDailyGame`.
+All three words computed atomically on first daily start via UTC-midnight seed: `Math.imul(dayMs, 2654435761)` bit-shifted by indices 0/1/2. All three set in one call to `startOrResumeDailyGame`. NOTE: contrary to the original design intent, this does NOT guarantee distinct words (see Known Issues).
 
 **Accessible-list gate**:
 Build reachable difficulty list before each cycle step:
@@ -167,6 +168,8 @@ Cycle (m = highest reachable index): header difficulty emoji taps through this l
 3. **Celebration overlay:** full-screen "Solved!" / "Better luck next time" popup. Fires ONCE via `celebrationShown` flag.
 4. **Final state:** `✓`/`✗` dim overlay on board. Always visible on completed boards, no animation.
 
+**Sequencing decisions are pure functions** in `components/boardSequencing.ts` (tileModeForSubmittedRow, shouldWaveRow, isRevisit, waveTileDelay, waveDuration, overlayPlan, …) with regression tests in `__tests__/board-sequencing.test.ts` replaying the v1.0.1→v1.2.8 bug chain. GameBoard renders what they decide — change the decisions there (with a test), not inline in the component.
+
 **Key implementation details:**
 - `GameBoard` receives `key={isDaily ? \`daily-${activeDailyDiff}\` : 'practice'}` (single-board) or `key={\`${boardCount}-${i}\`}` (quordle) — forces remount on mode/bc/daily-difficulty switch so `prevCount` ref initialises fresh (prevents spurious fill animation on revisit).
 - `celebrationShown` is checked in `index.tsx` before firing the end-game popup. Set immediately on first fire, stored in all three game stores.
@@ -209,9 +212,11 @@ Full-screen overlay, purely presentational (no store reads/writes for the demo b
 
 ## Build Pipeline
 
-**GitHub Actions (primary):** `.github/workflows/build-apk.yml` — trigger manually from Actions tab.
+**GitHub Actions (primary):** `.github/workflows/build-apk.yml` — trigger via `/release` (or manually from Actions tab).
+- Runs the test job first (typecheck + jest) — build only starts if it passes
 - Builds APK (`preview`) then AAB (`production`) sequentially
 - Creates versioned GitHub Release with both files
+- **Release notes are extracted from CHANGELOG.md** — the workflow awk-parses the section under the exact heading `## [x.y.z]` into the GitHub Release body. Keep that heading format, and write CHANGELOG entries to read as user-facing notes.
 - Build time: ~45 min; faster with warm Gradle cache
 - Requires `EXPO_TOKEN` secret in repo settings
 
@@ -224,6 +229,8 @@ Full-screen overlay, purely presentational (no store reads/writes for the demo b
 ---
 
 ## Version Bumping Protocol
+
+Use the global `/release` skill — it reads this section and Build Pipeline, and automates the flow below (propose → confirm → bump → commit/push → `gh workflow run build-apk.yml` → watch → report release links).
 
 Before every build, follow exactly:
 
@@ -262,6 +269,13 @@ Executor handles implementation; advisor engages automatically at key decision p
 
 ## Session lifecycle
 
+### Doc sync (drift check)
+These must state the same version — checked by the global /open and /close skills; `app.json` is the source of truth:
+- `app.json` — `expo.version` + `expo.android.versionCode`
+- `CHANGELOG.md` — latest `## [x.y.z]` heading
+- `CLAUDE.md` — "Current version" line in Version Bumping Protocol
+- `.claude/session-handoff.md` — version referenced in the handoff
+
 ### On /open
 - Read `.claude/session-handoff.md` for prior session context
 - Remind about Model Selection setup (see above)
@@ -279,6 +293,7 @@ Executor handles implementation; advisor engages automatically at key decision p
 
 ## Known Issues
 - `DAILY_PROGRESSION` export in `constants/helpContent.ts` — unused; candidate HelpModal section explaining daily difficulty progression
+- `getDailyAnswers` seed derivation does NOT guarantee distinct words per difficulty (8 collision days in the decade from epoch, e.g. 2026-01-27 easy=hard=ABACK) and its `& 0x7FF` mask makes answers at indices 2048–2314 unreachable. Fix pending; the store-invariant test deliberately doesn't assert distinctness until then.
 
 ## StatsModal Behaviour (v1.4.0+)
 - `isQuordle` uses `gameMode === 'quordle'` (see settingsStore rule)
