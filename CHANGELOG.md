@@ -2,7 +2,7 @@
 
 All notable changes to Wordout are documented here.
 
-## [Unreleased]
+## [1.5.7] — 2026-07-06
 ### Added
 - Unit test suites: store invariants (`__tests__/store-invariants.test.ts`) and animation sequencing regressions (`__tests__/board-sequencing.test.ts`) — 36 tests, run with `npm test`
 - CI: `test.yml` workflow (typecheck + tests on every push/PR) and a fail-fast test job gating the APK/AAB build
