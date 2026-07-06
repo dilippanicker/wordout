@@ -224,6 +224,8 @@ Full-screen overlay, purely presentational (no store reads/writes for the demo b
 - `https://github.com/dilippanicker/wordout/releases/latest/download/wordout.apk`
 - `https://github.com/dilippanicker/wordout/releases/latest/download/wordout.aab`
 
+**Local artifact copies** (refreshed by /release after a successful build): `releases/wordout-latest.apk` + `releases/wordout-latest.aab` (gitignored). `./make.sh install` additionally installs the APK on a connected device; `./make.sh push` installs the already-downloaded copy without re-fetching.
+
 **Do NOT use local EAS builds** — Java/Gradle environment issues. GitHub Actions is the only supported build path.
 
 ---
