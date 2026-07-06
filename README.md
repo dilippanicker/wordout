@@ -27,8 +27,7 @@ Built automatically on every release via GitHub Actions.
 - **Win / lose animations** with haptic feedback
 - **Haptic feedback** on correct guesses, wrong guesses, and wins
 - **Tap any tile to clear rightward** — cursor lands at tapped position
-- **Enter key highlights green** when your guess reaches 5 letters, so it's clear when you can submit
-- **Enter key on right** option
+- **Swap ⏎ and ⌫ positions** option for the on-screen keyboard
 - Confirms before abandoning an in-progress game
 - No ads, no accounts, no tracking
 

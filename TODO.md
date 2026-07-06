@@ -1,8 +1,22 @@
 # Wordout — Master TODO
-**Updated: 2026-07-06 (session 21)**
-**Current version: v1.5.6 (versionCode 28)**
+**Updated: 2026-07-06 (session 22)**
+**Current version: v1.5.7 (versionCode 29)**
 
 ---
+
+## ✅ Session 22 — Completed 2026-07-06 (v1.5.7 shipped through the new pipeline)
+
+- ✅ **v1.5.7 (versionCode 29) released** — first real end-to-end run of the new workflow: `/open` (drift check clean) → `/smoke` (3 automated + 10 manual items ALL PASS, device items on v1.5.6 build) → `/release` (bump gate, CHANGELOG fold, push, CLI trigger) → CI test gate green on both first firings (push-triggered `test.yml` + fail-fast job, 35s) → build success (~42 min) → release notes correctly awk-extracted into GitHub Release `v1.5.7`
+- ✅ **Device smoke pass** — retired the outstanding per-session "device regression test" items from sessions 15/17/18/20 (consolidated into the smoke checklist device items)
+- ✅ **Permissions modernized** — global `defaultMode` bypassPermissions → `auto` (routine actions unprompted, dangerous ones flagged); pruned ~30 auto-accumulated one-off allow rules from `.claude/settings.local.json` to 13 reusable ones
+- ✅ **Workflow docs modernized** (`~/repos/claude-workflow/HOWTO.md`) — two-AI chat-relay pattern retired in favor of "plan mode for features, direct for fixes"; decision-capture rule added to global /close; executor+advisor model economics recorded as deliberate (cost per correct result)
+- ✅ **README stale features fixed** — removed the reverted Enter-key green highlight line; "Enter key on right" renamed to match the actual "Swap ⏎ and ⌫ positions" setting
+
+## 🔴 NEW — Follow-up from Session 22
+
+- [ ] **v1.5.7 APK device spot-check** — 2 minutes: win-wave + revisit on the new build (first device run of the refactored GameBoard; web + 21 unit tests say identical, eyes on hardware close the loop)
+- [ ] **Verify advisor settings key** — `~/.claude/settings.json` has `"advisorModel": "opus"` and the current settings schema documents it; CLAUDE.md's "only the /advisor picker works" note may be stale. Verify in a session, then update CLAUDE.md's Model Selection section
+- [ ] **Play Store: upload v1.5.7** to closed testing when next doing store work (v1.5.6/vc28 currently live there)
 
 ## ✅ Session 21 — Completed 2026-07-06 (workflow overhaul)
 

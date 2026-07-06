@@ -1,37 +1,25 @@
-# Session Handoff — 2026-07-06 (Session 21: workflow overhaul)
+# Session Handoff — 2026-07-06 (Session 22: v1.5.7 shipped through the new pipeline)
 
 ## What this session did
 
-Diagnosed the project's workflow friction (three-source analysis → `reflection-notes.md`, 6 ranked items) and implemented items 1–5. No game-behavior changes shipped; the one code refactor (GameBoard) is behavior-identical and test-covered. Current version remains **v1.5.6 (versionCode 28)** — nothing was released.
+First real end-to-end run of the session-21 workflow, and it all worked: `/open` (drift check clean, caught a stale README line) → `/smoke` (3 automated + 10 manual items ALL PASS — web items via browser automation, device items by Dilip on the v1.5.6 build) → `/release` shipped **v1.5.7 (versionCode 29)**: bump confirmed at the gate, `[Unreleased]` folded into `## [1.5.7] — 2026-07-06`, pushed, CI test gate green on both first firings (test.yml 35s; fail-fast job in build), build succeeded (~42 min), release notes correctly extracted into GitHub Release `v1.5.7` with both artifacts.
 
-## New workflow (generic skills global, project layer in this repo)
+Also: global permission `defaultMode` switched bypassPermissions → `auto` (+ pruned `.claude/settings.local.json` to 13 reusable rules); workflow HOWTO modernized (plan-mode convention replaces the two-AI chat relay; decision-capture rule added to global /close; executor+advisor economics recorded as a deliberate cost choice — do NOT re-suggest dropping the advisor); README stale features fixed (reverted Enter-highlight line removed, swap-setting name corrected).
 
-- **`/release`** (`~/.claude/skills/release/SKILL.md`) — bump/confirm/CHANGELOG/commit/push/`gh workflow run`/report. Reads this repo's Version Bumping Protocol + Build Pipeline sections. CHANGELOG heading `## [x.y.z]` is load-bearing (awk-extracted into GitHub Release notes).
-- **`/smoke`** (`~/.claude/skills/smoke/SKILL.md`) — runs `.claude/smoke-checklist.md` (2 automated + 10 manual items), records to gitignored `.claude/smoke-status.json`; `/release` warns if missing/stale.
-- **Drift guard** in global `/open`/`/close` — checks the `### Doc sync (drift check)` list in CLAUDE.md. Missing close = backfill from git log as first task, never a retroactive /close.
-- **Tests**: `npm test` — 36 tests (store invariants + board sequencing). CI: `test.yml` on push/PR + fail-fast `test` job gating the build in `build-apk.yml`.
+## Current state
 
-## Files changed (all committed this close, none pushed)
-
-- New: `reflection-notes.md`, `components/boardSequencing.ts`, `__tests__/store-invariants.test.ts`, `__tests__/board-sequencing.test.ts`, `__mocks__/@react-native-async-storage/async-storage.js`, `.claude/smoke-checklist.md`, `.claude/launch.json`, `.github/workflows/test.yml`
-- Modified: `components/GameBoard.tsx` (pure-function substitution only), `package.json` (jest deps/config/test script), `package-lock.json`, `.gitignore` (smoke-status.json), `.github/workflows/build-apk.yml` (test job + needs), `CLAUDE.md` (Commands, Doc sync, Build Pipeline notes, animation section pointer, daily-word Known Issue, /release pointer), `CHANGELOG.md` (Unreleased section), `TODO.md`
-- Outside repo: `~/.claude/skills/{release,smoke}/SKILL.md` (new), `~/.claude/skills/{open,close}/SKILL.md` (drift check added), `~/repos/claude-workflow/HOWTO.md` (updated + committed there)
-
-## Decisions made (and why)
-
-- Generic-first: skills are global, discovering project specifics from CLAUDE.md — matches the /open//close migration pattern; swardb/gisty adopt by adding declarations (see HOWTO.md adoption checklist).
-- `/release` smoke gate **warns, doesn't block** — user keeps override for trivial releases.
-- Daily-word distinctness NOT asserted in tests — the derivation genuinely collides (8 days/decade) and masks off 267 answers; documented as Known Issue, fix task queued (needs cutover-date anchoring so an in-progress day doesn't change under players).
-- Item 6 (build-wait: parallelize APK/AAB, local Java/Gradle repair) deferred by explicit decision.
+- **v1.5.7 (versionCode 29)** released on GitHub; `releases/latest` points at it. Play Store still has v1.5.6/vc28 on closed testing — v1.5.7 upload is a manual step for whenever store work is next.
+- Smoke status (`.claude/smoke-status.json`, gitignored) records the full pass at pre-release commit `fe10385` — stale after this close commit, as designed; run `/smoke` fresh before the next release.
+- No game-design decisions were made this session (decision-capture check: workflow decisions landed in HOWTO/memory, release decision in CHANGELOG — nothing owed to CLAUDE.md's decisions sections).
 
 ## Exact next step
 
-Open a fresh session (skills load at session start) and do the first real end-to-end run: `/open` (exercises drift check) → device smoke pass via `/smoke` (the `[device]` items consolidate all outstanding device-regression TODOs) → `/release` to ship this session's changes as the next version — that validates the entire pipeline including the new CI test gate (which has never run; first firing is on next push).
+1. **v1.5.7 APK device spot-check** (2 min): win-wave + revisit on the new build — first device run of the refactored GameBoard (`components/boardSequencing.ts`). Web + 21 unit tests confirm identical behavior; hardware eyes close the loop.
+2. Then normal feature work resumes. Candidates: daily-word collision fix (task chip queued; needs cutover-date anchoring), `DAILY_PROGRESSION` HelpModal wiring, or rolling the workflow skills to swardb/gisty (adoption checklist in `~/repos/claude-workflow/HOWTO.md`).
 
 ## Gotchas
 
-- `.claude/smoke-status.json` currently records a pass for commit `89ec1e9` — stale the moment this close commits; `/release` will correctly warn. Run `/smoke` fresh.
-- TypeScript 6 doesn't auto-inject `@types` globals — test files must `import { ... } from '@jest/globals'` (no `@types/jest` dep; don't add one).
-- Expo web ignores `PORT` env and prompts interactively when 8081 is busy — `.claude/launch.json` pins `--port 8090` for the preview server.
-- jest + jest-expo live in devDependencies deliberately (`npx expo install` had put them in dependencies).
-- Today's daily easy word was ABACK (also one of the collision words for 2026-01-27 — coincidence, but a nice reminder the bug is real).
+- **Advisor settings key may work now**: `~/.claude/settings.json` contains `"advisorModel": "opus"` and the settings schema documents the key — CLAUDE.md's "only the /advisor picker works" note is possibly stale. Verify before editing (verify-before-fixing rule), then update Model Selection.
+- Next session starts in **auto permission mode** (first one shows a one-time opt-in dialog — accept it).
+- `/release` and `/smoke` skills carry `disable-model-invocation: true` — only the user typing the command can fire them; that's deliberate, don't "fix" it.
+- The mode-arrow quirk seen during smoke: from single-board "Wordout", header ► jumps to 6-out (cycle continues from the persisted `boardCount: 4` default rather than going 1→2). Long-standing behavior, not a regression — decide deliberately if it ever bothers users.
