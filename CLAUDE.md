@@ -95,7 +95,7 @@ Three independent daily games run each day — Easy, Hard, Extreme — each with
 - Streaks tracked independently via `lastWinDate`; missed-day detection fires in `checkAndReset()`
 
 **Word selection**:
-All three words computed atomically on first daily start via UTC-midnight seed: `Math.imul(dayMs, 2654435761)` bit-shifted by indices 0/1/2. All three set in one call to `startOrResumeDailyGame`. NOTE: contrary to the original design intent, this does NOT guarantee distinct words (see Known Issues).
+All three words computed atomically on first daily start via `dailyIndices(dayNum, n)` — a mulberry32 PRNG seeded per UTC day, sampled with reject-duplicate until 3 distinct indices are drawn from the full `[0, n)` range of that language's answer list. All three set in one call to `startOrResumeDailyGame`. Fixed in v1.5.8 (previously a bit-masked derivation that collided ~8 days/decade and capped indices at 2047 — see CHANGELOG).
 
 **Accessible-list gate**:
 Build reachable difficulty list before each cycle step:
@@ -295,7 +295,6 @@ These must state the same version — checked by the global /open and /close ski
 
 ## Known Issues
 - `DAILY_PROGRESSION` export in `constants/helpContent.ts` — unused; candidate HelpModal section explaining daily difficulty progression
-- `getDailyAnswers` seed derivation does NOT guarantee distinct words per difficulty (8 collision days in the decade from epoch, e.g. 2026-01-27 easy=hard=ABACK) and its `& 0x7FF` mask makes answers at indices 2048–2314 unreachable. Fix pending; the store-invariant test deliberately doesn't assert distinctness until then.
 
 ## StatsModal Behaviour (v1.4.0+)
 - `isQuordle` uses `gameMode === 'quordle'` (see settingsStore rule)

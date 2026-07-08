@@ -40,25 +40,41 @@ function getYesterdayString(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-export function getDailyAnswers(language: Language): { easy: string; hard: string; extreme: string } {
+// mulberry32 — small deterministic PRNG, seeded per UTC day
+function mulberry32(seed: number): () => number {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6D2B79F5) | 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Three distinct indices into a list of length n, deterministic per day.
+// Full range [0, n) is reachable (unlike the old bit-masked derivation).
+export function dailyIndices(dayNum: number, n: number): [number, number, number] {
+  const rand = mulberry32(Math.imul(dayNum, 2654435761));
+  const picked: number[] = [];
+  while (picked.length < 3) {
+    const v = Math.floor(rand() * n);
+    if (!picked.includes(v)) picked.push(v);
+  }
+  return picked as [number, number, number];
+}
+
+export function getDailyAnswersForDay(language: Language, dayNum: number): { easy: string; hard: string; extreme: string } {
   const list = ANSWERS[language];
+  const [easyIdx, hardIdx, extremeIdx] = dailyIndices(dayNum, list.length);
+  return { easy: list[easyIdx], hard: list[hardIdx], extreme: list[extremeIdx] };
+}
+
+export function getDailyAnswers(language: Language): { easy: string; hard: string; extreme: string } {
   const midnight = new Date();
   midnight.setUTCHours(0, 0, 0, 0);
-  const dayMs = midnight.getTime();
-  const seed = Math.imul(dayMs, 2654435761);
-  const indices = [
-    (seed >>> 0)  & 0x7FF,  // easy
-    (seed >>> 11) & 0x7FF,  // hard
-    (seed >>> 22) & 0x7FF,  // extreme
-    (seed >>> 3)  & 0x7FF,  // reserved
-    (seed >>> 14) & 0x7FF,  // reserved
-    (seed >>> 25) & 0x7FF,  // reserved
-  ];
-  return {
-    easy:    list[indices[0] % list.length],
-    hard:    list[indices[1] % list.length],
-    extreme: list[indices[2] % list.length],
-  };
+  const dayNum = Math.floor(midnight.getTime() / 86400000);
+  return getDailyAnswersForDay(language, dayNum);
 }
 
 function evaluateGuess(guess: string, answer: string): LetterResult[] {

@@ -12,11 +12,13 @@ import {
 } from '../store/settingsStore';
 import { useQuordleStore, QuordleGuess } from '../store/quordleStore';
 import { useGameStore } from '../store/gameStore';
-import { useDailyStore, getDailyAnswers, emptyDailyGameState } from '../store/dailyStore';
+import { useDailyStore, getDailyAnswers, getDailyAnswersForDay, dailyIndices, emptyDailyGameState } from '../store/dailyStore';
 import { emptyBoardStats } from '../store/statsStore';
 import answersEnUsJson from '../assets/wordlists/answers_en_us.json';
+import answersEnGbJson from '../assets/wordlists/answers_en_gb.json';
 
 const ANSWERS_EN_US = (answersEnUsJson as string[]).map(w => w.toUpperCase());
+const ANSWERS_EN_GB = (answersEnGbJson as string[]).map(w => w.toUpperCase());
 
 const SETTINGS_DEFAULTS = {
   language: 'en_us' as const,
@@ -257,13 +259,34 @@ describe('getDailyAnswers', () => {
     for (const w of [a.easy, a.hard, a.extreme]) {
       expect(ANSWERS_EN_US).toContain(w);
     }
-    // NOTE: distinctness across difficulties is NOT asserted — the bit-window
-    // derivation collides on rare days (8 days in the decade from the epoch,
-    // e.g. 2026-01-27 easy=hard=ABACK) and can only reach the first 2048 list
-    // entries. Tracked as a known bug; assert distinctness once fixed.
+    expect(new Set([a.easy, a.hard, a.extreme]).size).toBe(3);
 
     jest.setSystemTime(new Date('2026-07-07T01:00:00Z'));
     expect(getDailyAnswers('en_us')).not.toEqual(a); // new day, new words
+  });
+
+  test('always distinct and full range reachable, over 10000 days, both languages', () => {
+    const DAYS = 10000;
+    for (const list of [ANSWERS_EN_US, ANSWERS_EN_GB]) {
+      let maxIndexSeen = 0;
+      for (let day = 0; day < DAYS; day++) {
+        const [e, h, x] = dailyIndices(day, list.length);
+        expect(new Set([e, h, x]).size).toBe(3);
+        for (const idx of [e, h, x]) {
+          expect(idx).toBeGreaterThanOrEqual(0);
+          expect(idx).toBeLessThan(list.length);
+          maxIndexSeen = Math.max(maxIndexSeen, idx);
+        }
+      }
+      // Proves the old `& 0x7FF` cap (max reachable index 2047) is gone.
+      expect(maxIndexSeen).toBeGreaterThanOrEqual(2048);
+    }
+  });
+
+  test('getDailyAnswersForDay is a pure function of (language, dayNum)', () => {
+    const a = getDailyAnswersForDay('en_us', 200);
+    expect(getDailyAnswersForDay('en_us', 200)).toEqual(a);
+    expect(getDailyAnswersForDay('en_us', 201)).not.toEqual(a);
   });
 });
 
