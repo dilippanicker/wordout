@@ -2,6 +2,13 @@
 
 All notable changes to Wordout are documented here.
 
+## [1.5.8] — 2026-07-09
+### Added
+- Help screen now has a DAILY MODE section explaining the Easy → Hard → Extreme progression
+
+### Fixed
+- Daily words could collide across difficulties (~8 days/decade) and ~267 answers were unreachable due to a bit-masked seed derivation — replaced with a per-day PRNG guaranteeing 3 distinct words drawn from the full answer list
+
 ## [1.5.7] — 2026-07-06
 ### Added
 - Unit test suites: store invariants (`__tests__/store-invariants.test.ts`) and animation sequencing regressions (`__tests__/board-sequencing.test.ts`) — 36 tests, run with `npm test`
