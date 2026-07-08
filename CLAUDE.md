@@ -293,9 +293,6 @@ These must state the same version — checked by the global /open and /close ski
 
 ---
 
-## Known Issues
-- `DAILY_PROGRESSION` export in `constants/helpContent.ts` — unused; candidate HelpModal section explaining daily difficulty progression
-
 ## StatsModal Behaviour (v1.4.0+)
 - `isQuordle` uses `gameMode === 'quordle'` (see settingsStore rule)
 - Daily/Practice tabs are local state (`modalModeTab`), synced imperatively via `useDailyStore.getState()` on `visible → true` — does NOT write back to store

@@ -6,7 +6,7 @@ import {
   SINGLE_BOARD_RULES, COLOR_KEY, COLOR_BLIND_NOTE, MULTI_BOARD_RULES,
   RIBBON_DESCRIPTION, BOARD_IND_TEXTS, TOP_ICON_TEXTS, RIBBON_ICON_TEXTS,
   FOOTER_ICON_TEXTS, FEEDBACK_PROMPT, FEEDBACK_LINK_TEXT, OPEN_SOURCE_PROMPT,
-  OPEN_SOURCE_LINK_TEXT, MADE_BY, WATCH_TUTORIAL_LABEL,
+  OPEN_SOURCE_LINK_TEXT, MADE_BY, WATCH_TUTORIAL_LABEL, DAILY_PROGRESSION,
 } from '@/constants/helpContent';
 
 import { Difficulty, useSettingsStore } from '@/store/settingsStore';
@@ -184,6 +184,11 @@ export function HelpModal({ visible, onClose, difficulty, onWatchTutorial }: Hel
 
             <Text style={[styles.colorKey, { color: colors.text }]}>{COLOR_KEY}</Text>
             <Text style={styles.mutedNote}>{COLOR_BLIND_NOTE}</Text>
+
+            {/* ── DAILY MODE ──────────────────────────────────────── */}
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <Text style={styles.sectionLabel}>DAILY MODE</Text>
+            <Text style={[styles.rule, { color: colors.text }]}>{DAILY_PROGRESSION}</Text>
 
             {/* ── MULTI-BOARD MODE ────────────────────────────────── */}
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
