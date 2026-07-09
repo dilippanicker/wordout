@@ -1,8 +1,23 @@
 # Wordout — Master TODO
-**Updated: 2026-07-06 (session 22)**
-**Current version: v1.5.7 (versionCode 29)**
+**Updated: 2026-07-09 (session 23)**
+**Current version: v1.5.8 (versionCode 30)**
 
 ---
+
+## ✅ Session 23 — Completed 2026-07-09 (v1.5.8: daily-word fix + HelpModal wiring)
+
+- ✅ **Daily word collisions + unreachable answers fixed** (`getDailyAnswers`) — replaced the bit-masked `& 0x7FF` derivation with `dailyIndices(dayNum, n)`, a mulberry32 PRNG sampled with reject-duplicate for 3 distinct indices across the full answer-list range. New tests prove distinctness + full-range reachability over 10,000 simulated days, both languages. No cutover-date logic needed — reasoning recorded in CLAUDE.md.
+- ✅ **`DAILY_PROGRESSION` wired into HelpModal** — new "DAILY MODE" section in the help screen; text was already written (session 10), just never rendered. Resolved the last CLAUDE.md Known Issues entry, section removed (now empty).
+- ✅ **v1.5.8 (versionCode 30) released** — bump confirmed, CHANGELOG updated, `/release` triggered CI (test gate green, ~40 min build), GitHub Release published with both artifacts, local `releases/` copies refreshed, device spot-check clean.
+- ✅ **`/smoke` run properly** (previous close's status was 3 commits stale) — automated checks + 8/10 manual web items verified directly; items 4/10 (device-only: wave timing, share text) explicitly recorded as `skipped` rather than left silent.
+- ✅ **Decision capture**: "no cutover needed" reasoning added to Daily Gate Architecture; "Wordout stays ad-free" locked as an explicit decision (see Gotchas below); advisor-settings-key note softened from "confirmed broken" to "unconfirmed, worth re-testing."
+- ✅ **Play Store release notes drafted** for the 1.5.6→1.5.8 user-facing delta (v1.5.7 was internal-only, no notes needed for it) — see session-handoff.md.
+
+## 🔴 NEW — Follow-up from Session 23
+
+- [ ] **Play Store: upload v1.5.8** to closed testing (v1.5.6/vc28 currently live; v1.5.7 was never uploaded, v1.5.8 supersedes both) — AAB at `releases/wordout-latest.aab`, release notes drafted in session-handoff.md
+- [ ] **Prune two stale TODO nice-to-have entries** (flagged session 23, not yet cleaned up): "Haptic feedback on correct/wrong guess" under Future — already shipped session 8; "Animate board indicator state transitions" — contradicts the locked "deliberately static" CLAUDE.md decision
+- [ ] (Future, paused mid-search) **Web games portfolio domain naming** — if resumed, do NOT re-litigate Wordout-stays-ad-free (see CLAUDE.md Monetization decision + `wordout-ads-scope-decision.md` memory). Ruled out: `gullygames.org` (trademark/brand collision with an existing India real-money gaming platform), `desiboard.games` (collision with existing DesiBoardGames tabletop company). Live candidates when paused: `onglipo.games`/`onglipo.fun`, and pan-Indian (not Hindi-belt-slang) options still needed for South Indian resonance.
 
 ## ✅ Session 22 — Completed 2026-07-06 (v1.5.7 shipped through the new pipeline)
 
@@ -15,8 +30,8 @@
 ## 🔴 NEW — Follow-up from Session 22
 
 - ✅ **v1.5.7 APK device spot-check** — done 2026-07-06: installed via `./make.sh push`, win-wave + revisit verified on S24 Ultra. Refactored GameBoard confirmed behavior-identical on hardware.
-- [ ] **Verify advisor settings key** — `~/.claude/settings.json` has `"advisorModel": "opus"` and the current settings schema documents it; CLAUDE.md's "only the /advisor picker works" note may be stale. Verify in a session, then update CLAUDE.md's Model Selection section
-- [ ] **Play Store: upload v1.5.7** to closed testing when next doing store work (v1.5.6/vc28 currently live there)
+- 🟡 **Verify advisor settings key** — partially addressed session 23: `advisor()` calls this session returned substantive, independent-seeming analysis with the key present, but wasn't rigorously re-tested (no comparison with the key removed). CLAUDE.md note softened to "unconfirmed" rather than "does NOT work." Still needs a clean before/after test to fully close.
+- ✅ **Play Store: upload v1.5.x** — superseded; v1.5.7 was never uploaded, now tracked as "upload v1.5.8" in Session 23 follow-ups above
 
 ## ✅ Session 21 — Completed 2026-07-06 (workflow overhaul)
 
@@ -33,9 +48,9 @@
 
 ## 🔴 NEW — Follow-up from Session 21
 
-- [ ] **First real `/release` + `/smoke` run in a fresh session** — skills become invocable next session; this session's changes are a legitimate release candidate and would validate the whole pipeline end-to-end (including the CI test gate, which first fires on next push)
-- [ ] **Device smoke pass** — the `[device]` checklist items (wave feel on 6/8-out, share text, enter key) consolidate all the outstanding per-session "device regression test" items below
-- [ ] **Fix daily word collisions + unreachable answers** (`getDailyAnswers`) — task chip queued; needs a cutover-date-anchored derivation change
+- ✅ **First real `/release` + `/smoke` run** — done session 22
+- ✅ **Device smoke pass** — done session 22, consolidated the outstanding per-session "device regression test" items
+- ✅ **Fix daily word collisions + unreachable answers** — done session 23 (turned out not to need cutover-date anchoring — see session 23 notes)
 - [ ] (Optional, deferred by decision) Item 6 of reflection-notes: parallelize APK/AAB CI jobs, repair local Java/Gradle env
 
 ## ✅ Session 20 — Completed 2026-07-05

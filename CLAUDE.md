@@ -95,7 +95,7 @@ Three independent daily games run each day — Easy, Hard, Extreme — each with
 - Streaks tracked independently via `lastWinDate`; missed-day detection fires in `checkAndReset()`
 
 **Word selection**:
-All three words computed atomically on first daily start via `dailyIndices(dayNum, n)` — a mulberry32 PRNG seeded per UTC day, sampled with reject-duplicate until 3 distinct indices are drawn from the full `[0, n)` range of that language's answer list. All three set in one call to `startOrResumeDailyGame`. Fixed in v1.5.8 (previously a bit-masked derivation that collided ~8 days/decade and capped indices at 2047 — see CHANGELOG).
+All three words computed atomically on first daily start via `dailyIndices(dayNum, n)` — a mulberry32 PRNG seeded per UTC day, sampled with reject-duplicate until 3 distinct indices are drawn from the full `[0, n)` range of that language's answer list. All three set in one call to `startOrResumeDailyGame`. Fixed in v1.5.8 (previously a bit-masked derivation that collided ~8 days/decade and capped indices at 2047 — see CHANGELOG). No cutover-date gating was needed for the fix: `dailyAnswers` is computed once per day and persisted, so an in-progress day keeps its already-computed word (old or new algorithm) and only future days see the new derivation — same-day cross-version consistency was never a requirement here (no historical word display, share text never reveals the word).
 
 **Accessible-list gate**:
 Build reachable difficulty list before each cycle step:
@@ -159,6 +159,8 @@ Cycle (m = highest reachable index): header difficulty emoji taps through this l
 
 **App name:** Wordout (not WordOut, not WORDOUT)
 **Mode names:** Wordout, 2-out, 3-out, 4-out, 6-out, 8-out
+
+**Monetization:** Wordout stays ad-free (see README's "No ads, no accounts, no tracking"). Ad-monetization was explicitly considered and declined (2026-07) — it conflicts with the app's core promise to existing users/testers. Do not propose ads, analytics, or tracking SDKs for this app.
 
 ### Animation sequence (locked design)
 
@@ -263,7 +265,7 @@ Before every build, follow exactly:
 
 Pattern: `opusplan` session model (Opus plans, Sonnet executes — automatic) + Opus-class advisor + Haiku-pinned Explore agent (`~/.claude/agents/Explore.md`). Set globally in `~/.claude/settings.json`; verify at session start via the `/model` and `/advisor` checkmarks. Rationale and details: `~/repos/claude-workflow/HOWTO.md` Roles section.
 
-**Important:** `claude config set advisorModel` does NOT work — the only correct way to enable the advisor is via the `/advisor` command picker in the session.
+**Important:** `claude config set advisorModel` does NOT work — the only correct way to enable the advisor is via the `/advisor` command picker in the session. Note: `~/.claude/settings.json` currently has `"advisorModel": "opus"` set, and `advisor()` calls in the 2026-07-08 session returned substantive, independent-seeming analysis — this note may be stale, but wasn't rigorously re-tested (didn't compare behavior with the key removed), so treat as unconfirmed rather than fixed.
 
 Executor handles implementation; advisor engages automatically at key decision points (before writing, before committing to an approach, when stuck, before declaring done). Run `/compact` at 50%+ context.
 
