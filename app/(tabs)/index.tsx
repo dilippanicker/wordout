@@ -428,6 +428,7 @@ export default function WordleScreen() {
         confirmAbandon(() => { setDifficulty(next); useQuordleStore.getState().newGame(); });
       } else {
         setDifficulty(next);
+        useQuordleStore.getState().newGame();
       }
       return;
     }
