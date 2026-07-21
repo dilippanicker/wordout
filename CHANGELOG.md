@@ -2,6 +2,10 @@
 
 All notable changes to Wordout are documented here.
 
+## [1.5.10] — 2026-07-22
+### Fixed
+- N-out board indicators didn't show which unsolved boards were actually failed when a game ended in a loss — the dot just kept showing the in-progress correct-letter count. Unsolved boards now show a red ✗, matching the green ✓ shown for solved boards.
+
 ## [1.5.9] — 2026-07-21
 ### Fixed
 - Daily word could repeat across two consecutive days for players in timezones ahead of UTC (e.g. India) — the daily reset was keyed off local calendar day while the word itself rotates at UTC midnight, so opening the app in the early-morning gap between local and UTC midnight served yesterday's word again. Reset gate and the "Next word in HH:MM:SS" countdown now both key off UTC.

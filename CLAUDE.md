@@ -251,7 +251,7 @@ Before every build, follow exactly:
 - Never update `app.json` before user confirms
 - Never trigger build without confirmed version bump
 
-**Current version:** `1.5.9` (versionCode 31)
+**Current version:** `1.5.10` (versionCode 32)
 
 ---
 
