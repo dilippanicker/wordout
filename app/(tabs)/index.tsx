@@ -785,6 +785,7 @@ export default function WordleScreen() {
               const isActive   = activeBoard === i;
               const greenCount = solved ? 0 : boardCorrectCount(qGuesses, i);
               const hasYellow  = solved ? false : boardHasYellow(qGuesses, i);
+              const failed     = !solved && activeGameStatus === 'lost';
               return (
                 <BoardIndicator
                   key={i}
@@ -792,9 +793,11 @@ export default function WordleScreen() {
                   isActive={isActive}
                   greenCount={greenCount}
                   hasYellow={hasYellow}
+                  failed={failed}
                   onPress={() => scrollTo(i)}
                   accessibilityLabel={
                     solved ? `Board ${i + 1} — solved`
+                    : failed ? `Board ${i + 1} — not solved`
                     : isActive ? `Board ${i + 1} — current`
                     : `Board ${i + 1}${greenCount > 0 ? `, ${greenCount} correct` : ''}`
                   }

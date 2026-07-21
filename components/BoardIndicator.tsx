@@ -7,6 +7,7 @@ interface BoardIndicatorProps {
   isActive: boolean;
   greenCount: number;
   hasYellow: boolean;
+  failed: boolean;
   onPress: () => void;
   accessibilityLabel: string;
 }
@@ -16,6 +17,7 @@ export function BoardIndicator({
   isActive,
   greenCount,
   hasYellow,
+  failed,
   onPress,
   accessibilityLabel,
 }: BoardIndicatorProps) {
@@ -24,7 +26,11 @@ export function BoardIndicator({
   let backgroundColor: string;
   let textColor: string;
 
-  if (isActive) {
+  if (failed) {
+    borderColor = '#E24B4A';
+    backgroundColor = '#E24B4A';
+    textColor = '#ffffff';
+  } else if (isActive) {
     borderColor = solved ? '#6aaa64' : '#5BA75A';
     backgroundColor = solved ? '#6aaa64' : 'transparent';
     textColor = solved ? '#ffffff' : '#5BA75A';
@@ -50,6 +56,8 @@ export function BoardIndicator({
       >
         {solved ? (
           <Animated.Text style={{ fontSize: 14, fontWeight: 'bold', color: textColor }}>✓</Animated.Text>
+        ) : failed ? (
+          <Animated.Text style={{ fontSize: 12, fontWeight: 'bold', color: textColor }}>✗</Animated.Text>
         ) : isActive ? (
           <Ionicons name="play" size={10} color={textColor} />
         ) : greenCount > 0 ? (
