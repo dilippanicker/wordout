@@ -1,42 +1,44 @@
-# Session Handoff — 2026-07-21 (Session 24: Play Store production-access rejection investigated)
+# Session Handoff — 2026-07-21 (Session 25: v1.5.9 — daily UTC-boundary fix + n-out resize fix)
 
 ## What this session did
 
-No code changes. The whole session was a Play Console investigation, walked through screenshots the user took live in the browser (`~/Pictures/Screenshots/`).
+Two user-reported bugs, both root-caused, fixed, tested, and shipped as v1.5.9 (versionCode 31).
 
-**Finding:** v1.5.8 (versionCode 30) is live on Closed testing - Alpha (released Jul 9, 100% rollout, 18,977 devices reached). The user applied for production access and was **rejected** on review (banner says "Reviewed Monday" — 2026-07-20): *"Run your closed test with at least 12 testers for 14 more days starting from the review date. 12 testers have currently been opted in for 1 day."*
+**Bug 1 — daily word repeating across consecutive days.** User reported the same daily word appearing on both Jul 20 and Jul 21, 2026. Verified numerically (dev machine is IST, `Asia/Kolkata`) that `dailyStore.ts`'s `getTodayString()`/`getYesterdayString()` — which drive `checkAndReset()` and the `lastPlayedDate`/`lastWinDate` gate — used **local calendar day**, while `getDailyAnswers()` derives the actual word from **UTC midnight**. In any timezone ahead of UTC, local midnight arrives before real UTC midnight; opening the app in that gap window makes `checkAndReset()` see a "new day" and clear `dailyAnswers`, but the recomputed answer still lands on the previous UTC day — serving yesterday's word again. Fixed by switching both date-string helpers to UTC accessors (`getUTCFullYear()` etc.), and the "Next word in HH:MM:SS" countdown (`msUntilMidnight()` in `app/(tabs)/index.tsx`) to count down to UTC midnight instead of local midnight, so the two stay in sync. Added a regression test in `__tests__/store-invariants.test.ts` that sets `process.env.TZ = 'Asia/Kolkata'` and a fake system time inside the gap window — confirmed it **fails against the pre-fix code** (proves it actually catches the bug) and passes after the fix.
 
-This conflicts with the user's own understanding — they believed they'd had 12+ opted-in testers continuously since July 9 (~11-12 days by the review date), which is presumably why they applied. The discrepancy is **unexplained** — Play Console's UI doesn't expose historical opt-in duration anywhere, only the current snapshot on this rejection banner. Established during the session (clarifying three distinct, easily-conflated numbers):
-- **19** — testers on the invite list ("Internal Testers for Wordout" email list, Testers tab)
-- **12** — how many had actually opted in (accepted the join link) per Google's last check
-- **8** — how many of those opted-in testers ever downloaded/installed
+**Bug 2 — n-out board not resizing on difficulty change.** User reported (with 3 screenshots) that switching Hard → Extreme on a 2-out board left the board at 7 rows (Hard's guess count) instead of shrinking to 5 (Extreme's), until a manual New Game. Root cause: `handleDifficultyToggle()` in `app/(tabs)/index.tsx` has two quordle branches — one for an in-progress game (confirmAbandon, which correctly calls `useQuordleStore.getState().newGame()` after `setDifficulty()`) and one for a fresh board with no guesses submitted yet, which only called `setDifficulty()`. Since `quordleStore.maxGuesses` (the row-count source) is only recomputed inside `newGame()` — unlike single-board practice, where `maxGuesses` is derived live from settings on every render — the fresh-board path left it stale. Fixed by adding the missing `newGame()` call to that branch.
 
-An earlier working theory (opted-in count dipped below 12 then recovered, resetting the clock) was floated but the user correctly pushed back — they hadn't contacted or changed any tester since the July 9 release, so there's no mechanism for churn on their end. That theory was retracted as unconfirmed speculation, not something Google's message actually states.
+Both fixes verified: `npx tsc --noEmit` clean, full `npx jest` 39/39 passing, and live in a headless Playwright browser against the running `npx expo start --web` dev server — the browser extension (`claude-in-chrome`) wasn't connected this session, so a scratch Playwright driver was used instead (Chromium installed fresh via `npx playwright install chromium`, run through `~/repos/test/node_modules` since this repo has no local Playwright install). Reproduced the exact 2-out Hard→Extreme scenario from the user's screenshots and confirmed the board now resizes immediately on the emoji tap.
 
-**New information from Google's own AI-assist panel** (shown in Play Console's "New support ticket" flow before you can create one): failed production applications are attributed to either (a) the 12-tester minimum not being maintained continuously, **or (b) "insufficient engagement from those testers during the period."** This fits the data better than the churn theory — 12 opted in but only 8 ever downloaded means several testers joined without ever using the app, which plausibly reads as low engagement to whatever Google's system measures.
+## Version / release
 
-**Clarified how Google can measure "engagement" despite the app having zero telemetry/analytics of its own** (consistent with the project's "no tracking" principle — that's about *not adding* third-party SDKs, this is store-level telemetry outside developer control): the Play Store client and Google Play Services report install/uninstall, app-open events, Android vitals (crash/ANR rate), and update-adoption automatically for every Play-installed app, with no app-side instrumentation required.
-
-A support ticket was drafted and **submitted** (2026-07-21) targeting the specific factual discrepancy — 12+ opted-in since July 9 per the user's records vs. "1 day" shown at review — asking Google to explain the reset rather than repeating generic guidance. Awaiting response.
+- Bumped v1.5.8 (vc30) → **v1.5.9 (vc31)** — patch, both fixes folded into one CHANGELOG entry (the n-out fix was committed after the version bump commit but before anything was pushed, so it was added to the same still-unreleased `## [1.5.9]` section rather than triggering a second bump).
+- Pushed to `main`, triggered `build-apk.yml` via `gh workflow run` (run `29818613255`): test job 42s, build job 44m20s, both green.
+- GitHub Release **v1.5.9** published: `wordout.apk` (98.2 MB), `wordout.aab` (69.4 MB).
+  - https://github.com/dilippanicker/wordout/releases/download/v1.5.9/wordout.apk
+  - https://github.com/dilippanicker/wordout/releases/download/v1.5.9/wordout.aab
 
 ## Current state
 
-- v1.5.8/vc30 live and stable on Closed testing - Alpha; this is unchanged and not in question.
-- Production-access application was rejected once (2026-07-20 review). Google's own copy says the 14-day/12-tester requirement "cannot be waived or expedited" — there is no fast path.
-- Root cause of the "1 day" figure vs. expected ~11-12 days remains **unconfirmed**. Two live hypotheses, not mutually exclusive: (1) insufficient tester engagement (opted-in but inactive), (2) some Play Console mechanism we don't understand yet (possibly tied to release/track edits — unconfirmed).
-- Support ticket was submitted 2026-07-21. Awaiting Google's response.
+- v1.5.9/vc31 is built and published on GitHub Releases. **Not yet uploaded to Play Store** — closed testing track is still on v1.5.8/vc30.
+- Local `releases/wordout-latest.apk` / `.aab` are **stale (still v1.5.8)** — the refresh step (`gh release download` + copy into `releases/`) hit a permission denial on the `cp`/`rm -rf` commands mid-session and wasn't retried.
+- Play Store production-access saga (from Session 24, unrelated to this session) is untouched and still pending: rejected 2026-07-20, support ticket submitted 2026-07-21, awaiting Google's response, 14-day/12-tester clock still needs to run clean. See "Prior context" below.
+- No device regression test of either v1.5.9 fix — verification was web/headless-browser only.
 
 ## Exact next step
 
-1. **Decide whether to submit the drafted support ticket** (Play Console → Help → Contact us → Closed testing / Production access category). Ask specifically why the opt-in duration shows 1 day given no tester-list changes since July 9, and whether "opted in" requires ongoing activity beyond the initial join.
-2. **Get existing opted-in testers to actually open/use the current build** — this directly targets the "insufficient engagement" hypothesis without touching release/track config (which risks triggering whatever the unknown reset mechanism is).
-3. **Optionally ship a bug-fix release** once real tester-reported bugs are gathered (the "how to play" / Enter-key-default feedback the user mentioned was already implemented in past sessions — no new bug list exists yet, wasn't captured this session). Framed correctly to the user: a release won't shorten the mandatory 14 days, but gives testers a reason to reopen the app (targets engagement) and gives concrete material for the reapplication questionnaire, which Google's own guidance asks for ("highlighting specific bugs fixed and features added").
-4. **Wait 14 clean days with opt-in count staying ≥12** before reapplying via Dashboard → "Apply for production." Build margin by getting more of the 19 invited testers to actually opt in (7 haven't).
-5. Don't edit the tester list, countries/regions, or push a new release impulsively — every untouched variable right now is a suspect for whatever caused the "1 day" reset.
+1. Refresh local artifact copies for v1.5.9 — re-run `gh release download v1.5.9 --pattern '*.apk' --pattern '*.aab'` targeting `releases/` directly (avoid staging in `/tmp` first, since that path hit a permission denial this session), then rename to `wordout-latest.{apk,aab}`.
+2. Optional device regression test of the n-out resize fix (straightforward: switch difficulty on any n-out board with no guesses yet, confirm immediate resize). The UTC daily-boundary fix is impractical to device-test directly since it requires hitting a specific timezone-dependent instant window — the regression test + code fix should be treated as sufficient.
+3. Whenever Play Store upload is next prioritized: upload v1.5.9 (AAB), independent of the still-pending production-access clock.
+4. Continue waiting on Google's response to the 2026-07-21 support ticket (Session 24 item, unrelated to this session's work).
 
 ## Gotchas
 
-- **Play Console's UI has no page showing opt-in history or duration** — only the Dashboard's eligibility banner shows a point-in-time snapshot ("N testers opted in for M days"), and only when there's an active rejection to review. The Testers tab (Closed testing - Alpha → Testers) shows list size (invited count) only, not opt-in count.
-- **Three tester numbers are easy to conflate**: invited (list size) → opted-in (accepted join link) → downloaded (installed). Google's 14-day production-access clock counts opted-in, not the other two.
-- **App-side "no tracking" does not mean Google can't see usage.** Play Store/Play Services collect install, open, vitals, and update-adoption telemetry for every Play-installed app regardless of app code — this is separate from (and doesn't conflict with) the project's explicit decision to avoid adding analytics/ad SDKs.
-- Two screenshot mix-ups happened mid-session (a stale filename pointed at an unrelated ChatGPT/DevTools screenshot) — always confirm the screenshot filename matches what's actually being discussed before analyzing it.
+- **`claude-in-chrome` browser extension was not connected this session** — fell back to a scratch Playwright driver (Chromium installed via `npx playwright install chromium`, executed with `NODE_PATH` pointed at `~/repos/test/node_modules` since this repo doesn't have Playwright as a dependency). Worth checking extension connectivity at the start of future UI-verification tasks before assuming this fallback is needed again.
+- **`cp`/`rm -rf` on a scratch download directory got permission-denied** mid-session (staging a `gh release download` output before copying into `releases/`) — not yet understood why; didn't retry with a different approach. If this recurs, try `gh release download` with `--dir` pointed directly at the target instead of staging in `/tmp` first.
+- **Quordle's `maxGuesses` is a stored field, recomputed only by `newGame()`/`switchBoardCount()`** — unlike single-board practice, which derives `maxGuesses` live from `settingsStore.difficulty` on every render via `maxGuessesForDifficulty()`. Any future quordle state transition that changes `difficulty` or `boardCount` needs to explicitly trigger a `maxGuesses` recompute; it will not happen implicitly. This was the root cause of Bug 2 above — worth remembering as a general shape, not just this one call site.
+- **UTC vs local day boundary is now a recurring bug family** — this is the second fix in this area (first was the v1.5.8 word-derivation collision fix). Any new daily-related date logic should default to UTC accessors unless there's a specific reason to use local time.
+
+## Prior context (Session 24, untouched this session)
+
+Play Store production-access application was rejected 2026-07-20: Google requires 12+ testers opted-in continuously for 14 days; dashboard showed only "1 day" despite the user believing 12+ opted in continuously since Jul 9. Root cause unconfirmed — two live hypotheses: insufficient tester engagement (12 opted-in but only 8 ever downloaded), or an unexplained Play Console reset mechanism. A support ticket targeting this exact discrepancy was submitted 2026-07-21; awaiting Google's response. Full detail (tester-number definitions, Play Console UI gotchas) is in git history for this file (see commit `6a2b436`) if needed again.

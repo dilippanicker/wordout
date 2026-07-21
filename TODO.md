@@ -1,8 +1,22 @@
 # Wordout — Master TODO
-**Updated: 2026-07-21 (session 24)**
-**Current version: v1.5.8 (versionCode 30)**
+**Updated: 2026-07-21 (session 25)**
+**Current version: v1.5.9 (versionCode 31)**
 
 ---
+
+## ✅ Session 25 — Completed 2026-07-21 (v1.5.9: daily UTC-boundary fix + n-out resize fix)
+
+- ✅ **Daily word repeating across consecutive days fixed** — reported by user for Jul 20/21, 2026 in IST. Root cause: `getTodayString()`/`getYesterdayString()` (`dailyStore.ts`, drive `checkAndReset()`) used local calendar day while `getDailyAnswers()` derives the word from UTC midnight. In timezones ahead of UTC, local midnight arrives before real UTC midnight, so the reset fired early during that gap and reused the still-previous-UTC-day word. Both functions and the `msUntilMidnight()` countdown (`app/(tabs)/index.tsx`) now key off UTC. Regression test added (`__tests__/store-invariants.test.ts`, sets `TZ=Asia/Kolkata`) — confirmed it fails against the pre-fix code.
+- ✅ **N-out board not resizing on difficulty change fixed** — reported by user with screenshots (Hard → Extreme on 2-out kept 7 rows instead of 5 until New Game). Root cause: `handleDifficultyToggle()`'s quordle branch only called `useQuordleStore.getState().newGame()` (which recomputes `maxGuesses`) on the confirmAbandon path, not on the fresh-board (no guesses yet) path. Both paths now call it.
+- ✅ **Verified live** — headless Playwright against the running web dev server reproduced the exact 2-out Hard→Extreme repro and confirmed the board now resizes immediately; `npx tsc --noEmit` clean; full `npx jest` 39/39 passing.
+- ✅ **v1.5.9 (versionCode 31) released** — bump confirmed, CHANGELOG entry covers both fixes, pushed, GitHub Actions build triggered (run `29818613255`: test 42s + build 44m20s, both green), GitHub Release `v1.5.9` published with `wordout.apk` + `wordout.aab`.
+- ✅ CLAUDE.md updated: new "Day boundary is UTC everywhere" note under Daily Gate Architecture; quordle Difficulty rules bullet expanded with the `newGame()`-must-be-called-on-both-paths invariant.
+
+## 🔴 NEW — Follow-up from Session 25
+
+- [ ] **Local `releases/wordout-latest.{apk,aab}` still on v1.5.8** — refresh attempt mid-session hit a permission denial on the `cp`/`rm -rf` commands used to stage the download; not retried. Use `./make.sh push` (installs the already-downloaded copy) or re-run the `gh release download` + copy step to bring them to v1.5.9.
+- [ ] **No device regression test of either v1.5.9 fix** — both were verified web-only (headless Playwright). The n-out resize fix is straightforward to check on a real device; the UTC daily-boundary fix is hard to device-test directly (would need to actually change device timezone to IST or similar and hit the early-morning gap window) — consider trusting the regression test + code fix for this one rather than forcing a device repro.
+- [ ] **v1.5.9 not yet uploaded to Play Store** — closed testing track is still on v1.5.8/vc30. Upload is independent of (and shouldn't disturb) the ongoing production-access 14-day clock investigation — see Session 24 items below, still unresolved.
 
 ## 🔴 NEW — Follow-up from Session 24 (2026-07-21, Play Store production-access investigation)
 
