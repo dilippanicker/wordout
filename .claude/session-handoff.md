@@ -17,14 +17,14 @@ An earlier working theory (opted-in count dipped below 12 then recovered, resett
 
 **Clarified how Google can measure "engagement" despite the app having zero telemetry/analytics of its own** (consistent with the project's "no tracking" principle — that's about *not adding* third-party SDKs, this is store-level telemetry outside developer control): the Play Store client and Google Play Services report install/uninstall, app-open events, Android vitals (crash/ANR rate), and update-adoption automatically for every Play-installed app, with no app-side instrumentation required.
 
-A support-ticket draft was written (not yet confirmed submitted) targeting the specific factual discrepancy — 12+ opted-in since July 9 per the user's records vs. "1 day" shown at review — asking Google to explain the reset rather than repeating generic guidance.
+A support ticket was drafted and **submitted** (2026-07-21) targeting the specific factual discrepancy — 12+ opted-in since July 9 per the user's records vs. "1 day" shown at review — asking Google to explain the reset rather than repeating generic guidance. Awaiting response.
 
 ## Current state
 
 - v1.5.8/vc30 live and stable on Closed testing - Alpha; this is unchanged and not in question.
 - Production-access application was rejected once (2026-07-20 review). Google's own copy says the 14-day/12-tester requirement "cannot be waived or expedited" — there is no fast path.
 - Root cause of the "1 day" figure vs. expected ~11-12 days remains **unconfirmed**. Two live hypotheses, not mutually exclusive: (1) insufficient tester engagement (opted-in but inactive), (2) some Play Console mechanism we don't understand yet (possibly tied to release/track edits — unconfirmed).
-- Support ticket text was drafted in-conversation but the user had not confirmed sending it as of session end.
+- Support ticket was submitted 2026-07-21. Awaiting Google's response.
 
 ## Exact next step
 
