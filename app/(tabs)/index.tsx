@@ -160,10 +160,12 @@ async function copyToClipboard(text: string): Promise<boolean> {
 
 // ── Countdown helpers ───────────────────────────────────────────────────────
 
+// UTC-based to match dailyStore's UTC day boundary — the daily word actually
+// rotates at UTC midnight, not local midnight.
 function msUntilMidnight(): number {
   const now = new Date();
-  const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-  return midnight.getTime() - now.getTime();
+  const midnight = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
+  return midnight - now.getTime();
 }
 
 function msToHMS(ms: number): string {

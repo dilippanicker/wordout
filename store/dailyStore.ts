@@ -29,15 +29,19 @@ export function getDailyIndex(): number {
   return Math.floor((Date.now() - DAILY_EPOCH) / 86400000);
 }
 
+// UTC-based — must agree with getDailyAnswers()'s UTC-midnight day boundary.
+// A local-calendar-day version caused the daily reset to fire before the word
+// actually rotated for any timezone ahead of UTC (e.g. IST), repeating the
+// previous day's word until real UTC midnight caught up.
 function getTodayString(): string {
   const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
 }
 
 function getYesterdayString(): string {
   const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  d.setUTCDate(d.getUTCDate() - 1);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
 }
 
 // mulberry32 — small deterministic PRNG, seeded per UTC day

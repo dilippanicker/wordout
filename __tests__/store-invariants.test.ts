@@ -347,6 +347,47 @@ describe('dailyStore checkAndReset', () => {
     expect(s.games.hard.currentGuess).toBe('CRA');
     expect(s.activeDailyDifficulty).toBe('hard');
   });
+
+  test('day boundary is UTC, not local — no reset (and no word repeat) before real UTC midnight in timezones ahead of UTC', () => {
+    // Repro of the reported bug: in IST (+05:30), local midnight arrives 5.5h
+    // before UTC midnight. The old local-calendar-day getTodayString() saw a
+    // "new day" during that gap and reset early, and the freshly-reset game
+    // then reused getDailyAnswers()'s still-previous-UTC-day word — repeating
+    // yesterday's word. Day boundary must track UTC so reset and word
+    // rotation happen at the same instant regardless of device timezone.
+    const originalTZ = process.env.TZ;
+    process.env.TZ = 'Asia/Kolkata';
+    try {
+      jest.useFakeTimers();
+      // 2026-07-20T20:00:00Z = 2026-07-21 01:30 IST — local calendar day is
+      // already the 21st, but UTC calendar day is still the 20th.
+      jest.setSystemTime(new Date('2026-07-20T20:00:00Z'));
+      useDailyStore.setState({
+        lastPlayedDate: '2026-07-20',
+        dailyAnswers: { easy: 'CIGAR', hard: 'REBUT', extreme: 'SISSY' },
+        activeDailyDifficulty: 'easy',
+        games: {
+          ...useDailyStore.getState().games,
+          easy: { ...emptyDailyGameState(), status: 'playing', currentGuess: 'STARE' },
+        },
+      });
+
+      useDailyStore.getState().checkAndReset();
+      const s = useDailyStore.getState();
+      expect(s.lastPlayedDate).toBe('2026-07-20');
+      expect(s.games.easy.status).toBe('playing');
+      expect(s.games.easy.currentGuess).toBe('STARE');
+      expect(s.dailyAnswers).toEqual({ easy: 'CIGAR', hard: 'REBUT', extreme: 'SISSY' });
+
+      // Past real UTC midnight, the reset now correctly fires.
+      jest.setSystemTime(new Date('2026-07-21T00:30:00Z'));
+      useDailyStore.getState().checkAndReset();
+      expect(useDailyStore.getState().games.easy.status).toBe('available');
+      expect(useDailyStore.getState().dailyAnswers).toEqual({ easy: '', hard: '', extreme: '' });
+    } finally {
+      process.env.TZ = originalTZ;
+    }
+  });
 });
 
 // ── Daily guess limit — must match maxGuessesForDifficulty(d, 1) ─────────────
