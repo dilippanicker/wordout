@@ -1,33 +1,42 @@
-# Session Handoff — 2026-07-08/09 (Session 23: v1.5.8 shipped — daily-word fix + HelpModal wiring)
+# Session Handoff — 2026-07-21 (Session 24: Play Store production-access rejection investigated)
 
 ## What this session did
 
-Fixed the daily-word collision/reachability bug that session 21 found and queued: `getDailyAnswers`'s old `& 0x7FF` bit-masked derivation collided ~8 days/decade across difficulties and capped reachable indices at 2047 (1023 for extreme). Replaced with `dailyIndices(dayNum, n)` — a mulberry32 PRNG seeded per UTC day, sampled with reject-duplicate for 3 distinct indices across the full `[0, n)` range. New tests prove distinctness + full-range reachability over 10,000 simulated days, both languages. No cutover-date logic needed (reasoning now recorded in CLAUDE.md's Daily Gate Architecture section) — a day's answer is computed once and persisted, so in-progress days are unaffected by the algorithm swap.
+No code changes. The whole session was a Play Console investigation, walked through screenshots the user took live in the browser (`~/Pictures/Screenshots/`).
 
-Also wired the already-written `DAILY_PROGRESSION` text into `HelpModal.tsx` as a new "DAILY MODE" section (was sitting unused since v1.4.0) — resolved the last entry in CLAUDE.md's Known Issues, which is now empty and removed.
+**Finding:** v1.5.8 (versionCode 30) is live on Closed testing - Alpha (released Jul 9, 100% rollout, 18,977 devices reached). The user applied for production access and was **rejected** on review (banner says "Reviewed Monday" — 2026-07-20): *"Run your closed test with at least 12 testers for 14 more days starting from the review date. 12 testers have currently been opted in for 1 day."*
 
-Shipped as **v1.5.8 (versionCode 30)**: bump confirmed at the gate, CHANGELOG updated, pushed, `/release` triggered CI (test gate green, build ~40 min), GitHub Release published with both artifacts, local `releases/` copies refreshed. Device spot-check by Dilip: no issues.
+This conflicts with the user's own understanding — they believed they'd had 12+ opted-in testers continuously since July 9 (~11-12 days by the review date), which is presumably why they applied. The discrepancy is **unexplained** — Play Console's UI doesn't expose historical opt-in duration anywhere, only the current snapshot on this rejection banner. Established during the session (clarifying three distinct, easily-conflated numbers):
+- **19** — testers on the invite list ("Internal Testers for Wordout" email list, Testers tab)
+- **12** — how many had actually opted in (accepted the join link) per Google's last check
+- **8** — how many of those opted-in testers ever downloaded/installed
 
-`/smoke` was run properly this time (previous close's `.claude/smoke-status.json` was 3 commits stale) — automated checks + 8/10 manual web items verified directly (had to exclude an always-mounted `opacity:0` end-game overlay from DOM queries to get clean reads — testing-methodology issue, not a product bug). Items 4 and 10 (wave timing, share text) are device-only and were explicitly marked `skipped` by user decision rather than left silently unrecorded.
+An earlier working theory (opted-in count dipped below 12 then recovered, resetting the clock) was floated but the user correctly pushed back — they hadn't contacted or changed any tester since the July 9 release, so there's no mechanism for churn on their end. That theory was retracted as unconfirmed speculation, not something Google's message actually states.
 
-Also had an extended side conversation about a future multi-game ad-monetized web portfolio (domain naming, hit two real trademark/brand collisions — `gullygames.org` and `desiboard.games` — both verified via web search before any registration happened) — concluded with a firm decision that **Wordout itself stays ad-free**; monetization would live on a separate future brand. Recorded in project memory (`wordout-ads-scope-decision.md`) and now also in CLAUDE.md's locked decisions.
+**New information from Google's own AI-assist panel** (shown in Play Console's "New support ticket" flow before you can create one): failed production applications are attributed to either (a) the 12-tester minimum not being maintained continuously, **or (b) "insufficient engagement from those testers during the period."** This fits the data better than the churn theory — 12 opted in but only 8 ever downloaded means several testers joined without ever using the app, which plausibly reads as low engagement to whatever Google's system measures.
+
+**Clarified how Google can measure "engagement" despite the app having zero telemetry/analytics of its own** (consistent with the project's "no tracking" principle — that's about *not adding* third-party SDKs, this is store-level telemetry outside developer control): the Play Store client and Google Play Services report install/uninstall, app-open events, Android vitals (crash/ANR rate), and update-adoption automatically for every Play-installed app, with no app-side instrumentation required.
+
+A support-ticket draft was written (not yet confirmed submitted) targeting the specific factual discrepancy — 12+ opted-in since July 9 per the user's records vs. "1 day" shown at review — asking Google to explain the reset rather than repeating generic guidance.
 
 ## Current state
 
-- **v1.5.8 (versionCode 30)** released on GitHub and device-verified; `releases/latest` points at it. Play Store still has **v1.5.6/vc28** on closed testing — v1.5.7 was never uploaded, so v1.5.8 supersedes both v1.5.7 and v1.5.6 for that purpose.
-- Play Store release notes were drafted this session (see chat) covering the 1.5.6→1.5.8 user-facing delta: daily-word collision fix + new Help screen Daily Mode section. v1.5.7's changes were entirely internal (test suites, CI, refactor) — no user-facing notes needed for it.
-- `.claude/smoke-status.json` records a pass for commit `0c17bce` (the v1.5.8 bump commit) with items 4/10 explicitly `skipped`.
-- Decision capture done: "no cutover needed" reasoning added to Daily Gate Architecture; "Wordout stays ad-free" added as a locked decision; advisor-settings-key note softened from "confirmed broken" to "unconfirmed, worth re-testing" based on this session's observations.
+- v1.5.8/vc30 live and stable on Closed testing - Alpha; this is unchanged and not in question.
+- Production-access application was rejected once (2026-07-20 review). Google's own copy says the 14-day/12-tester requirement "cannot be waived or expedited" — there is no fast path.
+- Root cause of the "1 day" figure vs. expected ~11-12 days remains **unconfirmed**. Two live hypotheses, not mutually exclusive: (1) insufficient tester engagement (opted-in but inactive), (2) some Play Console mechanism we don't understand yet (possibly tied to release/track edits — unconfirmed).
+- Support ticket text was drafted in-conversation but the user had not confirmed sending it as of session end.
 
 ## Exact next step
 
-**Play Store upload** is the main loose end — v1.5.8 (AAB in `releases/wordout-latest.aab`) needs manual upload to closed testing whenever store work is next prioritized. Otherwise normal feature work resumes; candidates from TODO.md: two stale nice-to-have TODO entries still need pruning (already-shipped haptics item, and an "animate board indicators" item that contradicts a locked CLAUDE.md decision — flagged but not cleaned up this session), Android 15 edge-to-edge API migration, tablet support.
-
-If the web-games-portfolio idea resumes, don't re-litigate the Wordout-stays-ad-free decision — see CLAUDE.md's Monetization line and `wordout-ads-scope-decision.md`. Domain naming was mid-search when the conversation paused (ruled out gullygames.org, desiboard.games; onglipo.games/onglipo.fun and a few India-wide-not-regional-slang candidates like deshiboard.games were still live options).
+1. **Decide whether to submit the drafted support ticket** (Play Console → Help → Contact us → Closed testing / Production access category). Ask specifically why the opt-in duration shows 1 day given no tester-list changes since July 9, and whether "opted in" requires ongoing activity beyond the initial join.
+2. **Get existing opted-in testers to actually open/use the current build** — this directly targets the "insufficient engagement" hypothesis without touching release/track config (which risks triggering whatever the unknown reset mechanism is).
+3. **Optionally ship a bug-fix release** once real tester-reported bugs are gathered (the "how to play" / Enter-key-default feedback the user mentioned was already implemented in past sessions — no new bug list exists yet, wasn't captured this session). Framed correctly to the user: a release won't shorten the mandatory 14 days, but gives testers a reason to reopen the app (targets engagement) and gives concrete material for the reapplication questionnaire, which Google's own guidance asks for ("highlighting specific bugs fixed and features added").
+4. **Wait 14 clean days with opt-in count staying ≥12** before reapplying via Dashboard → "Apply for production." Build margin by getting more of the 19 invited testers to actually opt in (7 haven't).
+5. Don't edit the tester list, countries/regions, or push a new release impulsively — every untouched variable right now is a suspect for whatever caused the "1 day" reset.
 
 ## Gotchas
 
-- **AsyncStorage web fallback uses `localStorage`, not IndexedDB** — `localStorage.clear()` does reset it. Confusion this session came from a different source: an always-mounted end-game overlay renders with `opacity:0` but still occupies real DOM layout/bounding-rect space, so naive `getBoundingClientRect()`-based DOM queries in browser-preview testing pick up its (correct, real) answer-word text and can be misread as "stale/already-solved" game state. Filter by walking up the ancestor chain checking `getComputedStyle(el).opacity !== '0'` to get clean reads.
-- `preview_screenshot` was unreliable this session (repeated 30s timeouts) even when the page was fully responsive to `preview_eval`/`preview_snapshot` — prefer DOM/computed-style inspection over screenshots when screenshots start timing out, don't assume the page is frozen.
-- `/release`, `/smoke`, and `/close` all carry `disable-model-invocation: true` — confirmed again this session that even an explicit user "yes" to "should I run X" doesn't let the assistant invoke them via the Skill tool; the user must type the slash command themselves each time.
-- The Model Selection section's advisor-settings-key note is now marked "unconfirmed" rather than "does NOT work" — if a future session wants to actually settle this, the clean test is comparing `advisor()` behavior with `advisorModel` present vs. removed from `~/.claude/settings.json`, not just observing that it seems to work.
+- **Play Console's UI has no page showing opt-in history or duration** — only the Dashboard's eligibility banner shows a point-in-time snapshot ("N testers opted in for M days"), and only when there's an active rejection to review. The Testers tab (Closed testing - Alpha → Testers) shows list size (invited count) only, not opt-in count.
+- **Three tester numbers are easy to conflate**: invited (list size) → opted-in (accepted join link) → downloaded (installed). Google's 14-day production-access clock counts opted-in, not the other two.
+- **App-side "no tracking" does not mean Google can't see usage.** Play Store/Play Services collect install, open, vitals, and update-adoption telemetry for every Play-installed app regardless of app code — this is separate from (and doesn't conflict with) the project's explicit decision to avoid adding analytics/ad SDKs.
+- Two screenshot mix-ups happened mid-session (a stale filename pointed at an unrelated ChatGPT/DevTools screenshot) — always confirm the screenshot filename matches what's actually being discussed before analyzing it.

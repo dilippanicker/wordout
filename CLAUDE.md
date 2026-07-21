@@ -255,8 +255,9 @@ Before every build, follow exactly:
 
 ## Play Store
 - Publisher: Onglipo, package: `com.dilippanicker.wordout`
-- v1.5.6 (versionCode 28) live on closed testing, 12/12 testers opted in
-- Production access: ~July 10 2026
+- v1.5.8 (versionCode 30) live on closed testing (released Jul 9 2026), 19 testers invited / ~12 opted in / 8 downloaded
+- **Production access application rejected 2026-07-20** — Google requires 12+ testers opted-in continuously for 14 days; the dashboard showed only "1 day" of continuity despite ~12 days of believed compliance since Jul 9. Root cause unconfirmed (support ticket pending) — two candidates: insufficient tester engagement (opted-in ≠ actually opening the app), or an unexplained Play Console reset. See `.claude/session-handoff.md` session 24 for full investigation notes.
+- Google Play Services/Play Store tracks install, open, vitals, and update-adoption automatically for every Play-installed app with zero app-side instrumentation — this is separate from and doesn't conflict with the app's no-tracking policy (see Monetization above)
 - Upload/release status tracked manually until release — not maintained in docs
 
 ---

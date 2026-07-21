@@ -1,8 +1,17 @@
 # Wordout — Master TODO
-**Updated: 2026-07-09 (session 23)**
+**Updated: 2026-07-21 (session 24)**
 **Current version: v1.5.8 (versionCode 30)**
 
 ---
+
+## 🔴 NEW — Follow-up from Session 24 (2026-07-21, Play Store production-access investigation)
+
+- ✅ **v1.5.8 upload to closed testing confirmed live** — verified via Play Console screenshot (released Jul 9, 100% rollout, 18,977 devices); supersedes the "Session 23 follow-up" item below asking for this
+- [ ] **Production-access application was rejected** (reviewed 2026-07-20) — Google requires 12+ testers opted-in continuously for 14 days; dashboard showed only "1 day" despite the user believing 12+ opted in continuously since Jul 9. Root cause unconfirmed — see gotchas in `session-handoff.md`. Two live hypotheses: insufficient tester engagement (12 opted-in but only 8 ever downloaded), or an unknown Play Console reset mechanism.
+- [ ] **Support ticket drafted, not yet confirmed submitted** — asks Google to explain the opt-in-duration discrepancy. Follow up on response if/when sent.
+- [ ] **Get opted-in testers to actually open/use the current build** — targets the "insufficient engagement" hypothesis Google's own AI-assist panel named as a rejection cause
+- [ ] **Reapply for production access** once 14 clean days pass with opt-in count holding ≥12 (Dashboard → "Apply for production")
+- [ ] (Optional) Bug-fix release to re-engage testers and provide concrete material for the reapplication questionnaire — no specific tester-reported bugs were captured this session, would need a fresh list first
 
 ## ✅ Session 23 — Completed 2026-07-09 (v1.5.8: daily-word fix + HelpModal wiring)
 
