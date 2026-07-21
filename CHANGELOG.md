@@ -5,6 +5,7 @@ All notable changes to Wordout are documented here.
 ## [1.5.9] — 2026-07-21
 ### Fixed
 - Daily word could repeat across two consecutive days for players in timezones ahead of UTC (e.g. India) — the daily reset was keyed off local calendar day while the word itself rotates at UTC midnight, so opening the app in the early-morning gap between local and UTC midnight served yesterday's word again. Reset gate and the "Next word in HH:MM:SS" countdown now both key off UTC.
+- N-out board didn't resize when changing difficulty (e.g. Hard → Extreme) until a manual New Game — the row count stayed at the old difficulty's guess limit. Now resets immediately on every difficulty change, matching the behavior that already worked when abandoning an in-progress game.
 
 ## [1.5.8] — 2026-07-09
 ### Added
