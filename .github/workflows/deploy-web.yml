@@ -73,4 +73,4 @@ jobs:
       - name: Deploy web to itch.io
         env:
           BUTLER_API_KEY: ${{ secrets.ITCHIO_API_KEY }}
-        run: butler push dist dilippanicker/wordout:html5
+        run: butler push dist onglipo/wordout:html5

@@ -111,7 +111,7 @@ jobs:
       - name: Deploy APK to itch.io
         env:
           BUTLER_API_KEY: ${{ secrets.ITCHIO_API_KEY }}
-        run: butler push ./wordout.apk dilippanicker/wordout:android
+        run: butler push ./wordout.apk onglipo/wordout:android
 
       - name: Upload APK
         uses: actions/upload-artifact@v4

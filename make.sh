@@ -100,7 +100,7 @@ case "$cmd" in
       sudo mv /tmp/butler-bin/butler /usr/local/bin/
     fi
     echo "Pushing to itch.io (html5 channel)..."
-    butler push dist dilippanicker/wordout:html5
+    butler push dist onglipo/wordout:html5
     echo "✅ Deployed to itch.io. Note: dist/ is now the itch.io-specific (root-relative) build, not the GitHub Pages one."
     ;;
 

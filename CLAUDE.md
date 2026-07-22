@@ -267,6 +267,7 @@ Before every build, follow exactly:
 ## Distribution
 
 - **Web (GitHub Pages):** automated — `deploy-web.yml` (push to main) and `build-apk.yml`'s `deploy-web` job (after a manual build) both export and deploy to the `gh-pages` branch, under `/play/` so the existing landing page + Play Store privacy policy at the Pages root are untouched (`keep_files: true`).
+- **itch.io project:** `onglipo/wordout` (https://onglipo.itch.io/wordout) — note the itch.io account is `onglipo`, not `dilippanicker` (unlike the GitHub repo and Google Play package name). `butler push` targets must use `onglipo/wordout:<channel>`.
 - **itch.io — Android (APK):** automated — `build-apk.yml` pushes `./wordout.apk` via `butler` to the `:android` channel after every build (`ITCHIO_API_KEY` secret). Users sideload; itch.io hosts it as a plain file, no browser execution involved.
 - **itch.io — Web (HTML5): unblocked, automated.** `deploy-web.yml`'s `deploy-itchio-web` job (push to main) exports a *separate, root-relative* web build (baseUrl unset, unlike the GitHub Pages export), post-processes it with `scripts/itchio-postprocess.py`, and pushes to the `:html5` channel via `butler` (`ITCHIO_API_KEY` secret). `./make.sh deploy-web` does the same locally for manual pushes.
   - The blocker was real (Expo Router has no supported hash-based or dynamic-subpath routing — confirmed by reading the installed `expo-router` source and cross-checking upstream: [expo/expo#27163](https://github.com/expo/expo/issues/27163), [expo/router#165](https://github.com/expo/router/issues/165)), and itch.io assigns a new CDN path on every upload with no stable prefix to hardcode. The fix doesn't touch app code: the postprocess script injects a boot-time `<script>` into the exported `index.html` that pins an explicit `<base href>` to the real (unknown-until-runtime) CDN directory — so relative asset loads stay correctly anchored — and *then* normalizes `window.location` to `/` via `history.replaceState()` so Expo Router's initial route match succeeds. Order matters: doing the `replaceState()` first (the obvious first attempt) breaks asset loading instead, because it also moves `document.baseURI`, which relative references resolve against. Verified locally against a simulated nested CDN path: clean boot, correct asset loads, and round-trip client-side navigation to Settings and back (Wordout is not single-screen — `/settings` is a real `router.navigate()`'d route).
@@ -276,7 +277,7 @@ Before every build, follow exactly:
 - **Google Play:** manual upload for now — automate after production access is granted (API access unlocks then; see Play Store section above for the pending rejection).
 
 **Manual steps required before the workflows above will actually run/deploy successfully:**
-1. Create the `wordout` project on itch.io at `itch.io/game/new` (unconfirmed whether this has been done yet)
+1. ✅ `wordout` project created on itch.io under the `onglipo` account (https://onglipo.itch.io/wordout)
 2. ✅ API key generated and `ITCHIO_API_KEY` added to GitHub repo secrets
 3. ✅ GitHub Pages source flipped from `main:/docs` to the `gh-pages` branch — live and verified (`gh-pages` was seeded with the prior `docs/index.html` + `docs/privacy.html` first, so the Play Store privacy policy URL didn't change)
 
