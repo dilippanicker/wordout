@@ -37,3 +37,40 @@ jobs:
           publish_dir: ./dist
           destination_dir: play
           keep_files: true
+
+  deploy-itchio-web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Remove baseUrl for a root-relative itch.io build
+        run: node -e "const fs=require('fs'); const c=JSON.parse(fs.readFileSync('app.json')); delete c.expo.experiments.baseUrl; fs.writeFileSync('app.json', JSON.stringify(c, null, 2));"
+
+      - name: Export web build
+        run: npx expo export --platform web
+
+      - name: Post-process for itch.io (relative assets + base-href boot fix)
+        run: python3 scripts/itchio-postprocess.py dist
+
+      - name: Install butler
+        run: |
+          curl -L -o butler.zip https://broth.itch.ovh/butler/linux-amd64/LATEST/archive/default
+          unzip butler.zip
+          chmod +x butler
+          sudo mv butler /usr/local/bin/
+
+      - name: Deploy web to itch.io
+        env:
+          BUTLER_API_KEY: ${{ secrets.ITCHIO_API_KEY }}
+        run: butler push dist dilippanicker/wordout:html5

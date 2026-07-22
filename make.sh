@@ -82,6 +82,28 @@ case "$cmd" in
     npx expo start --web
     ;;
 
+  deploy-web)
+    if [ -z "$BUTLER_API_KEY" ]; then
+      echo "⚠️  BUTLER_API_KEY is not set. Generate an API key at itch.io/user/settings/api-keys and export it first."
+      exit 1
+    fi
+    cp app.json /tmp/wordout-app.json.bak
+    trap 'mv /tmp/wordout-app.json.bak app.json' EXIT
+    echo "Building root-relative web export for itch.io..."
+    node -e "const fs=require('fs'); const c=JSON.parse(fs.readFileSync('app.json')); delete c.expo.experiments.baseUrl; fs.writeFileSync('app.json', JSON.stringify(c, null, 2));"
+    npx expo export --platform web
+    python3 scripts/itchio-postprocess.py dist
+    if ! command -v butler &> /dev/null; then
+      echo "Installing butler..."
+      curl -L -o /tmp/butler.zip https://broth.itch.ovh/butler/linux-amd64/LATEST/archive/default
+      unzip -o /tmp/butler.zip -d /tmp/butler-bin
+      sudo mv /tmp/butler-bin/butler /usr/local/bin/
+    fi
+    echo "Pushing to itch.io (html5 channel)..."
+    butler push dist dilippanicker/wordout:html5
+    echo "✅ Deployed to itch.io. Note: dist/ is now the itch.io-specific (root-relative) build, not the GitHub Pages one."
+    ;;
+
   dev-android)
     echo "Starting dev server on connected Android device..."
     adb_connect
@@ -114,6 +136,7 @@ case "$cmd" in
     echo "  fetch-aab     Download latest AAB only"
     echo "  web           Start web dev server (cache cleared)"
     echo "  web-dirty     Start web dev server (no cache clear)"
+    echo "  deploy-web    Export + push web build to itch.io HTML5 channel (needs BUTLER_API_KEY)"
     echo "  dev-android   Start dev server on connected Android device (live reload)"
     echo "  adb-connect   Connect to S24 Ultra over WiFi"
     echo "  build-install Trigger build and remind to install after"
