@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useFonts } from 'expo-font';
 import { Stack, ThemeProvider, DefaultTheme, DarkTheme } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 import { useSettingsStore } from '@/store/settingsStore';
 
@@ -40,6 +41,7 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={darkTheme ? DARK_THEME : LIGHT_THEME}>
+      <StatusBar style={darkTheme ? 'light' : 'dark'} />
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       </Stack>
