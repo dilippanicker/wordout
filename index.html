@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wordout — Free Word Puzzle for Android</title>
+  <meta name="description" content="Wordle-style word puzzle for Android. No ads, no accounts, no tracking. Solo or multi-board. Open source." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Tokens ── */
+    :root {
+      --green:    #6aaa64;
+      --green-dk: #538d4e;
+      --yellow:   #c9b458;
+      --grey-dk:  #787c7e;
+      --grey-lt:  #d3d6da;
+      --tile-bg:  #121213;
+      --bg:       #f9f9f7;
+      --ink:      #1a1a1b;
+      --ink-mute: #6b6b6b;
+      --card-bg:  #ffffff;
+      --radius:   10px;
+      --mono: 'Space Mono', monospace;
+      --sans: 'Space Grotesk', sans-serif;
+    }
+
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+    }
+    img { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+
+    /* ── Nav ── */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 32px;
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 10;
+      border-bottom: 1px solid var(--grey-lt);
+    }
+    .nav-logo { display: flex; align-items: center; }
+    .wordmark { height: 32px; width: auto; }
+    .nav-links { display: flex; gap: 24px; align-items: center; }
+    .nav-links a {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--ink-mute);
+      transition: color 0.15s;
+    }
+    .nav-links a:hover { color: var(--green); }
+    .nav-gh {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--ink) !important;
+      border: 1.5px solid var(--grey-lt);
+      border-radius: 6px;
+      padding: 6px 12px;
+      transition: border-color 0.15s !important;
+    }
+    .nav-gh:hover { border-color: var(--green) !important; color: var(--green) !important; }
+
+    /* ── Hero ── */
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
+      align-items: center;
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 72px 32px 80px;
+    }
+    .hero-text { max-width: 480px; }
+
+    /* Signature: animated tile row spelling W-O-R-D-O-U-T */
+    .tile-word {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 32px;
+    }
+    .tile {
+      width: 44px;
+      height: 44px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--mono);
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: #fff;
+      animation: flip-in 0.4s ease both;
+    }
+    .tile.correct  { background: var(--green); }
+    .tile.present  { background: var(--yellow); }
+    .tile.absent   { background: var(--grey-dk); }
+    .tile:nth-child(1) { animation-delay: 0.05s; }
+    .tile:nth-child(2) { animation-delay: 0.15s; }
+    .tile:nth-child(3) { animation-delay: 0.25s; }
+    .tile:nth-child(4) { animation-delay: 0.35s; }
+    .tile:nth-child(5) { animation-delay: 0.45s; }
+    .tile:nth-child(6) { animation-delay: 0.55s; }
+    .tile:nth-child(7) { animation-delay: 0.65s; }
+
+    @keyframes flip-in {
+      0%   { transform: rotateX(90deg) scale(0.8); opacity: 0; }
+      60%  { transform: rotateX(-10deg) scale(1.05); opacity: 1; }
+      100% { transform: rotateX(0deg) scale(1); opacity: 1; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .tile { animation: none; }
+    }
+
+    .hero h1 {
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 700;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+    .hero h1 em {
+      font-style: normal;
+      color: var(--green);
+    }
+    .hero-sub {
+      font-size: 1.05rem;
+      line-height: 1.65;
+      color: var(--ink-mute);
+      margin-bottom: 32px;
+    }
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 36px;
+    }
+    .pill {
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 5px 12px;
+      border-radius: 100px;
+      background: transparent;
+    }
+    .pill-green  { border: 1.5px solid var(--green);  color: var(--green-dk); }
+    .pill-yellow { border: 1.5px solid var(--yellow); color: #8a7530; }
+    .pill-grey   { border: 1.5px solid var(--grey-dk); color: var(--grey-dk); }
+    .cta-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--green);
+      color: #fff;
+      font-family: var(--sans);
+      font-weight: 700;
+      font-size: 0.95rem;
+      padding: 13px 24px;
+      border-radius: var(--radius);
+      transition: background 0.15s, transform 0.1s;
+    }
+    .btn-primary:hover { background: var(--green-dk); transform: translateY(-1px); }
+    .btn-primary.btn-play { background: #5BA75A; }
+    .btn-primary.btn-play:hover { background: #4a8f49; }
+    .btn-primary.btn-github { background: var(--ink); }
+    .btn-primary.btn-github:hover { background: #2a2a2b; }
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: transparent;
+      color: var(--ink);
+      font-family: var(--sans);
+      font-weight: 600;
+      font-size: 0.95rem;
+      padding: 12px 20px;
+      border-radius: var(--radius);
+      border: 1.5px solid var(--grey-lt);
+      transition: border-color 0.15s;
+    }
+    .btn-secondary:hover { border-color: var(--ink); }
+
+    /* ── Phone mockups ── */
+    .hero-screens {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      align-items: end;
+    }
+    .phone-wrap {
+      background: var(--tile-bg);
+      border-radius: 28px;
+      padding: 10px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.18), 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .phone-wrap img {
+      border-radius: 20px;
+      width: 100%;
+    }
+    .phone-wrap.main { transform: translateY(-16px); }
+
+    /* ── Phone screen mockup ── */
+    .phone-screen {
+      background: #fff;
+      border-radius: 20px;
+      padding: 10px 8px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-height: 320px;
+    }
+    .phone-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 2px 6px 4px;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 9px;
+      color: #333;
+    }
+    .ph-title { font-weight: 700; font-size: 10px; }
+    .ph-icon { color: #888; font-size: 9px; }
+    .ph-indicators {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 0;
+    }
+    .ind-current {
+      width: 16px; height: 16px;
+      border: 1.5px solid #878a8c;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 6px; color: #878a8c;
+    }
+    .ind-num {
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      border: 1.5px solid #ccc;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 7px; font-weight: 700;
+    }
+    .ph-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      align-items: center;
+    }
+    .ph-row {
+      display: flex;
+      gap: 3px;
+    }
+    .ph-tile {
+      width: 26px; height: 26px;
+      border-radius: 3px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--mono);
+      font-weight: 700;
+      font-size: 9px;
+      color: #fff;
+    }
+    .ph-tile.correct { background: #6aaa64; }
+    .ph-tile.present { background: #c9b458; }
+    .ph-tile.absent  { background: #787c7e; }
+    .ph-tile.e       { background: transparent; border: 1px solid #e0e0e0; }
+    .ph-kbd {
+      margin-top: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .ph-krow {
+      display: flex;
+      gap: 2px;
+      justify-content: center;
+    }
+    .ph-krow span {
+      min-width: 18px; height: 22px;
+      background: #d3d6da;
+      border-radius: 3px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 7px;
+      font-weight: 600;
+      color: #000;
+      padding: 0 2px;
+    }
+    .ph-krow span.correct { background: #6aaa64; color: #fff; }
+    .ph-krow span.present { background: #c9b458; color: #fff; }
+    .ph-krow span.absent  { background: #787c7e; color: #fff; }
+    .ph-krow span.enter   { font-size: 6px; min-width: 28px; }
+
+    /* ── Features ── */
+    .features {
+      background: var(--tile-bg);
+      color: #fff;
+      padding: 80px 32px;
+    }
+    .features-inner {
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+    .section-eyebrow {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--green);
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-size: clamp(1.6rem, 3vw, 2.2rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 48px;
+      color: #fff;
+    }
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+    }
+    .feature-card {
+      background: #1a1a1b;
+      border-radius: var(--radius);
+      padding: 28px;
+      border: 1px solid #2a2a2b;
+    }
+    .feature-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      background: var(--green);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      margin-bottom: 16px;
+    }
+    .feature-card h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #fff;
+    }
+    .feature-card p {
+      font-size: 0.88rem;
+      line-height: 1.6;
+      color: #878a8c;
+    }
+
+    /* ── Modes ── */
+    .modes {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 80px 32px;
+    }
+    .modes .section-eyebrow { color: var(--green-dk); }
+    .modes .section-title { color: var(--ink); }
+    .modes-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+    .mode-card {
+      background: var(--card-bg);
+      border: 1.5px solid var(--grey-lt);
+      border-radius: var(--radius);
+      padding: 24px 20px;
+      text-align: center;
+      transition: border-color 0.15s, transform 0.15s;
+    }
+    .mode-card:hover { border-color: var(--green); transform: translateY(-2px); }
+    .mode-name {
+      font-family: var(--mono);
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+    .mode-boards {
+      font-size: 0.8rem;
+      color: var(--grey-dk);
+      margin-bottom: 12px;
+    }
+    .mode-dots {
+      display: flex;
+      gap: 4px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      border: 1.5px solid var(--grey-lt);
+    }
+    .dot.active { background: var(--green); border-color: var(--green); }
+
+    /* ── Open source strip ── */
+    .oss-strip {
+      background: var(--green);
+      color: #fff;
+      padding: 48px 32px;
+      text-align: center;
+    }
+    .oss-strip h2 {
+      font-size: clamp(1.4rem, 2.5vw, 1.9rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 10px;
+    }
+    .oss-strip p {
+      font-size: 1rem;
+      opacity: 0.88;
+      margin-bottom: 28px;
+      max-width: 480px;
+      margin-left: auto;
+      margin-right: auto;
+      line-height: 1.6;
+    }
+    .btn-white {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #fff;
+      color: var(--green-dk);
+      font-family: var(--sans);
+      font-weight: 700;
+      font-size: 0.95rem;
+      padding: 13px 24px;
+      border-radius: var(--radius);
+      transition: transform 0.1s;
+    }
+    .btn-white:hover { transform: translateY(-1px); }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--grey-lt);
+      padding: 28px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+    .footer-logo { display: flex; align-items: center; gap: 10px; }
+    .footer-wordmark { height: 24px; width: auto; opacity: 0.6; }
+    .footer-by { font-size: 0.78rem; color: var(--ink-mute); }
+    .footer-links {
+      display: flex;
+      gap: 20px;
+    }
+    .footer-links a {
+      font-size: 0.82rem;
+      color: var(--ink-mute);
+      transition: color 0.15s;
+    }
+    .footer-links a:hover { color: var(--green); }
+
+    /* ── Prefs strip ── */
+    .prefs-strip {
+      background: var(--card-bg);
+      border-top: 1px solid var(--grey-lt);
+      border-bottom: 1px solid var(--grey-lt);
+      padding: 56px 32px;
+    }
+    .prefs-inner {
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+    .prefs-sub {
+      text-align: center;
+      color: var(--ink-mute);
+      font-size: 0.95rem;
+      margin-bottom: 36px;
+    }
+    .prefs-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 16px;
+    }
+    .pref-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .pref-toggle {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      width: 100%;
+      background: #f3f4f6;
+      border-radius: 10px;
+      padding: 4px;
+    }
+    .pref-opt {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 8px 6px;
+      border-radius: 7px;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--ink-mute);
+      text-align: center;
+      transition: background 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+    .pref-opt.active {
+      background: #fff;
+      color: var(--ink);
+      font-weight: 600;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+    .pref-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--ink-mute);
+      text-align: center;
+    }
+    .cb-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      nav { padding: 14px 20px; }
+      .nav-links .hide-mobile { display: none; }
+      .hero {
+        grid-template-columns: 1fr;
+        padding: 48px 20px 56px;
+        gap: 48px;
+      }
+      .hero-text { max-width: 100%; }
+      .hero-screens { max-width: 320px; margin: 0 auto; }
+      .prefs-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+      .feature-grid { grid-template-columns: 1fr; gap: 16px; }
+      .modes-grid { grid-template-columns: repeat(2, 1fr); }
+      footer { flex-direction: column; gap: 16px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+  <div class="nav-logo">
+    <svg class="wordmark" viewBox="0 0 220 40" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Wordout">
+      <!-- W tile - green filled -->
+      <rect x="0" y="2" width="36" height="36" rx="5" fill="#6aaa64"/>
+      <text x="18" y="24" font-family="'Space Mono',monospace" font-weight="700" font-size="18" fill="white" text-anchor="middle" dominant-baseline="central">W</text>
+      <!-- O tile - outline -->
+      <rect x="40" y="2" width="36" height="36" rx="5" fill="none" stroke="#d3d6da" stroke-width="2"/>
+      <text x="58" y="24" font-family="'Space Mono',monospace" font-weight="700" font-size="18" fill="#1a1a1b" text-anchor="middle" dominant-baseline="central">O</text>
+      <!-- R tile - outline -->
+      <rect x="80" y="2" width="36" height="36" rx="5" fill="none" stroke="#d3d6da" stroke-width="2"/>
+      <text x="98" y="24" font-family="'Space Mono',monospace" font-weight="700" font-size="18" fill="#1a1a1b" text-anchor="middle" dominant-baseline="central">R</text>
+      <!-- D tile - outline -->
+      <rect x="120" y="2" width="36" height="36" rx="5" fill="none" stroke="#d3d6da" stroke-width="2"/>
+      <text x="138" y="24" font-family="'Space Mono',monospace" font-weight="700" font-size="18" fill="#1a1a1b" text-anchor="middle" dominant-baseline="central">D</text>
+      <!-- ✓ tile - green filled (the signature) -->
+      <rect x="160" y="2" width="36" height="36" rx="5" fill="#6aaa64"/>
+      <path d="M171,21 L180,30 L203,10" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </svg>
+  </div>
+  <div class="nav-links">
+    <a href="#features" class="hide-mobile">Features</a>
+    <a href="#modes" class="hide-mobile">Modes</a>
+    <a href="privacy.html" class="hide-mobile">Privacy</a>
+    <a href="https://github.com/dilippanicker/wordout" class="nav-gh" target="_blank" rel="noopener">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+      GitHub
+    </a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-text">
+    <div class="tile-word" aria-hidden="true">
+      <div class="tile correct">W</div>
+      <div class="tile absent">O</div>
+      <div class="tile present">R</div>
+      <div class="tile correct">D</div>
+      <div class="tile correct" style="font-size:1.3rem; line-height:1;">✓</div>
+    </div>
+    <h1>Word puzzles.<br><em>No strings attached.</em></h1>
+    <p class="hero-sub">
+      Guess the word. Play one, two, four, or up to eight boards at the same time.
+      Six to thirteen chances depending on how many you dare to take on.
+      No ads, no accounts, no tracking — just the puzzle.
+    </p>
+    <div class="pill-row">
+      <span class="pill pill-green">No ads</span>
+      <span class="pill pill-green">No accounts</span>
+      <span class="pill pill-yellow">Curated word list</span>
+      <span class="pill pill-grey">Open source</span>
+    </div>
+    <div class="cta-row">
+      <!-- Not in production yet — re-enable once the Play Store listing is public.
+      <a href="https://play.google.com/store/apps/details?id=com.dilippanicker.wordout" class="btn-primary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3.18 23.76c.3.18.66.18.96 0L15.9 12 3.18.24a1.02 1.02 0 0 0-.96 0C1.86.6 1.86 1.02 1.86 1.2v21.6c0 .18 0 .6 1.32.96zm2.1-21.18 9.54 9.42L5.28 21.42V2.58zM20.1 10.56l-2.52-1.44-2.82 2.88 2.82 2.88 2.52-1.44C21 12.84 21 11.16 20.1 10.56z"/></svg>
+        Get on Google Play
+      </a>
+      -->
+      <a href="https://dilippanicker.github.io/wordout/play/" class="btn-primary btn-play" target="_blank" rel="noopener">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        Play in browser
+      </a>
+      <a href="https://github.com/dilippanicker/wordout" class="btn-primary btn-github" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        View source
+      </a>
+    </div>
+  </div>
+  <div class="hero-screens">
+    <div class="phone-wrap main">
+      <div class="phone-screen">
+        <div class="phone-header">
+          <span class="ph-flag">🇺🇸</span>
+          <span class="ph-title">Wordout</span>
+          <span class="ph-icon">☽ ?</span>
+        </div>
+        <div class="ph-grid">
+          <div class="ph-row">
+            <div class="ph-tile correct">R</div><div class="ph-tile absent">A</div><div class="ph-tile present">I</div><div class="ph-tile absent">S</div><div class="ph-tile correct">E</div>
+          </div>
+          <div class="ph-row">
+            <div class="ph-tile absent">C</div><div class="ph-tile absent">L</div><div class="ph-tile absent">O</div><div class="ph-tile correct">U</div><div class="ph-tile absent">T</div>
+          </div>
+          <div class="ph-row">
+            <div class="ph-tile correct">S</div><div class="ph-tile correct">H</div><div class="ph-tile correct">R</div><div class="ph-tile correct">U</div><div class="ph-tile absent">B</div>
+          </div>
+          <div class="ph-row ph-empty"><div class="ph-tile e"></div><div class="ph-tile e"></div><div class="ph-tile e"></div><div class="ph-tile e"></div><div class="ph-tile e"></div></div>
+          <div class="ph-row ph-empty"><div class="ph-tile e"></div><div class="ph-tile e"></div><div class="ph-tile e"></div><div class="ph-tile e"></div><div class="ph-tile e"></div></div>
+          <div class="ph-row ph-empty"><div class="ph-tile e"></div><div class="ph-tile e"></div><div class="ph-tile e"></div><div class="ph-tile e"></div><div class="ph-tile e"></div></div>
+        </div>
+        <div class="ph-kbd">
+          <div class="ph-krow"><span>Q</span><span>W</span><span class="absent">E</span><span class="correct">R</span><span>T</span><span>Y</span><span class="correct">U</span><span>I</span><span>O</span><span>P</span></div>
+          <div class="ph-krow"><span class="correct">A</span><span class="correct">S</span><span>D</span><span>F</span><span>G</span><span class="correct">H</span><span>J</span><span>K</span><span>L</span></div>
+          <div class="ph-krow"><span class="enter">ENTER</span><span>Z</span><span>X</span><span class="absent">C</span><span>V</span><span class="absent">B</span><span>N</span><span>M</span><span>⌫</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-wrap">
+      <div class="phone-screen">
+        <div class="phone-header">
+          <span class="ph-flag">🇺🇸</span>
+          <span class="ph-title">4-out</span>
+          <span class="ph-icon">☽ ?</span>
+        </div>
+        <div class="ph-indicators">
+          <span class="ind-current">▶</span>
+          <span class="ind-num" style="border-color:#6aaa64;color:#6aaa64;">1</span>
+          <span class="ind-num" style="border-color:#6aaa64;color:#6aaa64;">1</span>
+          <span class="ind-num" style="border-color:#c9b458;background:#c9b458;color:#fff;">2</span>
+        </div>
+        <div class="ph-grid">
+          <div class="ph-row">
+            <div class="ph-tile present">R</div><div class="ph-tile present">A</div><div class="ph-tile absent">I</div><div class="ph-tile absent">S</div><div class="ph-tile correct">E</div>
+          </div>
+          <div class="ph-row">
+            <div class="ph-tile absent">C</div><div class="ph-tile absent">L</div><div class="ph-tile present">O</div><div class="ph-tile absent">U</div><div class="ph-tile absent">D</div>
+          </div>
+          <div class="ph-row">
+            <div class="ph-tile e" style="border:1.5px solid #d3d6da;"></div><div class="ph-tile e" style="border:1.5px solid #d3d6da;"></div><div class="ph-tile e" style="border:1.5px solid #d3d6da;"></div><div class="ph-tile e" style="border:1.5px solid #d3d6da;"></div><div class="ph-tile e" style="border:1.5px solid #d3d6da;"></div>
+          </div>
+          <div class="ph-row ph-empty"><div class="ph-tile e"></div><div class="ph-tile e"></div><div class="ph-tile e"></div><div class="ph-tile e"></div><div class="ph-tile e"></div></div>
+          <div class="ph-row ph-empty"><div class="ph-tile e"></div><div class="ph-tile e"></div><div class="ph-tile e"></div><div class="ph-tile e"></div><div class="ph-tile e"></div></div>
+          <div class="ph-row ph-empty"><div class="ph-tile e"></div><div class="ph-tile e"></div><div class="ph-tile e"></div><div class="ph-tile e"></div><div class="ph-tile e"></div></div>
+          <div class="ph-row ph-empty"><div class="ph-tile e"></div><div class="ph-tile e"></div><div class="ph-tile e"></div><div class="ph-tile e"></div><div class="ph-tile e"></div></div>
+          <div class="ph-row ph-empty"><div class="ph-tile e"></div><div class="ph-tile e"></div><div class="ph-tile e"></div><div class="ph-tile e"></div><div class="ph-tile e"></div></div>
+          <div class="ph-row ph-empty"><div class="ph-tile e"></div><div class="ph-tile e"></div><div class="ph-tile e"></div><div class="ph-tile e"></div><div class="ph-tile e"></div></div>
+        </div>
+        <div class="ph-kbd" style="margin-top:auto;">
+          <div class="ph-krow"><span>Q</span><span>W</span><span class="correct">E</span><span class="present">R</span><span>T</span><span>Y</span><span class="absent">U</span><span class="present">I</span><span class="present">O</span><span>P</span></div>
+          <div class="ph-krow"><span class="correct">A</span><span class="correct">S</span><span class="absent">D</span><span>F</span><span>G</span><span>H</span><span>J</span><span>K</span><span>L</span></div>
+          <div class="ph-krow"><span class="enter">ENTER</span><span>Z</span><span>X</span><span class="absent">C</span><span>V</span><span>B</span><span>N</span><span>M</span><span>⌫</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Your game, your rules strip -->
+<section class="prefs-strip">
+  <div class="prefs-inner">
+    <p class="section-eyebrow" style="color:var(--green-dk); text-align:center; margin-bottom:8px;">Your game, your rules</p>
+    <p class="prefs-sub">Five settings. All saved automatically.</p>
+    <div class="prefs-grid">
+
+      <div class="pref-card">
+        <div class="pref-toggle">
+          <div class="pref-opt active">🇺🇸 American</div>
+          <div class="pref-opt">🇬🇧 British</div>
+        </div>
+        <div class="pref-label">Word list language</div>
+      </div>
+
+      <div class="pref-card">
+        <div class="pref-toggle">
+          <div class="pref-opt active" style="background:var(--tile-bg); color:#fff;">🌙 Dark</div>
+          <div class="pref-opt">☀️ Light</div>
+        </div>
+        <div class="pref-label">Theme</div>
+      </div>
+
+      <div class="pref-card">
+        <div class="pref-toggle">
+          <div class="pref-opt enter-left active">← ENTER</div>
+          <div class="pref-opt enter-right">ENTER →</div>
+        </div>
+        <div class="pref-label">Enter key position</div>
+      </div>
+
+      <div class="pref-card">
+        <div class="pref-toggle">
+          <div class="pref-opt active">
+            <span class="cb-dot" style="background:var(--green)"></span>
+            <span class="cb-dot" style="background:var(--yellow)"></span>
+            Normal
+          </div>
+          <div class="pref-opt">
+            <span class="cb-dot" style="background:#f5793a"></span>
+            <span class="cb-dot" style="background:#85c0f9"></span>
+            Colour blind
+          </div>
+        </div>
+        <div class="pref-label">Colour mode</div>
+      </div>
+
+      <div class="pref-card">
+        <div class="pref-toggle">
+          <div class="pref-opt active">🐣 Easy</div>
+          <div class="pref-opt">💪 Hard</div>
+        </div>
+        <div class="pref-label">Difficulty</div>
+      </div>
+
+    </div>
+
+    <p style="text-align:center; color:var(--ink-mute); font-size:0.85rem; line-height:1.6; max-width:640px; margin:32px auto 0;">
+      <strong style="color:var(--ink);">Daily mode</strong> runs all three difficulties every day — 🐣 Easy, 💪 Hard, 💀 Extreme, each a different word. Win Easy to unlock Hard. Win Hard to unlock Extreme. Every difficulty tracks its own streak 🔥.
+    </p>
+  </div>
+</section>
+
+<!-- Features -->
+<section class="features" id="features">
+  <div class="features-inner">
+    <p class="section-eyebrow">Why Wordout</p>
+    <h2 class="section-title">Built for players, not advertisers.</h2>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🚫</div>
+        <h3>Zero ads, zero tracking</h3>
+        <p>No ad SDKs, no analytics, no data collection. The app doesn't know who you are and doesn't need to.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📝</div>
+        <h3>Curated word list</h3>
+        <p>Answers are hand-curated from common English words. No obscure traps, no proper nouns. Spot a problem? Submit feedback on GitHub.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🌍</div>
+        <h3>American &amp; British English</h3>
+        <p>Switch between US and UK word lists. COLOUR and COLOR are both valid — play in the English you actually use.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💪</div>
+        <h3>Hard mode</h3>
+        <p>Revealed hints must appear in every subsequent guess. For players who want the extra challenge.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🎨</div>
+        <h3>Colour blind mode</h3>
+        <p>Replaces green and yellow with high-contrast orange and blue. Because everyone should be able to play.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📖</div>
+        <h3>Open source</h3>
+        <p>Every line of code is on GitHub — word lists, game logic, everything. Fork it, audit it, improve it.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Modes -->
+<section class="modes" id="modes">
+  <p class="section-eyebrow">Game modes</p>
+  <h2 class="section-title">One puzzle or eight. Your call.</h2>
+  <div class="modes-grid">
+    <div class="mode-card">
+      <div class="mode-name">Wordout</div>
+      <div class="mode-boards">1 board · 6 guesses</div>
+      <div class="mode-dots">
+        <div class="dot active"></div>
+      </div>
+    </div>
+    <div class="mode-card">
+      <div class="mode-name">2-out</div>
+      <div class="mode-boards">2 boards · 7 guesses</div>
+      <div class="mode-dots">
+        <div class="dot active"></div><div class="dot active"></div>
+      </div>
+    </div>
+    <div class="mode-card">
+      <div class="mode-name">3-out</div>
+      <div class="mode-boards">3 boards · 8 guesses</div>
+      <div class="mode-dots">
+        <div class="dot active"></div><div class="dot active"></div><div class="dot active"></div>
+      </div>
+    </div>
+    <div class="mode-card">
+      <div class="mode-name">4-out</div>
+      <div class="mode-boards">4 boards · 9 guesses</div>
+      <div class="mode-dots">
+        <div class="dot active"></div><div class="dot active"></div>
+        <div class="dot active"></div><div class="dot active"></div>
+      </div>
+    </div>
+    <div class="mode-card">
+      <div class="mode-name">6-out</div>
+      <div class="mode-boards">6 boards · 11 guesses</div>
+      <div class="mode-dots">
+        <div class="dot active"></div><div class="dot active"></div><div class="dot active"></div>
+        <div class="dot active"></div><div class="dot active"></div><div class="dot active"></div>
+      </div>
+    </div>
+    <div class="mode-card">
+      <div class="mode-name">8-out</div>
+      <div class="mode-boards">8 boards · 13 guesses</div>
+      <div class="mode-dots">
+        <div class="dot active"></div><div class="dot active"></div><div class="dot active"></div>
+        <div class="dot active"></div><div class="dot active"></div><div class="dot active"></div>
+        <div class="dot active"></div><div class="dot active"></div>
+      </div>
+    </div>
+    <div class="mode-card" style="grid-column: span 2; background: #f0faf0; border-color: var(--green);">
+      <div class="mode-name" style="color: var(--green-dk);">Every guess applies to all boards at once.</div>
+      <div class="mode-boards" style="margin-top: 4px;">Swipe between boards to track your progress on each one.</div>
+    </div>
+  </div>
+</section>
+
+<!-- OSS strip -->
+<section class="oss-strip">
+  <h2>Free forever. Open forever.</h2>
+  <p>Wordout is MIT licensed. Read the code, fork the repo, contribute a fix, or just know exactly what's running on your phone.</p>
+  <a href="https://github.com/dilippanicker/wordout" class="btn-white" target="_blank" rel="noopener">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+    dilippanicker/wordout
+  </a>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-logo">
+    <svg class="footer-wordmark" viewBox="0 0 220 40" xmlns="http://www.w3.org/2000/svg" aria-label="Wordout">
+      <rect x="0" y="2" width="36" height="36" rx="5" fill="#6aaa64"/>
+      <text x="18" y="24" font-family="'Space Mono',monospace" font-weight="700" font-size="18" fill="white" text-anchor="middle" dominant-baseline="central">W</text>
+      <rect x="40" y="2" width="36" height="36" rx="5" fill="none" stroke="#d3d6da" stroke-width="2"/>
+      <text x="58" y="24" font-family="'Space Mono',monospace" font-weight="700" font-size="18" fill="#6b6b6b" text-anchor="middle" dominant-baseline="central">O</text>
+      <rect x="80" y="2" width="36" height="36" rx="5" fill="none" stroke="#d3d6da" stroke-width="2"/>
+      <text x="98" y="24" font-family="'Space Mono',monospace" font-weight="700" font-size="18" fill="#6b6b6b" text-anchor="middle" dominant-baseline="central">R</text>
+      <rect x="120" y="2" width="36" height="36" rx="5" fill="none" stroke="#d3d6da" stroke-width="2"/>
+      <text x="138" y="24" font-family="'Space Mono',monospace" font-weight="700" font-size="18" fill="#6b6b6b" text-anchor="middle" dominant-baseline="central">D</text>
+      <rect x="160" y="2" width="36" height="36" rx="5" fill="#6aaa64"/>
+      <path d="M171,21 L180,30 L203,10" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </svg>
+    <span class="footer-by">Wordout by Onglipo Labs · Ohm Shanti Ω Ω Ω</span>
+  </div>
+  <div class="footer-links">
+    <a href="privacy.html">Privacy policy</a>
+    <a href="https://github.com/dilippanicker/wordout/issues" target="_blank" rel="noopener">Report an issue</a>
+    <a href="https://onglipo.in" target="_blank" rel="noopener">Onglipo</a>
+  </div>
+</footer>
+
+</body>
+</html>
