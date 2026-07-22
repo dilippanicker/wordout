@@ -1,8 +1,22 @@
 # Wordout — Master TODO
-**Updated: 2026-07-21 (session 25)**
-**Current version: v1.5.9 (versionCode 31)**
+**Updated: 2026-07-22 (backfill sessions 25→26)**
+**Current version: v1.5.11 (versionCode 33)**
 
 ---
+
+## ✅ Session 26 — Completed 2026-07-22 (v1.5.10 + v1.5.11: board ✗ indicator + status bar icon fixes) [BACKFILLED]
+
+- ✅ **N-out board indicator shows ✗ for unsolved boards on game over** — reported as enhancement. Fixed: `BoardIndicator.tsx` now displays red ✗ for unsolved boards when game ends in loss (matching green ✓ for solved boards). Committed `861fc5a` (v1.5.10, versionCode 32).
+- ✅ **Status bar icons invisible against app background fixed** — reported by user observation. Root cause: `expo-status-bar` was imported but never rendered; Android picked icon colour from device system theme instead of app theme. Fixed: explicitly render `<StatusBar barStyle={darkTheme ? 'light-content' : 'dark-content'} />` in `app/_layout.tsx`, synced to `settingsStore.darkTheme`. Committed `dabcc5e` (v1.5.11, versionCode 33).
+- ⚠️ **Build/release/Play Store status for v1.5.10 and v1.5.11 UNKNOWN** — no evidence in git of `gh workflow run` trigger or GitHub Actions execution. Need to verify: check GitHub Releases for v1.5.10/v1.5.11 tags, compare `releases/wordout-latest.{apk,aab}` against latest release, check Play Store closed testing track status.
+- 🟡 **No device verification** — both fixes untested on real Android. v1.5.10 (board ✗) is low priority if code review solid; v1.5.11 (status bar) requires real device to verify icon colour sync.
+
+## 🔴 NEW — Follow-up from Session 26 (Backfill)
+
+- [ ] **Verify GitHub Releases for v1.5.10 and v1.5.11** — check that both tags exist with artifacts (wordout.apk + wordout.aab)
+- [ ] **Compare `releases/wordout-latest.{apk,aab}` against latest release** — if on v1.5.9, refresh via `gh release download` + copy, or decide if v1.5.11 build is needed this session
+- [ ] **Check Play Store closed testing track status** — is it still on v1.5.9 (vc31)? Upload v1.5.11 if it's built and released, or hold until next feature milestone
+- [ ] **Device regression test (optional but recommended)** — if v1.5.11 APK is available, verify status bar icon colour toggles correctly on real Android (Settings → Dark Theme toggle); n-out game loss end state shows red ✗ on unsolved boards
 
 ## ✅ Session 25 — Completed 2026-07-21 (v1.5.9: daily UTC-boundary fix + n-out resize fix)
 

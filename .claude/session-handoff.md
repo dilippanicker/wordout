@@ -1,44 +1,116 @@
-# Session Handoff — 2026-07-21 (Session 25: v1.5.9 — daily UTC-boundary fix + n-out resize fix)
+# Session Handoff — 2026-07-22 (Backfill: v1.5.10 + v1.5.11, two sessions closed without /close)
 
-## What this session did
+## Overview
 
-Two user-reported bugs, both root-caused, fixed, tested, and shipped as v1.5.9 (versionCode 31).
+This is a reconstructed/backfilled handoff documenting two consecutive sessions (v1.5.10 and v1.5.11) that bumped versions and committed code but did not run the `/close` ritual. Reconstruction source: `git log` commits `861fc5a` (v1.5.10) + `dabcc5e` (v1.5.11), both dated 2026-07-22.
 
-**Bug 1 — daily word repeating across consecutive days.** User reported the same daily word appearing on both Jul 20 and Jul 21, 2026. Verified numerically (dev machine is IST, `Asia/Kolkata`) that `dailyStore.ts`'s `getTodayString()`/`getYesterdayString()` — which drive `checkAndReset()` and the `lastPlayedDate`/`lastWinDate` gate — used **local calendar day**, while `getDailyAnswers()` derives the actual word from **UTC midnight**. In any timezone ahead of UTC, local midnight arrives before real UTC midnight; opening the app in that gap window makes `checkAndReset()` see a "new day" and clear `dailyAnswers`, but the recomputed answer still lands on the previous UTC day — serving yesterday's word again. Fixed by switching both date-string helpers to UTC accessors (`getUTCFullYear()` etc.), and the "Next word in HH:MM:SS" countdown (`msUntilMidnight()` in `app/(tabs)/index.tsx`) to count down to UTC midnight instead of local midnight, so the two stay in sync. Added a regression test in `__tests__/store-invariants.test.ts` that sets `process.env.TZ = 'Asia/Kolkata'` and a fake system time inside the gap window — confirmed it **fails against the pre-fix code** (proves it actually catches the bug) and passes after the fix.
+---
 
-**Bug 2 — n-out board not resizing on difficulty change.** User reported (with 3 screenshots) that switching Hard → Extreme on a 2-out board left the board at 7 rows (Hard's guess count) instead of shrinking to 5 (Extreme's), until a manual New Game. Root cause: `handleDifficultyToggle()` in `app/(tabs)/index.tsx` has two quordle branches — one for an in-progress game (confirmAbandon, which correctly calls `useQuordleStore.getState().newGame()` after `setDifficulty()`) and one for a fresh board with no guesses submitted yet, which only called `setDifficulty()`. Since `quordleStore.maxGuesses` (the row-count source) is only recomputed inside `newGame()` — unlike single-board practice, where `maxGuesses` is derived live from settings on every render — the fresh-board path left it stale. Fixed by adding the missing `newGame()` call to that branch.
+## Session 1: v1.5.9 → v1.5.10 — Board Loss Indicator (2026-07-22 ~04:29 IST)
 
-Both fixes verified: `npx tsc --noEmit` clean, full `npx jest` 39/39 passing, and live in a headless Playwright browser against the running `npx expo start --web` dev server — the browser extension (`claude-in-chrome`) wasn't connected this session, so a scratch Playwright driver was used instead (Chromium installed fresh via `npx playwright install chromium`, run through `~/repos/test/node_modules` since this repo has no local Playwright install). Reproduced the exact 2-out Hard→Extreme scenario from the user's screenshots and confirmed the board now resizes immediately on the emoji tap.
+### Objective
+Display a red ✗ indicator on unsolved boards when an n-out game ends in a loss, matching the green ✓ indicators on solved boards.
 
-## Version / release
+### Files Modified
+- **`app/(tabs)/index.tsx`** (+3 lines) — Updated `BoardIndicator` rendering to pass `isUnsolved` prop for loss state
+- **`components/BoardIndicator.tsx`** (+10/-1 lines) — Added red ✗ display for unsolved boards when game is over (lost)
+- **`app.json`** — Version bumped v1.5.9 → v1.5.10 (versionCode 31 → 32)
+- **`CHANGELOG.md`** — New entry under `## [1.5.10] — 2026-07-22`
 
-- Bumped v1.5.8 (vc30) → **v1.5.9 (vc31)** — patch, both fixes folded into one CHANGELOG entry (the n-out fix was committed after the version bump commit but before anything was pushed, so it was added to the same still-unreleased `## [1.5.9]` section rather than triggering a second bump).
-- Pushed to `main`, triggered `build-apk.yml` via `gh workflow run` (run `29818613255`): test job 42s, build job 44m20s, both green.
-- GitHub Release **v1.5.9** published: `wordout.apk` (98.2 MB), `wordout.aab` (69.4 MB).
-  - https://github.com/dilippanicker/wordout/releases/download/v1.5.9/wordout.apk
-  - https://github.com/dilippanicker/wordout/releases/download/v1.5.9/wordout.aab
+### Decisions Made
+- **Display choice:** Red ✗ on unsolved boards (not an empty state) — mirrors the semantic of the green ✓ solved boards
+- **No animation:** Deliberately static indicator (consistent with existing CLAUDE.md "Rendering is deliberately static" decision)
 
-## Current state
+### Current State (after v1.5.10)
+✅ n-out board indicators now show:
+  - Green ✓ in filled square — current board, solved
+  - Green ✓ in filled circle — non-active board, solved
+  - Red ✗ — current or non-active board, unsolved (game over)
+  - Progress circles/numbers — non-active, in-progress
 
-- v1.5.9/vc31 is built and published on GitHub Releases. **Not yet uploaded to Play Store** — closed testing track is still on v1.5.8/vc30.
-- Local `releases/wordout-latest.apk` / `.aab` are **stale (still v1.5.8)** — the refresh step (`gh release download` + copy into `releases/`) hit a permission denial on the `cp`/`rm -rf` commands mid-session and wasn't retried.
-- Play Store production-access saga (from Session 24, unrelated to this session) is untouched and still pending: rejected 2026-07-20, support ticket submitted 2026-07-21, awaiting Google's response, 14-day/12-tester clock still needs to run clean. See "Prior context" below.
-- No device regression test of either v1.5.9 fix — verification was web/headless-browser only.
+### Commits This Session
+1. `861fc5a` — fix: n-out board indicator shows X for unsolved boards on game over
 
-## Exact next step
+---
 
-1. Refresh local artifact copies for v1.5.9 — re-run `gh release download v1.5.9 --pattern '*.apk' --pattern '*.aab'` targeting `releases/` directly (avoid staging in `/tmp` first, since that path hit a permission denial this session), then rename to `wordout-latest.{apk,aab}`.
-2. Optional device regression test of the n-out resize fix (straightforward: switch difficulty on any n-out board with no guesses yet, confirm immediate resize). The UTC daily-boundary fix is impractical to device-test directly since it requires hitting a specific timezone-dependent instant window — the regression test + code fix should be treated as sufficient.
-3. Whenever Play Store upload is next prioritized: upload v1.5.9 (AAB), independent of the still-pending production-access clock.
-4. Continue waiting on Google's response to the 2026-07-21 support ticket (Session 24 item, unrelated to this session's work).
+## Session 2: v1.5.10 → v1.5.11 — Status Bar Icon Sync (2026-07-22 ~09:20 IST)
 
-## Gotchas
+### Objective
+Fix invisible status bar icons that could blend with the app background when device system theme disagreed with in-app theme.
 
-- **`claude-in-chrome` browser extension was not connected this session** — fell back to a scratch Playwright driver (Chromium installed via `npx playwright install chromium`, executed with `NODE_PATH` pointed at `~/repos/test/node_modules` since this repo doesn't have Playwright as a dependency). Worth checking extension connectivity at the start of future UI-verification tasks before assuming this fallback is needed again.
-- **`cp`/`rm -rf` on a scratch download directory got permission-denied** mid-session (staging a `gh release download` output before copying into `releases/`) — not yet understood why; didn't retry with a different approach. If this recurs, try `gh release download` with `--dir` pointed directly at the target instead of staging in `/tmp` first.
-- **Quordle's `maxGuesses` is a stored field, recomputed only by `newGame()`/`switchBoardCount()`** — unlike single-board practice, which derives `maxGuesses` live from `settingsStore.difficulty` on every render via `maxGuessesForDifficulty()`. Any future quordle state transition that changes `difficulty` or `boardCount` needs to explicitly trigger a `maxGuesses` recompute; it will not happen implicitly. This was the root cause of Bug 2 above — worth remembering as a general shape, not just this one call site.
-- **UTC vs local day boundary is now a recurring bug family** — this is the second fix in this area (first was the v1.5.8 word-derivation collision fix). Any new daily-related date logic should default to UTC accessors unless there's a specific reason to use local time.
+### Root Cause
+`expo-status-bar` was imported but never rendered in `app/_layout.tsx`. Android's default status bar icon color comes from the device's system theme, not the app's theme. In timezones or devices where system theme differs from app theme, icons became invisible (e.g., system dark mode + app light theme = white icons on white background).
 
-## Prior context (Session 24, untouched this session)
+### Files Modified
+- **`app/_layout.tsx`** (+2 lines) — Added explicit `<StatusBar />` component with `barStyle` synced to `darkTheme`
+- **`app.json`** — Version bumped v1.5.10 → v1.5.11 (versionCode 32 → 33)
+- **`CLAUDE.md`** — Updated (per global close protocol; content not detailed here)
+- **`CHANGELOG.md`** — New entry under `## [1.5.11] — 2026-07-22`
 
-Play Store production-access application was rejected 2026-07-20: Google requires 12+ testers opted-in continuously for 14 days; dashboard showed only "1 day" despite the user believing 12+ opted in continuously since Jul 9. Root cause unconfirmed — two live hypotheses: insufficient tester engagement (12 opted-in but only 8 ever downloaded), or an unexplained Play Console reset mechanism. A support ticket targeting this exact discrepancy was submitted 2026-07-21; awaiting Google's response. Full detail (tester-number definitions, Play Console UI gotchas) is in git history for this file (see commit `6a2b436`) if needed again.
+### Decisions Made
+- **Approach:** Render `<StatusBar barStyle={darkTheme ? 'light-content' : 'dark-content'} />` directly in `_layout.tsx`, synced imperatively to `darkTheme` from `settingsStore`
+- **No animation:** Simple state sync, no transition needed
+
+### Current State (after v1.5.11)
+✅ Status bar icon colour now always syncs to app theme:
+  - Light theme → dark status bar icons
+  - Dark theme → light status bar icons
+  - Matches the app's explicit `ThemeProvider` theming
+
+---
+
+## Verification Status
+
+**⚠️ CRITICAL — Unverified/Unknown:**
+- **Build/release status** for v1.5.10 and v1.5.11 is **UNKNOWN** — no evidence in git of `gh workflow run` or GitHub Actions triggering
+  - Need to check: GitHub Releases page for `v1.5.10` and `v1.5.11` tags
+  - Need to check: `releases/wordout-latest.apk` and `releases/wordout-latest.aab` to see if they're on v1.5.10/v1.5.11 or still on v1.5.9
+- **Device verification** — neither fix verified on a real Android device
+  - v1.5.10 (board ✗ indicator) — straightforward to check visually; should be low priority if code review is solid
+  - v1.5.11 (status bar icons) — only visible on real device; web dev server doesn't render a native status bar
+- **Play Store track status** — closed testing is still on v1.5.9 (versionCode 31) per Session 25 context; v1.5.10 and v1.5.11 not yet uploaded
+
+---
+
+## Prior Context Carried Forward
+
+**Play Store Production Access (from Session 25):**
+- Application rejected 2026-07-20 — requires 12+ testers opted-in continuously for 14 days; dashboard showed only "1 day"
+- Root cause unconfirmed — support ticket submitted 2026-07-21, awaiting Google response
+- Two hypotheses: insufficient tester engagement (opted-in ≠ actually opening the app), or Play Console reset
+- Reapplication after 14 clean days with ≥12 opted-in testers
+
+**Local Release Artifacts (from Session 25):**
+- `releases/wordout-latest.apk` and `releases/wordout-latest.aab` still on v1.5.8 — refresh attempt mid-session hit permission denial, not retried
+- Available via `./make.sh push` (installs without re-fetching), or manual re-download via `gh release download` + copy
+
+---
+
+## Exact Next Step
+
+1. **This session:** Verify build/release/Play Store status
+   - Check GitHub Releases for `v1.5.10` and `v1.5.11` tags and artifacts
+   - Compare `releases/wordout-latest.{apk,aab}` metadata against latest release
+   - If v1.5.11 built/released: verify APK contains the StatusBar fix (check `app/_layout.tsx` decompile)
+   - If v1.5.11 NOT built: decide whether to trigger `/release` now or defer until next feature
+
+2. **Future:** Device regression test
+   - Status bar icon colour on real Android device (light/dark theme toggle in Settings)
+   - N-out game loss end state (verify red ✗ on unsolved boards)
+   - Optional: web verification of board ✗ state via `npx expo start` and DevTools
+
+---
+
+## Known Gotchas
+
+None new — applies to all sessions:
+- StatusBar icon colour only visible on real devices, not web
+- Board indicator state changes are deliberately static (no animation)
+- No cutover-date logic for either fix — board ✗ is immediate, status bar sync is immediate on theme change
+
+---
+
+## Version Info
+- **Current:** 1.5.11 (versionCode 33)
+- **Previous:** 1.5.9 (versionCode 31)
+- **Skipped commits:** v1.5.10 (versionCode 32) — between these two
