@@ -3,8 +3,10 @@ import { useFonts } from 'expo-font';
 import { Stack, ThemeProvider, DefaultTheme, DarkTheme } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import { Platform, View, StyleSheet } from 'react-native';
 import 'react-native-reanimated';
 import { useSettingsStore } from '@/store/settingsStore';
+import { WEB_CARD_MAX_WIDTH } from '@/constants/layout';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -40,11 +42,34 @@ export default function RootLayout() {
   if (!loaded) return null;
 
   return (
-    <ThemeProvider value={darkTheme ? DARK_THEME : LIGHT_THEME}>
-      <StatusBar style={darkTheme ? 'light' : 'dark'} />
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      </Stack>
-    </ThemeProvider>
+    <View style={styles.webBackdrop}>
+      <View style={styles.webCard}>
+        <ThemeProvider value={darkTheme ? DARK_THEME : LIGHT_THEME}>
+          <StatusBar style={darkTheme ? 'light' : 'dark'} />
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          </Stack>
+        </ThemeProvider>
+      </View>
+    </View>
   );
 }
+
+// Desktop web: render as a centered phone-width card on a dark backdrop
+// instead of stretching full window width. No-op on native (plain flex:1).
+const styles = StyleSheet.create({
+  webBackdrop: Platform.OS === 'web'
+    ? { flex: 1, alignItems: 'center', backgroundColor: '#1a1a1a' }
+    : { flex: 1 },
+  webCard: Platform.OS === 'web'
+    ? {
+        flex: 1,
+        width: '100%',
+        maxWidth: WEB_CARD_MAX_WIDTH,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.4,
+        shadowRadius: 24,
+      }
+    : { flex: 1 },
+});
