@@ -264,9 +264,28 @@ Before every build, follow exactly:
 
 ---
 
+## Distribution
+
+- **Web (GitHub Pages):** automated — `deploy-web.yml` (push to main) and `build-apk.yml`'s `deploy-web` job (after a manual build) both export and deploy to the `gh-pages` branch, under `/play/` so the existing landing page + Play Store privacy policy at the Pages root are untouched (`keep_files: true`).
+- **itch.io — Android (APK):** automated — `build-apk.yml` pushes `./wordout.apk` via `butler` to the `:android` channel after every build (`ITCHIO_API_KEY` secret). Users sideload; itch.io hosts it as a plain file, no browser execution involved.
+- **itch.io — Web (HTML5): not automated, blocked.** Expo Router has no supported hash-based or dynamic-subpath routing — confirmed by reading the installed `expo-router` source (no such option in the plugin schema) and cross-checking upstream ([expo/expo#27163](https://github.com/expo/expo/issues/27163) asked for `linking` prop access and was closed unimplemented; [expo/router#165](https://github.com/expo/router/issues/165) is the general subpath-deploy gap). itch.io assigns a **new CDN path on every upload** (confirmed via itch.io's own docs — no stable prefix to hardcode the way GitHub Pages' `/wordout/play` is hardcoded), so the router 404s immediately on load (verified by simulating the exact scenario locally — the app's own "This screen doesn't exist" fallback fires, and its "Go to home screen!" link doesn't recover). Real fix would require either an unsupported patch of Expo Router's internals or restructuring web navigation to avoid separate router paths (e.g. modals instead of routes) — not attempted; revisit only as deliberate follow-up work.
+- **Samsung Galaxy Store:** manual upload for now, automate later.
+- **Amazon Appstore:** manual upload for now, automate later.
+- **Google Play:** manual upload for now — automate after production access is granted (API access unlocks then; see Play Store section above for the pending rejection).
+
+**Manual steps required before the workflows above will actually run/deploy successfully:**
+1. Create the `wordout` project on itch.io at `itch.io/game/new`
+2. Generate an API key at `itch.io/user/settings/api-keys`
+3. Add `ITCHIO_API_KEY` to GitHub repo secrets
+4. Flip GitHub Pages source from `main:/docs` to the `gh-pages` branch in repo settings (also requires seeding `gh-pages`'s root with the current `docs/index.html` + `docs/privacy.html` first, so the privacy policy URL Play Store depends on doesn't break — see Play Store section)
+
+---
+
 ## Model Selection
 
 Pattern: `opusplan` session model (Opus plans, Sonnet executes — automatic) + Opus-class advisor + Haiku-pinned Explore agent (`~/.claude/agents/Explore.md`). Set globally in `~/.claude/settings.json`; verify at session start via the `/model` and `/advisor` checkmarks. Rationale and details: `~/repos/claude-workflow/HOWTO.md` Roles section.
+
+**Implementation delegation:** well-specified, low-complexity tasks (see `~/.claude/agents/haiku-implementer.md`) may be delegated to Haiku per the global CLAUDE.md "Model Delegation" section. Returned diffs get reviewed against this project's own `/review` command before being accepted — not the generic fallback checklist, since `/review` already covers the failure modes that matter here (persist-version bumps, hardMode constraints, abandon guard).
 
 **Important:** `claude config set advisorModel` does NOT work — the only correct way to enable the advisor is via the `/advisor` command picker in the session. Note: `~/.claude/settings.json` currently has `"advisorModel": "opus"` set, and `advisor()` calls in the 2026-07-08 session returned substantive, independent-seeming analysis — this note may be stale, but wasn't rigorously re-tested (didn't compare behavior with the key removed), so treat as unconfirmed rather than fixed.
 
