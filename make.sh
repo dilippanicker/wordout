@@ -95,7 +95,7 @@ case "$cmd" in
     python3 scripts/itchio-postprocess.py dist
     if ! command -v butler &> /dev/null; then
       echo "Installing butler..."
-      curl -L -o /tmp/butler.zip https://broth.itch.ovh/butler/linux-amd64/LATEST/archive/default
+      curl -L -o /tmp/butler.zip https://broth.itch.zone/butler/linux-amd64/LATEST/archive/default
       unzip -o /tmp/butler.zip -d /tmp/butler-bin
       sudo mv /tmp/butler-bin/butler /usr/local/bin/
     fi
