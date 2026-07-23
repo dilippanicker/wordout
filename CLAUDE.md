@@ -223,7 +223,7 @@ Before every build, follow exactly:
 **Current version:** `1.6.0` (versionCode 34)
 
 ## Play Store
-- Publisher: Onglipo, package: `com.dilippanicker.wordout`. v1.5.8 (versionCode 30) live on closed testing (released Jul 9 2026), 19 testers invited / ~12 opted in / 8 downloaded.
+- Publisher: Onglipo, package: `com.dilippanicker.wordout`. v1.6.0 (versionCode 34) uploaded to closed testing 2026-07-23 — supersedes v1.5.8 (versionCode 30, live since Jul 9 2026), which had fallen 4 versions behind. Tester counts as of the v1.5.8 upload: 19 invited / ~12 opted in / 8 downloaded — not re-checked since.
 - **Production access application rejected 2026-07-20** — Google requires 12+ testers opted-in continuously for 14 days; dashboard showed only "1 day" of continuity despite ~12 days of believed compliance. Root cause unconfirmed (support ticket pending). See auto-memory (`wordout-playstore-production-access`) and `.claude/session-handoff.md` session 24 for full investigation notes.
 - Google Play Services tracks install/open/vitals/update-adoption automatically with zero app-side instrumentation — separate from and doesn't conflict with the app's no-tracking policy (see Monetization above).
 - Upload/release status tracked manually until release — not maintained in docs.

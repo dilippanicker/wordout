@@ -4,13 +4,16 @@
 
 ---
 
-## ✅ Session 28 — Completed 2026-07-23 (itch.io scroll/frame/notch fixes + daily auto-advance)
+## ✅ Session 28 — Completed 2026-07-23 (itch.io fixes + daily auto-advance + v1.6.0 release + Play Store upload + first devlog)
 
 - ✅ **itch.io "can't play without scrolling" + ugly wide frame fixed** — reported by user (laptop needed scrolling to reach the keyboard; phone view covered the status bar/camera cutout). Root cause: the itch.io embed was 700×1050, well past the app's own 430×932 web-card cap, forcing both the dark-backdrop card framing (which looked bad at that size) and — more importantly — the surrounding itch.io page to scroll before the keyboard was reachable. itch.io has no responsive/auto-fit sizing for non-Unity HTML5 (confirmed live on the Edit Game page). Fixed: shrunk the itch.io embed to 430×820 (live itch.io setting, not in git) so it always renders full-bleed; added a theme-matched 1px border in `app/_layout.tsx` so there's still a visible edge against the surrounding page without needing an oversized container. Also added `viewport-fit=cover` to the itch-specific HTML export (`scripts/itchio-postprocess.py`) so `env(safe-area-inset-*)` can activate on notched phones — best-effort, not verifiable against a real device from this sandbox.
 - ✅ **Daily mode now auto-advances Easy → Hard → Extreme** — user asked: after finishing Easy, the header emoji peek animation played and then nothing happened, leaving the player stranded on the completed board requiring a manual tap. `dismissEndGame()` (`app/(tabs)/index.tsx`) now calls `setActiveDailyDifficulty()` itself right after the peek animation finishes, which the existing effect already turns into a `startOrResumeDailyGame()` call. Removed the now-dead "Play Now" button (`BottomStrip.tsx`) since the state it targeted is no longer reachable in normal play. Verified live in the web build: solving Easy then Hard auto-advanced to Hard then Extreme with zero taps.
 - ✅ **itch.io fullscreen button no longer overlaps the stats icon** — full-bleed embed put both itch's overlaid fullscreen-toggle button and our own 📊 icon in the bottom-right corner. `BottomStrip.tsx` reserves extra right-padding while iframe-embedded (`window.self !== window.top`) AND `useWindowDimensions()` is still at or under the web-card cap (430×932) — that's the only state where the card is genuinely edge-to-edge and shares a corner with itch's button; real fullscreen expands the iframe past the cap, reverting the card to its normal centered/backdropped look. First attempt tracked `document.fullscreenElement` instead — confirmed live it doesn't fire for itch's embed, so the reservation stuck around even in fullscreen; replaced with the window-size check, verified locally via an iframe test harness.
 - ✅ **CLAUDE.md doc-size overage fixed** — was 340 lines (~40 over its ~300-line soft budget). Extracted resolved-incident narratives into a new `REGRESSION_TRAPS.md`, leaving short pointers in place; deleted one block that duplicated the Daily Gate Architecture section above it. Now 288 lines. Also fixed a staleness bug found along the way: the `dailyStore.ts` reference for `dailyAnswers` still described the pre-v1.5.8 bit-shifted derivation as current.
-- ✅ **v1.6.0 (versionCode 34) built** — minor bump for the daily auto-advance behavior change (the only native-affecting change this session; everything else is web/itch-only, gated on `Platform.OS === 'web'` or iframe detection). AAB/APK build triggered via `build-apk.yml`.
+- ✅ **v1.6.0 (versionCode 34) built** — minor bump for the daily auto-advance behavior change (the only native-affecting change this session; everything else is web/itch-only, gated on `Platform.OS === 'web'` or iframe detection). AAB/APK build triggered via `build-apk.yml`; itch.io's Android channel auto-updated as part of the same workflow run.
+- ✅ **Stale local release-artifact gotcha found + fixed** — after triggering `build-apk.yml` manually (the `/release` skill itself can't be invoked directly), `releases/wordout-latest.aab` was never refreshed via `gh release download`. A Play Console upload attempt got rejected for a duplicate versionCode — the local file was still byte-for-byte the old v1.5.11 (versionCode 33) build. Fixed by downloading the real v1.6.0 assets from the GitHub release tag; saved as an auto-memory (`wordout-release-artifact-refresh`) so this doesn't get rediscovered next session.
+- ✅ **Play Store closed testing upload** — v1.6.0 (versionCode 34) uploaded, superseding v1.5.8 (was 4 versions behind). See CLAUDE.md's Play Store section.
+- ✅ **First itch.io devlog published** — launch announcement ("Wordout a wordle like game is live: Android and web app"), covers both the web embed and Android APK, tagged android/casual/daily/free/mobile/open source/word game/wordle. Includes a 4-image gallery (feature graphic, settings, win celebration, 4-out multi-board). A cropped 16:9 landing-page hero screenshot was also prepared (`store-assets/itchio/devlog-launch-hero-16x9.png`) but the published post used a different image set — kept in the repo for future reuse.
 
 ## ✅ Session 26 — Completed 2026-07-22 (v1.5.10 + v1.5.11: board ✗ indicator + status bar icon fixes) [BACKFILLED]
 
@@ -31,14 +34,14 @@
 
 ## 🔴 NEW — Follow-up from Session 27
 
-- [ ] **Play Store: upload v1.5.11 to closed testing** — already built (real AAB/APK confirmed on GitHub Releases), closed testing still on v1.5.8. Three patches of real fixes (daily-word-repeat, n-out resize, n-out indicator ✗, status bar icons) aren't reaching actual testers yet. Recommended, not actioned — needs explicit go-ahead next session. One open unknown: whether uploading interacts at all with the still-unresolved Play Store production-access tester-opt-in tracking mystery (see Play Store section in CLAUDE.md) — no specific reason to think it would, just untested.
+- ✅ **Play Store: upload to closed testing** — done session 28, uploaded v1.6.0 (versionCode 34) directly, superseding the v1.5.11 that was originally planned here. See session 28 entry above for the stale-local-artifact gotcha hit along the way.
 - ✅ **CLAUDE.md line-budget overage** — fixed session 28, see above.
 - [ ] **Visual confirmation of the height-cap fix on GitHub Pages** — verified via computed styles and via the itch.io embed (which now shows the framing correctly), but never got a literal screenshot of it on the GH Pages URL itself since this sandbox's display can't exceed ~889px tall. Worth a real glance on an actual monitor.
 
 ## 🔴 NEW — Follow-up from Session 26 (Backfill)
 
 - ✅ **Verify GitHub Releases for v1.5.10 and v1.5.11** — confirmed this session: v1.5.11 has real AAB (69MB) + APK (98MB) artifacts on GitHub Releases.
-- [ ] **Compare `releases/wordout-latest.{apk,aab}` against latest release** — if on v1.5.9, refresh via `gh release download` + copy, or decide if v1.5.11 build is needed this session
+- ✅ **Compare `releases/wordout-latest.{apk,aab}` against latest release** — resolved session 28: found stale (still v1.5.11) when a Play Console upload got rejected for a duplicate versionCode; refreshed via `gh release download`.
 - ✅ **Check Play Store closed testing track status** — confirmed still on v1.5.8; v1.5.11 upload recommended but not actioned, see Session 27 below.
 - [ ] **Device regression test (optional but recommended)** — if v1.5.11 APK is available, verify status bar icon colour toggles correctly on real Android (Settings → Dark Theme toggle); n-out game loss end state shows red ✗ on unsolved boards
 
@@ -54,7 +57,7 @@
 
 - [ ] **Local `releases/wordout-latest.{apk,aab}` still on v1.5.8** — refresh attempt mid-session hit a permission denial on the `cp`/`rm -rf` commands used to stage the download; not retried. Use `./make.sh push` (installs the already-downloaded copy) or re-run the `gh release download` + copy step to bring them to v1.5.9.
 - [ ] **No device regression test of either v1.5.9 fix** — both were verified web-only (headless Playwright). The n-out resize fix is straightforward to check on a real device; the UTC daily-boundary fix is hard to device-test directly (would need to actually change device timezone to IST or similar and hit the early-morning gap window) — consider trusting the regression test + code fix for this one rather than forcing a device repro.
-- [ ] **v1.5.9 not yet uploaded to Play Store** — closed testing track is still on v1.5.8/vc30. Upload is independent of (and shouldn't disturb) the ongoing production-access 14-day clock investigation — see Session 24 items below, still unresolved.
+- ✅ **Play Store upload** — done session 28 (v1.6.0/vc34 uploaded directly, well past v1.5.9). Upload was independent of the production-access 14-day clock investigation as expected — see Session 24 items below, still unresolved.
 
 ## 🔴 NEW — Follow-up from Session 24 (2026-07-21, Play Store production-access investigation)
 
