@@ -1,8 +1,16 @@
 # Wordout — Master TODO
-**Updated: 2026-07-23 (session 27)**
+**Updated: 2026-07-23 (session 28)**
 **Current version: v1.5.11 (versionCode 33)**
 
 ---
+
+## ✅ Session 28 — Completed 2026-07-23 (itch.io scroll/frame/notch fixes + daily auto-advance)
+
+- ✅ **itch.io "can't play without scrolling" + ugly wide frame fixed** — reported by user (laptop needed scrolling to reach the keyboard; phone view covered the status bar/camera cutout). Root cause: the itch.io embed was 700×1050, well past the app's own 430×932 web-card cap, forcing both the dark-backdrop card framing (which looked bad at that size) and — more importantly — the surrounding itch.io page to scroll before the keyboard was reachable. itch.io has no responsive/auto-fit sizing for non-Unity HTML5 (confirmed live on the Edit Game page). Fixed: shrunk the itch.io embed to 430×820 (live itch.io setting, not in git) so it always renders full-bleed; added a theme-matched 1px border in `app/_layout.tsx` so there's still a visible edge against the surrounding page without needing an oversized container. Also added `viewport-fit=cover` to the itch-specific HTML export (`scripts/itchio-postprocess.py`) so `env(safe-area-inset-*)` can activate on notched phones — best-effort, not verifiable against a real device from this sandbox.
+- ✅ **Daily mode now auto-advances Easy → Hard → Extreme** — user asked: after finishing Easy, the header emoji peek animation played and then nothing happened, leaving the player stranded on the completed board requiring a manual tap. `dismissEndGame()` (`app/(tabs)/index.tsx`) now calls `setActiveDailyDifficulty()` itself right after the peek animation finishes, which the existing effect already turns into a `startOrResumeDailyGame()` call. Removed the now-dead "Play Now" button (`BottomStrip.tsx`) since the state it targeted is no longer reachable in normal play. Verified live in the web build: solving Easy then Hard auto-advanced to Hard then Extreme with zero taps.
+- ✅ **itch.io fullscreen button no longer overlaps the stats icon** — full-bleed embed put both itch's overlaid fullscreen-toggle button and our own 📊 icon in the bottom-right corner. `BottomStrip.tsx` now reserves extra right-padding while iframe-embedded (`window.self !== window.top`), dropped again once `document.fullscreenElement` goes truthy (itch's iframe has `allowfullscreen`, so its fullscreen state cascades into our own document).
+- ✅ **CLAUDE.md doc-size overage fixed** — was 340 lines (~40 over its ~300-line soft budget). Extracted resolved-incident narratives into a new `REGRESSION_TRAPS.md`, leaving short pointers in place; deleted one block that duplicated the Daily Gate Architecture section above it. Now 288 lines. Also fixed a staleness bug found along the way: the `dailyStore.ts` reference for `dailyAnswers` still described the pre-v1.5.8 bit-shifted derivation as current.
+- No version bump — all of this is either web/itch-only (zero effect on native, gated on `Platform.OS === 'web'` or iframe detection) or docs, except the daily auto-advance which is a genuine cross-platform behavior change; it'll get a CHANGELOG entry when the next version bump actually ships it.
 
 ## ✅ Session 26 — Completed 2026-07-22 (v1.5.10 + v1.5.11: board ✗ indicator + status bar icon fixes) [BACKFILLED]
 
@@ -24,7 +32,7 @@
 ## 🔴 NEW — Follow-up from Session 27
 
 - [ ] **Play Store: upload v1.5.11 to closed testing** — already built (real AAB/APK confirmed on GitHub Releases), closed testing still on v1.5.8. Three patches of real fixes (daily-word-repeat, n-out resize, n-out indicator ✗, status bar icons) aren't reaching actual testers yet. Recommended, not actioned — needs explicit go-ahead next session. One open unknown: whether uploading interacts at all with the still-unresolved Play Store production-access tester-opt-in tracking mystery (see Play Store section in CLAUDE.md) — no specific reason to think it would, just untested.
-- [ ] **CLAUDE.md is ~40 lines over its own soft budget** (340 vs ~300) — propose extracting historical sections (e.g. parts of "Daily Gate Architecture" or "Key Design Decisions (locked)") to an archive file next time this comes up. Needs a human judgment pass on what's still load-bearing vs. safely archivable — not done this session to keep the close quick.
+- ✅ **CLAUDE.md line-budget overage** — fixed session 28, see above.
 - [ ] **Visual confirmation of the height-cap fix on GitHub Pages** — verified via computed styles and via the itch.io embed (which now shows the framing correctly), but never got a literal screenshot of it on the GH Pages URL itself since this sandbox's display can't exceed ~889px tall. Worth a real glance on an actual monitor.
 
 ## 🔴 NEW — Follow-up from Session 26 (Backfill)
