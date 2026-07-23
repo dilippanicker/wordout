@@ -3,10 +3,10 @@ import { useFonts } from 'expo-font';
 import { Stack, ThemeProvider, DefaultTheme, DarkTheme } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { Platform, View, StyleSheet } from 'react-native';
+import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import 'react-native-reanimated';
 import { useSettingsStore } from '@/store/settingsStore';
-import { WEB_CARD_MAX_WIDTH, WEB_CARD_MAX_HEIGHT } from '@/constants/layout';
+import { WEB_CARD_MAX_WIDTH, WEB_CARD_MAX_HEIGHT, shouldLetterbox } from '@/constants/layout';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -31,6 +31,12 @@ export default function RootLayout() {
   // Starts with the persisted default; re-renders after AsyncStorage hydration.
   const darkTheme = useSettingsStore(s => s.darkTheme);
 
+  // Always true on web; on native, true only for large screens (>=600dp min
+  // dimension) where Android 16+ ignores the portrait lock. Must match the
+  // clamp gate in app/(tabs)/index.tsx — see constants/layout.ts.
+  const { width: winW, height: winH } = useWindowDimensions();
+  const letterbox = shouldLetterbox(winW, winH);
+
   useEffect(() => {
     if (error) throw error;
   }, [error]);
@@ -42,13 +48,14 @@ export default function RootLayout() {
   if (!loaded) return null;
 
   return (
-    <View style={styles.webBackdrop}>
+    <View style={letterbox ? styles.backdrop : styles.plain}>
       {/* Border marks the card's edge even when maxWidth/maxHeight are a no-op (e.g. an
-          undersized itch.io iframe) and there's no dark backdrop space to show a boundary. */}
+          undersized itch.io iframe), and on native dark theme where the card (#121213)
+          barely contrasts with the backdrop (#1a1a1a) and shadow doesn't render. */}
       <View
         style={[
-          styles.webCard,
-          Platform.OS === 'web' && { borderColor: darkTheme ? '#3a3a3c' : '#d3d6da', borderWidth: 1 },
+          letterbox ? styles.card : styles.plain,
+          letterbox && { borderColor: darkTheme ? '#3a3a3c' : '#d3d6da', borderWidth: 1 },
         ]}
       >
         <ThemeProvider value={darkTheme ? DARK_THEME : LIGHT_THEME}>
@@ -62,22 +69,20 @@ export default function RootLayout() {
   );
 }
 
-// Desktop web: render as a centered phone-width card on a dark backdrop
-// instead of stretching full window width. No-op on native (plain flex:1).
+// Letterboxed (desktop web, native large screens): render as a centered
+// phone-width card on a dark backdrop instead of stretching full window size.
+// Phones use `plain` (flex:1), the pre-existing native behavior, unchanged.
 const styles = StyleSheet.create({
-  webBackdrop: Platform.OS === 'web'
-    ? { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#1a1a1a' }
-    : { flex: 1 },
-  webCard: Platform.OS === 'web'
-    ? {
-        flex: 1,
-        width: '100%',
-        maxWidth: WEB_CARD_MAX_WIDTH,
-        maxHeight: WEB_CARD_MAX_HEIGHT,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.4,
-        shadowRadius: 24,
-      }
-    : { flex: 1 },
+  plain: { flex: 1 },
+  backdrop: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#1a1a1a' },
+  card: {
+    flex: 1,
+    width: '100%',
+    maxWidth: WEB_CARD_MAX_WIDTH,
+    maxHeight: WEB_CARD_MAX_HEIGHT,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 24,
+  },
 });
