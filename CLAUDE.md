@@ -1,5 +1,7 @@
 # Wordout — React Native (Expo)
 
+Historical bug write-ups and resolved-incident detail referenced below live in [REGRESSION_TRAPS.md](REGRESSION_TRAPS.md) — check it before touching code near a "see REGRESSION_TRAPS.md" pointer.
+
 ## Stack
 - Expo SDK ~56.0.12, React Native 0.85.3 (file-based routing via Expo Router)
 - TypeScript ~6.0.3
@@ -23,16 +25,12 @@
 - **Regeneration:** `python3 wordlist/regenerate.py` (reads from `wordlist/source/`)
 - Bundled JSON, not fetched at runtime
 
----
-
 ## Screen Zone Naming Convention
 - **Header** — top bar: 🇬🇧 🐣 ↺ | ◄ Wordout ► | ☽ ⚙ ?
 - **Ribbon** — 📅 🎮 icons + board indicators + contextual status (next word countdown etc)
 - **Board** — tile grid
 - **Keyboard** — on-screen keyboard
 - **Footer** — ⏳ tries left / new game button / 📊 stats
-
----
 
 ## Architecture
 
@@ -47,7 +45,6 @@
 - `(tabs)/new-game.tsx` — dummy redirect to `/(tabs)/`
 
 ### Stores — `store/`
-
 **`settingsStore.ts`** — persisted (`wordle-settings`):
 - `language`, `difficulty: 'easy'|'hard'|'extreme'`, `darkTheme`, `colorBlindMode`
 - `gameMode: 'wordle'|'quordle'`, `boardCount: 1|2|3|4|6|8` — **default `boardCount` is `4`**, not `1`
@@ -71,7 +68,7 @@
 **`dailyStore.ts`** — persisted (`wordout-daily`, version 2):
 - `DAILY_EPOCH = new Date('2026-01-01').getTime()`
 - `games: { easy, hard, extreme }` — each a `DailyGameState` with `status`, `guesses`, `currentGuess`, `solved`, `waveShown`, `celebrationShown`, `lastWinDate`, `stats`
-- `dailyAnswers: { easy, hard, extreme }` — per-difficulty answers, set together on first daily start of the day via UTC-midnight seed (`Math.imul(dayMs, 2654435761)`, bit-shifted indices 0/1/2)
+- `dailyAnswers: { easy, hard, extreme }` — all three set together on first daily start of the day, via `dailyIndices(dayNum, n)` (see Daily Gate Architecture below)
 - `activeDailyDifficulty: Difficulty` — persisted; which tab is active
 - `activeWordleMode: 'daily'|'practice'`
 - `startOrResumeDailyGame(difficulty)` — starts game only if status === 'available'; computes all three answers at once; dev-mode logs all three words
@@ -86,43 +83,27 @@
 `setCurrentGuess()` is defined on all three game stores (`gameStore`, `quordleStore`, `dailyStore`) — powers tap-tile-to-clear-rightward in every mode.
 
 ### Daily Gate Architecture (v1.4.0)
-
-Three independent daily games run each day — Easy, Hard, Extreme — each with a different word:
+Three independent daily games run each day — Easy, Hard, Extreme — each with a different word.
 
 **Per-difficulty state (`dailyStore.ts`)**:
 - `games.{easy|hard|extreme}` — independent `DailyGameState`: status, guesses, currentGuess, solved, waveShown, celebrationShown, lastWinDate, streak, stats
 - Stats per-difficulty, shown in sub-tabs (🐣/💪/💀) within the Daily tab of StatsModal
 - Streaks tracked independently via `lastWinDate`; missed-day detection fires in `checkAndReset()`
+- Word selection: all three words computed atomically via `dailyIndices(dayNum, n)` — a mulberry32 PRNG seeded per UTC day, sampled with reject-duplicate until 3 distinct indices are drawn from the full `[0, n)` answer-list range. See REGRESSION_TRAPS.md for the collision bug this replaced (v1.5.8).
 
-**Word selection**:
-All three words computed atomically on first daily start via `dailyIndices(dayNum, n)` — a mulberry32 PRNG seeded per UTC day, sampled with reject-duplicate until 3 distinct indices are drawn from the full `[0, n)` range of that language's answer list. All three set in one call to `startOrResumeDailyGame`. Fixed in v1.5.8 (previously a bit-masked derivation that collided ~8 days/decade and capped indices at 2047 — see CHANGELOG). No cutover-date gating was needed for the fix: `dailyAnswers` is computed once per day and persisted, so an in-progress day keeps its already-computed word (old or new algorithm) and only future days see the new derivation — same-day cross-version consistency was never a requirement here (no historical word display, share text never reveals the word).
+**Day boundary is UTC everywhere, not local calendar day** — `getTodayString()`/`getYesterdayString()` (`dailyStore.ts`) and the countdown (`msUntilMidnight()`, `app/(tabs)/index.tsx`) all key off UTC date components, matching `getDailyAnswers()`'s UTC-midnight derivation. See REGRESSION_TRAPS.md for the local-timezone bug this fixed. Regression test: `__tests__/store-invariants.test.ts` "day boundary is UTC, not local" (`TZ=Asia/Kolkata`).
 
-**Day boundary is UTC everywhere, not local calendar day** — `getTodayString()`/`getYesterdayString()` (`dailyStore.ts`, drive `checkAndReset()`/`lastPlayedDate`/`lastWinDate`) and the countdown (`msUntilMidnight()`, `app/(tabs)/index.tsx`) all key off UTC date components, matching `getDailyAnswers()`'s UTC-midnight derivation. Before this fix they used local time: for any timezone ahead of UTC (e.g. IST +5:30), local midnight arrives before real UTC midnight, so `checkAndReset()` fired early during that gap and the freshly-reset game reused `getDailyAnswers()`'s still-previous-UTC-day word — the daily word appeared to repeat across two consecutive local days. Regression test: `__tests__/store-invariants.test.ts` "day boundary is UTC, not local" (sets `TZ=Asia/Kolkata`, fails against the pre-fix local-time implementation).
-
-**Accessible-list gate**:
-Build reachable difficulty list before each cycle step:
+**Accessible-list gate** — build reachable difficulty list before each cycle step:
 1. Easy — always included
 2. Hard — included if Easy is `'completed'` OR Hard is already `'playing'`/`'completed'`
 3. Extreme — included if Hard is `'completed'` OR Extreme is already `'playing'`/`'completed'`
 
-Cycle (m = highest reachable index): header difficulty emoji taps through this list only. NO gate toasts, NO "Win X first" messages.
-
-**Peek animation**: After the win overlay dismisses (first win only), the header emoji briefly scales toward the next difficulty emoji (🐣→💪 or 💪→💀) then snaps back. Only fires when the next difficulty is newly unlocked.
-
-**Play Now button**: After winning Easy (if Hard is `'available'`) or Hard (if Extreme is `'available'`), the footer shows "💪 Unlocked! Play Now" or "💀 Unlocked! Play Now". Tapping starts the next difficulty immediately.
-
-**Startup funnel**: On app mount, automatically routes to next unplayed difficulty: Easy not started → Easy; Easy won + Hard not started → Hard; Hard won + Extreme not started → Extreme; else restore persisted `activeWordleMode` + `activeDailyDifficulty`.
+Header difficulty emoji taps through this list only. NO gate toasts, NO "Win X first" messages.
+**Peek animation**: after the win overlay dismisses (first win only), the header emoji briefly scales toward the next difficulty emoji then snaps back — only when the next difficulty is newly unlocked.
+**Play Now button**: after winning Easy (if Hard is `'available'`) or Hard (if Extreme is `'available'`), the footer shows "💪/💀 Unlocked! Play Now" — tapping starts the next difficulty immediately.
+**Startup funnel**: on app mount, routes to next unplayed difficulty (Easy → Hard → Extreme in order), else restores persisted `activeWordleMode` + `activeDailyDifficulty`.
 
 ### Key Design Decisions (locked)
-
-**Daily mode (v1.4.0)** — decisions; see "Daily Gate Architecture" above for mechanics:
-- Three independent daily games per day, each a different word
-- Gate via accessible-list cycling only — no gate toasts, no "Win X first" messages
-- Footer surfaces a "Play Now" button for a newly-unlocked difficulty
-- Peek animation previews the next difficulty right after a win
-- Streaks and missed-day detection tracked independently per difficulty
-- Stats modal has per-difficulty sub-tabs
-- Startup funnels to the next unplayed difficulty
 
 **Practice mode:**
 - Unlimited games, freely change difficulty — snapshot-based (no lock, no confirm dialog)
@@ -154,13 +135,9 @@ Cycle (m = highest reachable index): header difficulty emoji taps through this l
 - Game over (daily, next unstarted): `[? for help] [💪 Unlocked! Play Now (green)] [📊]`
 - Game over (daily, all done or gated): `[? for help] [📊]` (countdown in Ribbon)
 
-**Emoji convention (strict):**
-- 🐣 easy, 💪 hard, 💀 extreme
-- 🔥 daily streak, ⚡ practice streak, 🏆 personal best
-- 📅 daily mode, 🎮 practice mode
+**Emoji convention (strict):** 🐣 easy, 💪 hard, 💀 extreme · 🔥 daily streak, ⚡ practice streak, 🏆 personal best · 📅 daily mode, 🎮 practice mode
 
-**App name:** Wordout (not WordOut, not WORDOUT)
-**Mode names:** Wordout, 2-out, 3-out, 4-out, 6-out, 8-out
+**App name:** Wordout (not WordOut, not WORDOUT) · **Mode names:** Wordout, 2-out, 3-out, 4-out, 6-out, 8-out
 
 **Monetization:** Wordout stays ad-free (see README's "No ads, no accounts, no tracking"). Ad-monetization was explicitly considered and declined (2026-07) — it conflicts with the app's core promise to existing users/testers. Do not propose ads, analytics, or tracking SDKs for this app.
 
@@ -192,11 +169,10 @@ Cycle (m = highest reachable index): header difficulty emoji taps through this l
 ### Difficulty rules
 - Daily: header emoji cycles through accessible difficulties (accessible-list approach, no toasts). Settings difficulty panel applies to practice only when in daily mode.
 - Practice single-board: snapshot-based switch via `gameStore.switchDifficulty(d)`. No lock, no confirm dialog.
-- Quordle: lock if game complete (toast); confirmAbandon if in-progress; resets board on change. Both the confirmAbandon path and the fresh-board (no guesses yet) path in `handleDifficultyToggle()` must call `useQuordleStore.getState().newGame()` after `setDifficulty()` — `quordleStore.maxGuesses` (and thus rendered row count) is only recomputed inside `newGame()`, not derived live like single-board's. Fixed in v1.5.9 (previously the fresh-board path skipped the `newGame()` call, so the board kept the old difficulty's row count until a manual New Game).
+- Quordle: lock if game complete (toast); confirmAbandon if in-progress; resets board on change. Both the confirmAbandon path and the fresh-board (no guesses yet) path in `handleDifficultyToggle()` must call `useQuordleStore.getState().newGame()` after `setDifficulty()` — `quordleStore.maxGuesses` (and thus rendered row count) is only recomputed inside `newGame()`, not derived live like single-board's. See REGRESSION_TRAPS.md (v1.5.9).
 
 ### Abandon guard — `utils/abandon.ts`
-`isGameInProgress()` reads stores imperatively. Checks guesses submitted, not just game state existence.
-`confirmAbandon(onConfirm)` — `Alert.alert` on Android/iOS, `window.confirm` on web.
+`isGameInProgress()` reads stores imperatively. Checks guesses submitted, not just game state existence. `confirmAbandon(onConfirm)` — `Alert.alert` on Android/iOS, `window.confirm` on web.
 
 ### Help content
 Text strings extracted to `constants/helpContent.ts` — edit there without touching `HelpModal.tsx`.
@@ -211,8 +187,6 @@ Full-screen overlay, purely presentational (no store reads/writes for the demo b
 - "Got it!" is tappable at any point, including mid-animation — `handleGotIt()` sets `cancelledRef.current = true` before closing, so it always cancels the running sequence and closes immediately rather than requiring the animation to finish first
 - "Got it!" with the checkbox checked sets `tutorialSeen = true`; unchecked, the tutorial fires again next launch
 - Replayable from `HelpModal`'s "▶ Watch how to play" button (top of the modal, only rendered when the optional `onWatchTutorial` prop is passed — `app/(tabs)/settings.tsx`'s `HelpModal` instance has no path back to the game screen's tutorial state, so the button is hidden there by design)
-
----
 
 ## Build Pipeline
 
@@ -232,14 +206,11 @@ Full-screen overlay, purely presentational (no store reads/writes for the demo b
 
 **Do NOT use local EAS builds** — Java/Gradle environment issues. GitHub Actions is the only supported build path.
 
----
-
 ## Version Bumping Protocol
 
 Use the global `/release` skill — it reads this section and Build Pipeline, and automates the flow below (propose → confirm → bump → commit/push → `gh workflow run build-apk.yml` → watch → report release links).
 
 Before every build, follow exactly:
-
 1. Read `app.json` for current `version` and `versionCode`
 2. Propose bump with reasoning, wait for confirmation:
    > "Ready to build. Proposing v1.2.8 (versionCode 16) — patch: bug fixes. Confirm?"
@@ -253,49 +224,29 @@ Before every build, follow exactly:
 
 **Current version:** `1.5.11` (versionCode 33)
 
----
-
 ## Play Store
-- Publisher: Onglipo, package: `com.dilippanicker.wordout`
-- v1.5.8 (versionCode 30) live on closed testing (released Jul 9 2026), 19 testers invited / ~12 opted in / 8 downloaded
-- **Production access application rejected 2026-07-20** — Google requires 12+ testers opted-in continuously for 14 days; the dashboard showed only "1 day" of continuity despite ~12 days of believed compliance since Jul 9. Root cause unconfirmed (support ticket pending) — two candidates: insufficient tester engagement (opted-in ≠ actually opening the app), or an unexplained Play Console reset. See `.claude/session-handoff.md` session 24 for full investigation notes.
-- Google Play Services/Play Store tracks install, open, vitals, and update-adoption automatically for every Play-installed app with zero app-side instrumentation — this is separate from and doesn't conflict with the app's no-tracking policy (see Monetization above)
-- Upload/release status tracked manually until release — not maintained in docs
-
----
+- Publisher: Onglipo, package: `com.dilippanicker.wordout`. v1.5.8 (versionCode 30) live on closed testing (released Jul 9 2026), 19 testers invited / ~12 opted in / 8 downloaded.
+- **Production access application rejected 2026-07-20** — Google requires 12+ testers opted-in continuously for 14 days; dashboard showed only "1 day" of continuity despite ~12 days of believed compliance. Root cause unconfirmed (support ticket pending). See auto-memory (`wordout-playstore-production-access`) and `.claude/session-handoff.md` session 24 for full investigation notes.
+- Google Play Services tracks install/open/vitals/update-adoption automatically with zero app-side instrumentation — separate from and doesn't conflict with the app's no-tracking policy (see Monetization above).
+- Upload/release status tracked manually until release — not maintained in docs.
 
 ## Distribution
 
 - **Web (GitHub Pages):** automated — `deploy-web.yml` (push to main) and `build-apk.yml`'s `deploy-web` job (after a manual build) both export and deploy to the `gh-pages` branch, under `/play/` so the existing landing page + Play Store privacy policy at the Pages root are untouched (`keep_files: true`).
-- **Web card sizing (`constants/layout.ts`, `app/_layout.tsx`):** on web only, the game renders as a fixed-size card (`WEB_CARD_MAX_WIDTH` 430 / `WEB_CARD_MAX_HEIGHT` 932 — iPhone 14 Pro Max's logical size, chosen to sit just above the tallest realistic phone viewport so it never clips real mobile users) centered on a `#1a1a1a` backdrop, instead of stretching full window size. `index.tsx` clamps `screenW`/`screenH` from `useWindowDimensions()` to match, or tile-sizing and board-paging math size themselves for the raw window instead of the visible card and overflow it. Below the cap (any real phone), both clamps are a no-op — full-bleed fill is preserved.
-- **itch.io project:** `onglipo/wordout` (https://onglipo.itch.io/wordout) — note the itch.io account is `onglipo`, not `dilippanicker` (unlike the GitHub repo and Google Play package name). `butler push` targets must use `onglipo/wordout:<channel>`.
-- **itch.io — Android (APK):** automated — `build-apk.yml` pushes `./wordout.apk` via `butler` to the `:android` channel after every build (`ITCHIO_API_KEY` secret). Users sideload; itch.io hosts it as a plain file, no browser execution involved. Butler is installed from `https://broth.itch.zone/...` — the `.ovh` domain used in earlier drafts of this step is retired and no longer resolves; both workflows and `make.sh` were fixed to `.zone`.
-- **itch.io — Web (HTML5): unblocked, automated.** `deploy-web.yml`'s `deploy-itchio-web` job (push to main) exports a *separate, root-relative* web build (baseUrl unset, unlike the GitHub Pages export), post-processes it with `scripts/itchio-postprocess.py`, and pushes to the `:html5` channel via `butler` (`ITCHIO_API_KEY` secret). `./make.sh deploy-web` does the same locally for manual pushes.
-  - The blocker was real (Expo Router has no supported hash-based or dynamic-subpath routing — confirmed by reading the installed `expo-router` source and cross-checking upstream: [expo/expo#27163](https://github.com/expo/expo/issues/27163), [expo/router#165](https://github.com/expo/router/issues/165)), and itch.io assigns a new CDN path on every upload with no stable prefix to hardcode. The fix doesn't touch app code: the postprocess script injects a boot-time `<script>` into the exported `index.html` that pins an explicit `<base href>` to the real (unknown-until-runtime) CDN directory — so relative asset loads stay correctly anchored — and *then* normalizes `window.location` to `/` via `history.replaceState()` so Expo Router's initial route match succeeds. Order matters: doing the `replaceState()` first (the obvious first attempt) breaks asset loading instead, because it also moves `document.baseURI`, which relative references resolve against. Verified locally against a simulated nested CDN path: clean boot, correct asset loads, and round-trip client-side navigation to Settings and back (Wordout is not single-screen — `/settings` is a real `router.navigate()`'d route).
-  - **Caveat:** a manual page reload while on a sub-route (e.g. `/settings`) issues a real request the CDN can't serve and 404s for real. Inherent to any client-routed SPA on a static host without server-side rewrite rules, not itch.io-specific, and not fixable client-side. Acceptable given itch.io embeds games in an iframe with no reload affordance exposed to players.
-  - **itch.io project embed settings** (`Edit game` page, not in git — check itch.io directly, not this repo, if it looks wrong): size **700×1050**, "fullscreen button" enabled. Must stay comfortably larger than the 430×932 web card above — an iframe sized to exactly match the card (tried first: 390×844, then 430×844) leaves no room for the dark-backdrop framing to render, so the game fills the iframe edge-to-edge with no visible boundary against the surrounding page.
-- **Samsung Galaxy Store:** manual upload for now, automate later.
-- **Amazon Appstore:** manual upload for now, automate later.
-- **Google Play:** manual upload for now — automate after production access is granted (API access unlocks then; see Play Store section above for the pending rejection).
-
-**Manual steps required before the workflows above will actually run/deploy successfully:**
-1. ✅ `wordout` project created on itch.io under the `onglipo` account (https://onglipo.itch.io/wordout)
-2. ✅ API key generated and `ITCHIO_API_KEY` added to GitHub repo secrets
-3. ✅ GitHub Pages source flipped from `main:/docs` to the `gh-pages` branch — live and verified (`gh-pages` was seeded with the prior `docs/index.html` + `docs/privacy.html` first, so the Play Store privacy policy URL didn't change)
-
----
+- **Web card sizing (`constants/layout.ts`, `app/_layout.tsx`):** on web only, the game renders as a fixed-size card (`WEB_CARD_MAX_WIDTH` 430 / `WEB_CARD_MAX_HEIGHT` 932 — iPhone 14 Pro Max's logical size, chosen to sit just above the tallest realistic phone viewport so it never clips real mobile users) centered on a `#1a1a1a` backdrop, instead of stretching full window size. `index.tsx` clamps `screenW`/`screenH` from `useWindowDimensions()` to match. Below the cap (any real phone), both clamps are a no-op.
+- **itch.io project:** `onglipo/wordout` (https://onglipo.itch.io/wordout) — **the itch.io account is `onglipo`, not `dilippanicker`** (unlike the GitHub repo and Google Play package name). `butler push` targets must use `onglipo/wordout:<channel>`. See REGRESSION_TRAPS.md — this was silently wrong for several sessions before being caught.
+- **itch.io — Android (APK):** automated — `build-apk.yml` pushes `./wordout.apk` via `butler` to the `:android` channel after every build (`ITCHIO_API_KEY` secret). Butler installs from `https://broth.itch.zone/...` — **not `.ovh`, which is retired and no longer resolves** (see REGRESSION_TRAPS.md).
+- **itch.io — Web (HTML5):** automated — `deploy-web.yml`'s `deploy-itchio-web` job exports a *separate, root-relative* web build (baseUrl unset), post-processes it with `scripts/itchio-postprocess.py`, and pushes to the `:html5` channel via `butler`. `./make.sh deploy-web` does the same locally. The postprocess script pins `<base href>` to the real CDN directory *before* normalizing `window.location` via `history.replaceState()` — order matters, see REGRESSION_TRAPS.md. Caveat: a manual reload on a sub-route (e.g. `/settings`) 404s — inherent to client-routed SPAs on a static host, acceptable since itch.io embeds in an iframe with no reload affordance.
+- **itch.io project embed settings** (`Edit game` page, not in git — check itch.io directly if it looks wrong): size **700×1050**, "fullscreen button" enabled. Must stay comfortably larger than the 430×932 web card above — see REGRESSION_TRAPS.md for why an exact-match size broke framing.
+- **Samsung Galaxy Store / Amazon Appstore:** manual upload for now, automate later.
+- **Google Play:** manual upload for now — automate after production access is granted (see Play Store section above).
+- **Manual setup (all completed):** itch.io `wordout` project created under `onglipo`; `ITCHIO_API_KEY` added to GitHub repo secrets; GitHub Pages source flipped from `main:/docs` to the `gh-pages` branch (seeded with the prior `docs/index.html` + `docs/privacy.html` first, so the Play Store privacy policy URL didn't change).
 
 ## Model Selection
-
-Pattern: `opusplan` session model (Opus plans, Sonnet executes — automatic) + Opus-class advisor + Haiku-pinned Explore agent (`~/.claude/agents/Explore.md`). Set globally in `~/.claude/settings.json`; verify at session start via the `/model` and `/advisor` checkmarks. Rationale and details: `~/repos/claude-workflow/HOWTO.md` Roles section.
-
-**Implementation delegation:** well-specified, low-complexity tasks (see `~/.claude/agents/haiku-implementer.md`) may be delegated to Haiku per the global CLAUDE.md "Model Delegation" section. Returned diffs get reviewed against this project's own `/review` command before being accepted — not the generic fallback checklist, since `/review` already covers the failure modes that matter here (persist-version bumps, hardMode constraints, abandon guard).
-
-**Important:** `claude config set advisorModel` does NOT work — the only correct way to enable the advisor is via the `/advisor` command picker in the session. Note: `~/.claude/settings.json` currently has `"advisorModel": "opus"` set, and `advisor()` calls in the 2026-07-08 session returned substantive, independent-seeming analysis — this note may be stale, but wasn't rigorously re-tested (didn't compare behavior with the key removed), so treat as unconfirmed rather than fixed.
-
-Executor handles implementation; advisor engages automatically at key decision points (before writing, before committing to an approach, when stuck, before declaring done). Run `/compact` at 50%+ context.
-
----
+- Pattern: `opusplan` session model (Opus plans, Sonnet executes — automatic) + Opus-class advisor + Haiku-pinned Explore agent (`~/.claude/agents/Explore.md`). Set globally in `~/.claude/settings.json`; verify at session start via the `/model` and `/advisor` checkmarks. Rationale and details: `~/repos/claude-workflow/HOWTO.md` Roles section.
+- **Implementation delegation:** well-specified, low-complexity tasks (see `~/.claude/agents/haiku-implementer.md`) may be delegated to Haiku per the global CLAUDE.md "Model Delegation" section. Returned diffs get reviewed against this project's own `/review` command before being accepted.
+- `claude config set advisorModel` does NOT work — the only correct way to enable the advisor is via the `/advisor` command picker in the session. See REGRESSION_TRAPS.md for an unconfirmed note on `settings.json`'s `advisorModel` key.
+- Executor handles implementation; advisor engages automatically at key decision points (before writing, before committing to an approach, when stuck, before declaring done). Run `/compact` at 50%+ context.
 
 ## Session lifecycle
 
@@ -319,8 +270,6 @@ These must state the same version — checked by the global /open and /close ski
 - Commit message convention: `chore: session close — <what changed>`
 - **Push policy: commit always; push only when explicitly asked**
 
----
-
 ## StatsModal Behaviour (v1.4.0+)
 - `isQuordle` uses `gameMode === 'quordle'` (see settingsStore rule)
 - Daily/Practice tabs are local state (`modalModeTab`), synced imperatively via `useDailyStore.getState()` on `visible → true` — does NOT write back to store
@@ -329,8 +278,8 @@ These must state the same version — checked by the global /open and /close ski
 
 ## Keyboard Behaviour (`components/Keyboard.tsx`, v1.5.6+)
 - `deriveKeyStatuses(guesses)` (single-board) and `deriveQuordleKeyStatuses(guesses, boardIndex)` (n-out, `app/(tabs)/index.tsx`) both fold letter statuses by priority (correct > present > absent). The n-out version takes an explicit `boardIndex` and reads only `guess.boardResults[boardIndex]` — **scoped to the currently active board only, never a union across boards.** Since only one board is visible at a time in n-out mode (unlike Quordle/Octordle showing all boards simultaneously), the keyboard mirrors single-board behavior exactly, keyed off `activeBoard` state. Switching boards (swipe via `onMomentumScrollEnd`, or tapping a `BoardIndicator` dot via `scrollTo(i)`) both update `activeBoard`, so the keyboard re-derives and updates automatically.
-- **Enter key is always `'ENTER'` internally** — `keyLabel(key)` maps it to the display glyph `'⏎'` only at render time (`Text` content), so `onKey`/`keyStatuses` lookups keyed on `'ENTER'` stay correct. Do not change the key's functional value to `'⏎'` — v1.5.5 did this and it broke submit (the glyph got typed as a literal character); fixed in v1.5.6.
-- **No `enterActive` prop** — the green-outline highlight on 5-letter guesses (added v1.5.3) was fully reverted in v1.5.6, including the prop, both call sites, and its styles. Do not re-add it without a fresh explicit request.
+- **Enter key is always `'ENTER'` internally** — `keyLabel(key)` maps it to the display glyph `'⏎'` only at render time (`Text` content), so `onKey`/`keyStatuses` lookups keyed on `'ENTER'` stay correct. Do not change the key's functional value to `'⏎'` — see REGRESSION_TRAPS.md (v1.5.5→v1.5.6).
+- **No `enterActive` prop** — the green-outline highlight on 5-letter guesses was fully reverted in v1.5.6, including the prop, both call sites, and its styles. Do not re-add it without a fresh explicit request.
 - `enterOnRight: boolean` (`settingsStore`, default `false`) — settings label "Swap ⏎ and ⌫ positions". `false` (default) renders `ROWS_ENTER_RIGHT` (⌫ left, ⏎ right — the natural position); `true` renders `ROWS_ENTER_LEFT` (⏎ left, ⌫ right, swapped). Toggle polarity was inverted until v1.5.6 — verify against this description before "fixing" it again.
 
 ## Share Behaviour (`app/(tabs)/index.tsx`, v1.5.4+)
