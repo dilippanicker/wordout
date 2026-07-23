@@ -1,5 +1,5 @@
 # Wordout — Master TODO
-**Updated: 2026-07-22 (backfill sessions 25→26)**
+**Updated: 2026-07-23 (session 27)**
 **Current version: v1.5.11 (versionCode 33)**
 
 ---
@@ -11,11 +11,27 @@
 - ⚠️ **Build/release/Play Store status for v1.5.10 and v1.5.11 UNKNOWN** — no evidence in git of `gh workflow run` trigger or GitHub Actions execution. Need to verify: check GitHub Releases for v1.5.10/v1.5.11 tags, compare `releases/wordout-latest.{apk,aab}` against latest release, check Play Store closed testing track status.
 - 🟡 **No device verification** — both fixes untested on real Android. v1.5.10 (board ✗) is low priority if code review solid; v1.5.11 (status bar) requires real device to verify icon colour sync.
 
+## ✅ Session 27 — Completed 2026-07-23 (web + itch.io distribution pipeline)
+
+- ✅ **GitHub Pages deploy live** — game at `dilippanicker.github.io/wordout/play/`, landing page + privacy policy preserved at the root. `gh-pages` branch seeded, Pages source flipped, `deploy-web.yml` automates future deploys on every push to main.
+- ✅ **itch.io HTML5 + Android both live** — `onglipo.itch.io/wordout`. HTML5 was expected to be blocked by Expo Router's lack of dynamic-subpath routing support; root-caused and fixed via a boot-time `<base href>` + `history.replaceState()` script (`scripts/itchio-postprocess.py`), verified locally before shipping and again live in production (played an actual guess in the embed).
+- ✅ **Two real bugs found + fixed via live CI runs, not code review** — butler push targets used the wrong itch.io account (`dilippanicker` → `onglipo`); butler's download domain `broth.itch.ovh` is retired (→ `broth.itch.zone`). Both were wrong since the itch.io automation was first written and only surfaced by actually triggering and watching a GitHub Actions run fail.
+- ✅ **Landing page fixes** (`docs/index.html`) — "Quadout" → "4-out" (2 places), wrong emoji (🔥→💪 for Hard, 2 places), daily-progression blurb added, Google Play CTA commented out + replaced with "Play in browser" + promoted GitHub button, footer signature updated, feature graphic wired up as the OG/Twitter social-preview image.
+- ✅ **Web responsive fix completed** — phone-card treatment (430×932, iPhone 14 Pro Max size) now caps both width (done previously) and height (done this session) on desktop web, centered on a dark backdrop, matching the original "floating phone card" design intent. No effect on native or real mobile web (clamps are no-ops below the cap).
+- ✅ **itch.io embed sizing bug found + fixed live** — user reported the game "overflowing the frame" on itch.io with a real screenshot. Root cause: the itch.io project's embed dimensions had been set to exactly match the web card's own max-size (430×844), leaving no slack for the dark-backdrop framing to render — the game filled the iframe edge-to-edge with no visible boundary. Fixed by widening the itch.io embed to 700×1050 (an external project setting, not in git — now documented in CLAUDE.md's Distribution section so it isn't silently broken again).
+- ✅ **README.md + CLAUDE.md updated** — itch.io mentioned as an alternate download/play option in README; CLAUDE.md's Distribution section now documents the web card sizing decision, the itch.io embed settings, and the retired butler domain.
+
+## 🔴 NEW — Follow-up from Session 27
+
+- [ ] **Play Store: upload v1.5.11 to closed testing** — already built (real AAB/APK confirmed on GitHub Releases), closed testing still on v1.5.8. Three patches of real fixes (daily-word-repeat, n-out resize, n-out indicator ✗, status bar icons) aren't reaching actual testers yet. Recommended, not actioned — needs explicit go-ahead next session. One open unknown: whether uploading interacts at all with the still-unresolved Play Store production-access tester-opt-in tracking mystery (see Play Store section in CLAUDE.md) — no specific reason to think it would, just untested.
+- [ ] **CLAUDE.md is ~40 lines over its own soft budget** (340 vs ~300) — propose extracting historical sections (e.g. parts of "Daily Gate Architecture" or "Key Design Decisions (locked)") to an archive file next time this comes up. Needs a human judgment pass on what's still load-bearing vs. safely archivable — not done this session to keep the close quick.
+- [ ] **Visual confirmation of the height-cap fix on GitHub Pages** — verified via computed styles and via the itch.io embed (which now shows the framing correctly), but never got a literal screenshot of it on the GH Pages URL itself since this sandbox's display can't exceed ~889px tall. Worth a real glance on an actual monitor.
+
 ## 🔴 NEW — Follow-up from Session 26 (Backfill)
 
-- [ ] **Verify GitHub Releases for v1.5.10 and v1.5.11** — check that both tags exist with artifacts (wordout.apk + wordout.aab)
+- ✅ **Verify GitHub Releases for v1.5.10 and v1.5.11** — confirmed this session: v1.5.11 has real AAB (69MB) + APK (98MB) artifacts on GitHub Releases.
 - [ ] **Compare `releases/wordout-latest.{apk,aab}` against latest release** — if on v1.5.9, refresh via `gh release download` + copy, or decide if v1.5.11 build is needed this session
-- [ ] **Check Play Store closed testing track status** — is it still on v1.5.9 (vc31)? Upload v1.5.11 if it's built and released, or hold until next feature milestone
+- ✅ **Check Play Store closed testing track status** — confirmed still on v1.5.8; v1.5.11 upload recommended but not actioned, see Session 27 below.
 - [ ] **Device regression test (optional but recommended)** — if v1.5.11 APK is available, verify status bar icon colour toggles correctly on real Android (Settings → Dark Theme toggle); n-out game loss end state shows red ✗ on unsolved boards
 
 ## ✅ Session 25 — Completed 2026-07-21 (v1.5.9: daily UTC-boundary fix + n-out resize fix)

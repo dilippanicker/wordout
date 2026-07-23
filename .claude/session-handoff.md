@@ -1,116 +1,42 @@
-# Session Handoff — 2026-07-22 (Backfill: v1.5.10 + v1.5.11, two sessions closed without /close)
+# Session Handoff — 2026-07-23 (Session 27: web + itch.io distribution pipeline shipped)
 
-## Overview
+## What this session did
 
-This is a reconstructed/backfilled handoff documenting two consecutive sessions (v1.5.10 and v1.5.11) that bumped versions and committed code but did not run the `/close` ritual. Reconstruction source: `git log` commits `861fc5a` (v1.5.10) + `dabcc5e` (v1.5.11), both dated 2026-07-22.
+Built and shipped a full web distribution pipeline from scratch, end to end, with everything verified live in a real browser against the actual deployed URLs (not just local testing).
 
----
+**GitHub Pages** — the game is live at `dilippanicker.github.io/wordout/play/`. The existing landing page + Play Store privacy policy stayed at the Pages root (`dilippanicker.github.io/wordout/`), untouched — `gh-pages` branch was seeded with the prior `docs/index.html` + `docs/privacy.html` before the Pages source was flipped from `main:/docs` to the `gh-pages` branch, and the game deploys under `/play/` via `keep_files: true` so the two never collide. `deploy-web.yml` (push to main) and `build-apk.yml`'s `deploy-web` job both handle this.
 
-## Session 1: v1.5.9 → v1.5.10 — Board Loss Indicator (2026-07-22 ~04:29 IST)
+**itch.io** — live at `onglipo.itch.io/wordout`, both a web (HTML5) build and Android APK sideload. This was expected to be blocked: Expo Router has no supported hash-based or dynamic-subpath routing, and itch.io serves HTML5 uploads from an unpredictable per-upload CDN path, so the router 404s before the app boots. Root-caused and fixed anyway — `scripts/itchio-postprocess.py` injects a boot-time script into the exported `index.html` that pins an explicit `<base href>` to the real CDN directory *before* normalizing `window.location` to `/` via `history.replaceState()`. Order matters: doing the `replaceState()` first was the obvious first attempt and it breaks asset loading instead, because `replaceState()` also moves `document.baseURI`, which relative asset references resolve against. Verified locally against a simulated nested CDN path (boot, asset loads, round-trip client-side navigation to Settings and back) before shipping, then verified again for real once live — including actually playing a guess in the production embed.
 
-### Objective
-Display a red ✗ indicator on unsolved boards when an n-out game ends in a loss, matching the green ✓ indicators on solved boards.
+Two real bugs were found and fixed while testing the itch.io pipeline live (both were wrong in the original butler commands from several sessions back):
+- Butler push targets used `dilippanicker/wordout` — the actual itch.io account is `onglipo`, a different identity from the GitHub repo owner and Google Play package name.
+- `broth.itch.ovh` (the butler download domain) is retired — itch.io moved to `broth.itch.zone`. This wasn't a typo, itch.io actually decommissioned the old domain; confirmed via their current docs.
 
-### Files Modified
-- **`app/(tabs)/index.tsx`** (+3 lines) — Updated `BoardIndicator` rendering to pass `isUnsolved` prop for loss state
-- **`components/BoardIndicator.tsx`** (+10/-1 lines) — Added red ✗ display for unsolved boards when game is over (lost)
-- **`app.json`** — Version bumped v1.5.9 → v1.5.10 (versionCode 31 → 32)
-- **`CHANGELOG.md`** — New entry under `## [1.5.10] — 2026-07-22`
+Both fixes are live in `.github/workflows/deploy-web.yml`, `.github/workflows/build-apk.yml`, and `make.sh` (which also gained a new `deploy-web` command for manual local itch.io pushes).
 
-### Decisions Made
-- **Display choice:** Red ✗ on unsolved boards (not an empty state) — mirrors the semantic of the green ✓ solved boards
-- **No animation:** Deliberately static indicator (consistent with existing CLAUDE.md "Rendering is deliberately static" decision)
+**Landing page** (`docs/index.html`): fixed "Quadout" → "4-out" (wrong app name, two places), wrong emoji (🔥 daily-streak emoji was used for Hard mode, should be 💪 — two places), added a daily-difficulty-progression explainer blurb, commented out the Google Play CTA (app isn't in production there yet) and replaced it with a promoted "View source" button plus a new green "Play in browser" button, updated the footer signature, and added `store-assets/wordout-feature-graphic.png` as the Open Graph / Twitter Card social-preview image (there was no existing hero `<img>` to "replace" as originally asked — confirmed via AskUserQuestion that adding it as a social-preview image was the right call instead).
 
-### Current State (after v1.5.10)
-✅ n-out board indicators now show:
-  - Green ✓ in filled square — current board, solved
-  - Green ✓ in filled circle — non-active board, solved
-  - Red ✗ — current or non-active board, unsolved (game over)
-  - Progress circles/numbers — non-active, in-progress
+**Web responsive fix**: the game renders as a fixed-size phone-card (430×932 — iPhone 14 Pro Max's logical size) centered on a dark backdrop on desktop web, instead of stretching to fill the browser window. The width-cap half of this was already done in a prior session; this session added the height cap (`WEB_CARD_MAX_HEIGHT` in `constants/layout.ts`, applied in `app/_layout.tsx`, with `index.tsx`'s `screenW`/`screenH` clamped to match so tile-sizing and board-paging math can't compute sizes larger than what's actually visible). Below the cap (any real phone) both clamps are a no-op, so mobile fill is unaffected. Couldn't get a literal screenshot of the vertical framing effect itself — this sandbox's display tops out around 889px tall, under the 932 cap — but confirmed via computed styles in the live production page that `maxHeight: 932px` and vertical centering are both correctly wired.
 
-### Commits This Session
-1. `861fc5a` — fix: n-out board indicator shows X for unsolved boards on game over
+**itch.io project embed settings** (external, not in git — only discoverable by checking itch.io's own Edit Game page): went through two iterations. First widened from the default 390×844 to 430×844 to "match the app's design width" — this was actually wrong and caused a real regression: an iframe sized to *exactly* match the 430×932 card leaves zero slack for the dark-backdrop framing to render, so the game filled the iframe edge-to-edge with no visible boundary against the surrounding white itch.io page (user reported this as "overflowing the frame" with a real screenshot). Fixed by widening again to 700×1050, which gives the card room to show its margins. Also enabled the "fullscreen button" option. This is now documented in CLAUDE.md's Distribution section specifically so it isn't silently re-broken next time someone touches the web card sizing constants.
 
----
+## Current state
 
-## Session 2: v1.5.10 → v1.5.11 — Status Bar Icon Sync (2026-07-22 ~09:20 IST)
+- Everything above is committed, pushed, and live. `git status` is clean.
+- `app.json` version unchanged all session: **1.5.11 (versionCode 33)**. No version bump — none of this was app-code/native behavior, it was entirely deploy infrastructure, web-platform-only styling (gated on `Platform.OS === 'web'`, zero effect on native), and external project settings.
+- Doc sync clean: `app.json`, `CHANGELOG.md`, CLAUDE.md's "Current version" line, and this handoff file all agree on 1.5.11/33.
+- CLAUDE.md is now 340 lines, ~40 over the project's own ~300-line soft budget (Doc Size Discipline in the global CLAUDE.md). Flagged, not acted on — see "Exact next step" below.
 
-### Objective
-Fix invisible status bar icons that could blend with the app background when device system theme disagreed with in-app theme.
+## Exact next step
 
-### Root Cause
-`expo-status-bar` was imported but never rendered in `app/_layout.tsx`. Android's default status bar icon color comes from the device's system theme, not the app's theme. In timezones or devices where system theme differs from app theme, icons became invisible (e.g., system dark mode + app light theme = white icons on white background).
+1. **Play Store upload decision, still open.** `v1.5.11` is already built with real AAB/APK artifacts sitting on GitHub Releases (confirmed: 69MB AAB, 98MB APK), but Play Store closed testing is still on `v1.5.8`. That means three patches of real, already-shipped-everywhere-else fixes have never reached actual Play Store testers: the UTC daily-word-repeat fix (v1.5.9), the n-out resize fix (v1.5.9), the n-out board-indicator ✗ fix (v1.5.10), and the status bar icon fix (v1.5.11). Recommended uploading it; user hadn't confirmed or actioned this before the session ended. One real unknown worth going in eyes-open on: the pending Play Store production-access rejection's root cause was never confirmed (see Play Store section), and it's possible (untested, not confirmed either way) that Google's tester opt-in tracking could interact with a new closed-testing upload in some way — no specific reason to believe it would, just flagging the uncertainty since the whole rejection was already one Play Console mystery.
+2. **CLAUDE.md doc-size overage** — propose which sections to extract to an archive file (e.g. `REGRESSION_TRAPS.md`, doesn't exist yet) next time this comes up. Candidates worth a look: "Daily Gate Architecture" and "Key Design Decisions (locked)" sections are the longest and most historical, but both still document currently-active behavior (not just resolved incidents), so this needs a human judgment pass on what's actually safe to move — didn't do it this session to keep the close itself quick.
+3. **Visual confirmation of the height-cap fix** — worth a real glance on an actual wide/tall monitor to confirm the dark-backdrop framing looks right on GitHub Pages; verified via computed styles and the itch.io embed (which does show it correctly now) but never got a literal screenshot of it on the GH Pages URL specifically due to the sandbox's display height limit.
 
-### Files Modified
-- **`app/_layout.tsx`** (+2 lines) — Added explicit `<StatusBar />` component with `barStyle` synced to `darkTheme`
-- **`app.json`** — Version bumped v1.5.10 → v1.5.11 (versionCode 32 → 33)
-- **`CLAUDE.md`** — Updated (per global close protocol; content not detailed here)
-- **`CHANGELOG.md`** — New entry under `## [1.5.11] — 2026-07-22`
+## Gotchas
 
-### Decisions Made
-- **Approach:** Render `<StatusBar barStyle={darkTheme ? 'light-content' : 'dark-content'} />` directly in `_layout.tsx`, synced imperatively to `darkTheme` from `settingsStore`
-- **No animation:** Simple state sync, no transition needed
-
-### Current State (after v1.5.11)
-✅ Status bar icon colour now always syncs to app theme:
-  - Light theme → dark status bar icons
-  - Dark theme → light status bar icons
-  - Matches the app's explicit `ThemeProvider` theming
-
----
-
-## Verification Status
-
-**⚠️ CRITICAL — Unverified/Unknown:**
-- **Build/release status** for v1.5.10 and v1.5.11 is **UNKNOWN** — no evidence in git of `gh workflow run` or GitHub Actions triggering
-  - Need to check: GitHub Releases page for `v1.5.10` and `v1.5.11` tags
-  - Need to check: `releases/wordout-latest.apk` and `releases/wordout-latest.aab` to see if they're on v1.5.10/v1.5.11 or still on v1.5.9
-- **Device verification** — neither fix verified on a real Android device
-  - v1.5.10 (board ✗ indicator) — straightforward to check visually; should be low priority if code review is solid
-  - v1.5.11 (status bar icons) — only visible on real device; web dev server doesn't render a native status bar
-- **Play Store track status** — closed testing is still on v1.5.9 (versionCode 31) per Session 25 context; v1.5.10 and v1.5.11 not yet uploaded
-
----
-
-## Prior Context Carried Forward
-
-**Play Store Production Access (from Session 25):**
-- Application rejected 2026-07-20 — requires 12+ testers opted-in continuously for 14 days; dashboard showed only "1 day"
-- Root cause unconfirmed — support ticket submitted 2026-07-21, awaiting Google response
-- Two hypotheses: insufficient tester engagement (opted-in ≠ actually opening the app), or Play Console reset
-- Reapplication after 14 clean days with ≥12 opted-in testers
-
-**Local Release Artifacts (from Session 25):**
-- `releases/wordout-latest.apk` and `releases/wordout-latest.aab` still on v1.5.8 — refresh attempt mid-session hit permission denial, not retried
-- Available via `./make.sh push` (installs without re-fetching), or manual re-download via `gh release download` + copy
-
----
-
-## Exact Next Step
-
-1. **This session:** Verify build/release/Play Store status
-   - Check GitHub Releases for `v1.5.10` and `v1.5.11` tags and artifacts
-   - Compare `releases/wordout-latest.{apk,aab}` metadata against latest release
-   - If v1.5.11 built/released: verify APK contains the StatusBar fix (check `app/_layout.tsx` decompile)
-   - If v1.5.11 NOT built: decide whether to trigger `/release` now or defer until next feature
-
-2. **Future:** Device regression test
-   - Status bar icon colour on real Android device (light/dark theme toggle in Settings)
-   - N-out game loss end state (verify red ✗ on unsolved boards)
-   - Optional: web verification of board ✗ state via `npx expo start` and DevTools
-
----
-
-## Known Gotchas
-
-None new — applies to all sessions:
-- StatusBar icon colour only visible on real devices, not web
-- Board indicator state changes are deliberately static (no animation)
-- No cutover-date logic for either fix — board ✗ is immediate, status bar sync is immediate on theme change
-
----
-
-## Version Info
-- **Current:** 1.5.11 (versionCode 33)
-- **Previous:** 1.5.9 (versionCode 31)
-- **Skipped commits:** v1.5.10 (versionCode 32) — between these two
+- **itch.io account name ≠ GitHub/Play Store identity.** The itch.io account is `onglipo`, not `dilippanicker`. Any future `butler push` command must target `onglipo/wordout:<channel>`, not `dilippanicker/wordout:<channel>`. This bit us once already (silently wrong for several sessions before being caught).
+- **`broth.itch.ovh` is dead.** Use `broth.itch.zone` for any butler install command. If a future AI session or copy-pasted snippet reintroduces the `.ovh` domain, it will fail with `curl: (6) Could not resolve host` — not obviously itch.io-related from the error alone.
+- **itch.io embed size must stay larger than the web card (430×932), not equal to it.** This is a live project setting on itch.io's own site, not in git — if the web card's max-width/height constants ever change, the itch.io embed dimensions need a matching manual update via the Edit Game page, or the "no visible frame" bug comes back.
+- **The `resize_window` browser tool doesn't reliably control the actual page viewport in this sandbox** — `window.innerWidth`/`innerHeight` stayed pinned regardless of requested size in every attempt this session (and prior sessions). The sandbox's actual display tops out around 1920×889. Any future viewport-dependent visual verification (e.g. confirming the height-cap framing, or narrow mobile-width behavior) needs either a real device/browser outside this sandbox, or accepting verification via computed styles instead of literal screenshots.
+- **Two real, unrelated bugs were hiding in the itch.io pipeline that only surfaced by actually triggering a live GitHub Actions run and watching it fail** — code review and local testing alone would not have caught either the wrong account name or the retired domain. Worth remembering as a reason to always do at least one real end-to-end trigger-and-watch for new CI automation, not just "the YAML is valid and the logic looks right."

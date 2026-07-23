@@ -12,6 +12,8 @@ A free, open-source word puzzle game for Android. No ads, no accounts, no tracki
 
 Built automatically on every release via GitHub Actions.
 
+Also on [itch.io](https://onglipo.itch.io/wordout) — play in browser or download the Android APK there instead.
+
 ## Features
 
 - **Daily Word** — three puzzles per day (🐣 Easy / 💪 Hard / 💀 Extreme), each with a unique word. Win Easy to unlock Hard; win Hard to unlock Extreme. Independent streaks per difficulty.
