@@ -1,7 +1,8 @@
-import { ReactNode, useEffect, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
+import { ReactNode } from 'react';
+import { View, Text, Pressable, StyleSheet, Platform, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Difficulty } from '@/store/settingsStore';
+import { WEB_CARD_MAX_WIDTH, WEB_CARD_MAX_HEIGHT } from '@/constants/layout';
 
 const GREEN = '#5BA75A';
 const GREY = '#888780';
@@ -50,18 +51,17 @@ export function BottomStrip({
   const { bottom: bottomInset } = useSafeAreaInsets();
   const isGameOver = gameStatus === 'won' || gameStatus === 'lost';
 
-  // Only reserve clearance while embedded AND not fullscreen — itch's iframe has
-  // allowfullscreen, so its fullscreen state cascades into our own document.fullscreenElement
-  // when the user clicks itch's button. Once fullscreen, that overlay button relocates/hides,
-  // so the reservation is no longer needed.
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  useEffect(() => {
-    if (!isIframeEmbedded) return;
-    const onChange = () => setIsFullscreen(!!document.fullscreenElement);
-    document.addEventListener('fullscreenchange', onChange);
-    return () => document.removeEventListener('fullscreenchange', onChange);
-  }, []);
-  const needsIframeInset = isIframeEmbedded && !isFullscreen;
+  // Only reserve clearance while our own card is actually rendering edge-to-edge (viewport at
+  // or under the web-card cap) — that's the only case where our corner coincides with wherever
+  // itch places its button. In itch's real fullscreen the iframe expands to the full screen
+  // size, so our card reverts to its normal centered/backdropped desktop-web look with plenty
+  // of margin around it — nowhere near itch's corner icon, wherever it ends up. (An earlier
+  // attempt tracked document.fullscreenElement directly, assuming itch's fullscreen cascades
+  // into our own document via the iframe's allowfullscreen permission — it doesn't in practice,
+  // confirmed live: the reservation stayed even after entering itch's fullscreen.)
+  const { width: winW, height: winH } = useWindowDimensions();
+  const isFullBleedCard = winW <= WEB_CARD_MAX_WIDTH && winH <= WEB_CARD_MAX_HEIGHT;
+  const needsIframeInset = isIframeEmbedded && isFullBleedCard;
 
   const statsIcon = (
     <Pressable onPress={onOpenStats} hitSlop={10} style={styles.statsBtn}>
