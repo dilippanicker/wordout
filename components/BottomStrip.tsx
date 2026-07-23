@@ -26,9 +26,6 @@ interface Props {
   activeBoardIndex?: number;
   activeBoardSolved?: boolean;
   activeBoardSolvedGuess?: number;
-  // Play Now button — shown after winning one daily difficulty when next is unstarted
-  playNowLabel?: string | null;
-  onPlayNow?: () => void;
   onOpenStats: () => void;
   onOpenHelp: () => void;
   onNewGame: () => void;
@@ -42,7 +39,6 @@ export function BottomStrip({
   gameStatus, isQuordle, isDaily,
   currentGuessNum, maxGuesses, boardCount, solvedCount, difficulty,
   activeBoardIndex, activeBoardSolved, activeBoardSolvedGuess,
-  playNowLabel, onPlayNow,
   onOpenStats, onOpenHelp, onNewGame,
   textColor, backgroundColor, borderColor,
   gameStats,
@@ -69,7 +65,7 @@ export function BottomStrip({
       </View>
     );
   } else if (isGameOver) {
-    // Game over: daily → [? for help] [spacer] [💪 Play Now?] [📊]; others → [? for help] [spacer] [↺ New Game] [📊]
+    // Game over: daily → [? for help] [spacer] [📊] (next difficulty auto-starts); others → [? for help] [spacer] [↺ New Game] [📊]
     content = (
       <View style={styles.row}>
         <Pressable onPress={onOpenHelp} hitSlop={6}>
@@ -79,11 +75,6 @@ export function BottomStrip({
         {!isDaily && (
           <Pressable onPress={onNewGame} hitSlop={6} style={styles.newGameBtn}>
             <Text style={styles.newGameBtnText}>↺ New Game</Text>
-          </Pressable>
-        )}
-        {isDaily && playNowLabel && onPlayNow && (
-          <Pressable onPress={onPlayNow} hitSlop={6} style={styles.newGameBtn}>
-            <Text style={styles.newGameBtnText}>{playNowLabel}</Text>
           </Pressable>
         )}
         {statsIcon}

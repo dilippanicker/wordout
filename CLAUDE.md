@@ -99,8 +99,7 @@ Three independent daily games run each day — Easy, Hard, Extreme — each with
 3. Extreme — included if Hard is `'completed'` OR Extreme is already `'playing'`/`'completed'`
 
 Header difficulty emoji taps through this list only. NO gate toasts, NO "Win X first" messages.
-**Peek animation**: after the win overlay dismisses (first win only), the header emoji briefly scales toward the next difficulty emoji then snaps back — only when the next difficulty is newly unlocked.
-**Play Now button**: after winning Easy (if Hard is `'available'`) or Hard (if Extreme is `'available'`), the footer shows "💪/💀 Unlocked! Play Now" — tapping starts the next difficulty immediately.
+**Peek animation + auto-advance**: after the win overlay dismisses (first win only), the header emoji briefly scales toward the next difficulty emoji then snaps back — only when the next difficulty is newly unlocked (`games[next].status === 'available'`) — then `dismissEndGame()` in `index.tsx` calls `setActiveDailyDifficulty(next)` itself, which the existing `activeWordleMode`/`activeDailyDifficulty` effect turns into a `startOrResumeDailyGame(next)` call. No manual tap required to progress Easy→Hard→Extreme. There is no "Play Now" button (removed — auto-advance made it dead code, since the "completed with next available" state it targeted is no longer reachable in normal play).
 **Startup funnel**: on app mount, routes to next unplayed difficulty (Easy → Hard → Extreme in order), else restores persisted `activeWordleMode` + `activeDailyDifficulty`.
 
 ### Key Design Decisions (locked)
@@ -132,8 +131,7 @@ Header difficulty emoji taps through this list only. NO gate toasts, NO "Win X f
 **Footer layout:**
 - Playing: `[⏳ N tries left · ? for help] [📊]`
 - Game over (practice): `[? for help] [↺ New Game (green)] [📊]`
-- Game over (daily, next unstarted): `[? for help] [💪 Unlocked! Play Now (green)] [📊]`
-- Game over (daily, all done or gated): `[? for help] [📊]` (countdown in Ribbon)
+- Game over (daily): `[? for help] [📊]` — next difficulty (if any) auto-starts, no button needed; countdown shows in Ribbon once all three are done
 
 **Emoji convention (strict):** 🐣 easy, 💪 hard, 💀 extreme · 🔥 daily streak, ⚡ practice streak, 🏆 personal best · 📅 daily mode, 🎮 practice mode
 

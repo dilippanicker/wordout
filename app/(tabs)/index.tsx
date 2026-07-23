@@ -480,16 +480,22 @@ export default function WordleScreen() {
     setTimeout(() => {
       setEndGameVisible(false);
       setOverlayLocked(false);
-      // Peek animation: after daily win, briefly flash the next difficulty emoji
+      // Peek animation: after daily win, briefly flash the next difficulty emoji,
+      // then auto-advance into it (startOrResumeDailyGame fires via the
+      // activeDailyDifficulty effect) so the user never has to tap to progress.
       if (isDaily && activeDailyGame.solved) {
         const nextDiff = activeDailyDiff === 'easy' ? 'hard' : activeDailyDiff === 'hard' ? 'extreme' : null;
-        if (nextDiff) {
+        const nextStatus = nextDiff ? useDailyStore.getState().games[nextDiff].status : null;
+        if (nextDiff && nextStatus === 'available') {
           setPeekDiffEmoji(DIFFICULTY_EMOJI[nextDiff]);
           peekScale.value = withSequence(
             withTiming(1.7, { duration: 200 }),
             withDelay(1000, withTiming(1, { duration: 200 })),
           );
-          setTimeout(() => setPeekDiffEmoji(null), 1450);
+          setTimeout(() => {
+            setPeekDiffEmoji(null);
+            useDailyStore.getState().setActiveDailyDifficulty(nextDiff);
+          }, 1450);
         }
       }
     }, 320);
@@ -692,21 +698,6 @@ export default function WordleScreen() {
       setCopyConfirmed(true);
       setTimeout(() => setCopyConfirmed(false), 1500);
     }
-  }
-
-  // ── Play Now button (daily progression) ─────────────────────────────────
-  // Show when current daily difficulty is won and the next difficulty hasn't started yet
-  const playNowDiff: Difficulty | null = isDaily
-    ? (activeDailyDiff === 'easy' && activeDailyGame.solved && dailyStore.games.hard.status === 'available'
-        ? 'hard'
-        : activeDailyDiff === 'hard' && activeDailyGame.solved && dailyStore.games.extreme.status === 'available'
-        ? 'extreme'
-        : null)
-    : null;
-  const playNowLabel = playNowDiff ? `${DIFFICULTY_EMOJI[playNowDiff]} Unlocked! Play Now` : null;
-
-  function handlePlayNow() {
-    if (playNowDiff) useDailyStore.getState().setActiveDailyDifficulty(playNowDiff);
   }
 
   // ── Shared end-game overlay ──────────────────────────────────────────────
@@ -1033,8 +1024,6 @@ export default function WordleScreen() {
         onOpenStats={() => setStatsModalVisible(true)}
         onOpenHelp={() => setShowHelp(true)}
         onNewGame={handleNewGame}
-        playNowLabel={playNowLabel}
-        onPlayNow={handlePlayNow}
         textColor={colors.text as string}
         backgroundColor={colors.card as string}
         borderColor={colors.border as string}
