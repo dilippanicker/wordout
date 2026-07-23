@@ -6,7 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Platform, View, StyleSheet } from 'react-native';
 import 'react-native-reanimated';
 import { useSettingsStore } from '@/store/settingsStore';
-import { WEB_CARD_MAX_WIDTH } from '@/constants/layout';
+import { WEB_CARD_MAX_WIDTH, WEB_CARD_MAX_HEIGHT } from '@/constants/layout';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -59,13 +59,14 @@ export default function RootLayout() {
 // instead of stretching full window width. No-op on native (plain flex:1).
 const styles = StyleSheet.create({
   webBackdrop: Platform.OS === 'web'
-    ? { flex: 1, alignItems: 'center', backgroundColor: '#1a1a1a' }
+    ? { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#1a1a1a' }
     : { flex: 1 },
   webCard: Platform.OS === 'web'
     ? {
         flex: 1,
         width: '100%',
         maxWidth: WEB_CARD_MAX_WIDTH,
+        maxHeight: WEB_CARD_MAX_HEIGHT,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.4,

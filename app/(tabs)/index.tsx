@@ -26,7 +26,7 @@ import { useDailyStore, getDailyIndex } from '@/store/dailyStore';
 import { useStatsStore, emptyBoardStats } from '@/store/statsStore';
 import { isGameInProgress, confirmAbandon } from '@/utils/abandon';
 import { TileStatus } from '@/components/Tile';
-import { WEB_CARD_MAX_WIDTH } from '@/constants/layout';
+import { WEB_CARD_MAX_WIDTH, WEB_CARD_MAX_HEIGHT } from '@/constants/layout';
 
 const noFocus = { tabIndex: -1, onMouseDown: (e: any) => e.preventDefault() };
 const END_GAME_DISMISS_MS = 5000;
@@ -202,12 +202,13 @@ export default function WordleScreen() {
   const { colors } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { height: screenH, width: rawScreenW } = useWindowDimensions();
-  // On desktop web the game renders inside a fixed-width card (see app/_layout.tsx)
-  // narrower than the actual browser window — tile sizing and board-paging math
-  // below must use the card's width, not the raw window width, or boards overflow
+  const { height: rawScreenH, width: rawScreenW } = useWindowDimensions();
+  // On desktop web the game renders inside a fixed-size card (see app/_layout.tsx)
+  // smaller than the actual browser window — tile sizing and board-paging math
+  // below must use the card's size, not the raw window size, or boards overflow
   // and scroll-paging offsets (index * screenW) go out of sync with the real layout.
   const screenW = Platform.OS === 'web' ? Math.min(rawScreenW, WEB_CARD_MAX_WIDTH) : rawScreenW;
+  const screenH = Platform.OS === 'web' ? Math.min(rawScreenH, WEB_CARD_MAX_HEIGHT) : rawScreenH;
 
   // Layout constants
   const HEADER_H = 50;
