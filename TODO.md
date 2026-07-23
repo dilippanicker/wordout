@@ -1,6 +1,6 @@
 # Wordout — Master TODO
 **Updated: 2026-07-23 (session 28)**
-**Current version: v1.5.11 (versionCode 33)**
+**Current version: v1.6.0 (versionCode 34)**
 
 ---
 
@@ -10,7 +10,7 @@
 - ✅ **Daily mode now auto-advances Easy → Hard → Extreme** — user asked: after finishing Easy, the header emoji peek animation played and then nothing happened, leaving the player stranded on the completed board requiring a manual tap. `dismissEndGame()` (`app/(tabs)/index.tsx`) now calls `setActiveDailyDifficulty()` itself right after the peek animation finishes, which the existing effect already turns into a `startOrResumeDailyGame()` call. Removed the now-dead "Play Now" button (`BottomStrip.tsx`) since the state it targeted is no longer reachable in normal play. Verified live in the web build: solving Easy then Hard auto-advanced to Hard then Extreme with zero taps.
 - ✅ **itch.io fullscreen button no longer overlaps the stats icon** — full-bleed embed put both itch's overlaid fullscreen-toggle button and our own 📊 icon in the bottom-right corner. `BottomStrip.tsx` reserves extra right-padding while iframe-embedded (`window.self !== window.top`) AND `useWindowDimensions()` is still at or under the web-card cap (430×932) — that's the only state where the card is genuinely edge-to-edge and shares a corner with itch's button; real fullscreen expands the iframe past the cap, reverting the card to its normal centered/backdropped look. First attempt tracked `document.fullscreenElement` instead — confirmed live it doesn't fire for itch's embed, so the reservation stuck around even in fullscreen; replaced with the window-size check, verified locally via an iframe test harness.
 - ✅ **CLAUDE.md doc-size overage fixed** — was 340 lines (~40 over its ~300-line soft budget). Extracted resolved-incident narratives into a new `REGRESSION_TRAPS.md`, leaving short pointers in place; deleted one block that duplicated the Daily Gate Architecture section above it. Now 288 lines. Also fixed a staleness bug found along the way: the `dailyStore.ts` reference for `dailyAnswers` still described the pre-v1.5.8 bit-shifted derivation as current.
-- No version bump — all of this is either web/itch-only (zero effect on native, gated on `Platform.OS === 'web'` or iframe detection) or docs, except the daily auto-advance which is a genuine cross-platform behavior change; it'll get a CHANGELOG entry when the next version bump actually ships it.
+- ✅ **v1.6.0 (versionCode 34) built** — minor bump for the daily auto-advance behavior change (the only native-affecting change this session; everything else is web/itch-only, gated on `Platform.OS === 'web'` or iframe detection). AAB/APK build triggered via `build-apk.yml`.
 
 ## ✅ Session 26 — Completed 2026-07-22 (v1.5.10 + v1.5.11: board ✗ indicator + status bar icon fixes) [BACKFILLED]
 

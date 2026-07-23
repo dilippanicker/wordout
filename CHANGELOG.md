@@ -2,6 +2,10 @@
 
 All notable changes to Wordout are documented here.
 
+## [1.6.0] — 2026-07-23
+### Changed
+- Daily mode now advances Easy → Hard → Extreme automatically after each win — no more tapping the header emoji or a "Play Now" button to start the next difficulty.
+
 ## [1.5.11] — 2026-07-22
 ### Fixed
 - Status bar icons (clock, signal, wifi) could render invisible against the app's background — the app never told Android what color to use for them, so it fell back to following the phone's own system theme instead of Wordout's in-app theme, and the two could mismatch (e.g. white icons over Wordout's white light-theme background). Status bar style now explicitly follows Wordout's own dark/light setting.
