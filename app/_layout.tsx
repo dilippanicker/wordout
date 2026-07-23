@@ -43,7 +43,14 @@ export default function RootLayout() {
 
   return (
     <View style={styles.webBackdrop}>
-      <View style={styles.webCard}>
+      {/* Border marks the card's edge even when maxWidth/maxHeight are a no-op (e.g. an
+          undersized itch.io iframe) and there's no dark backdrop space to show a boundary. */}
+      <View
+        style={[
+          styles.webCard,
+          Platform.OS === 'web' && { borderColor: darkTheme ? '#3a3a3c' : '#d3d6da', borderWidth: 1 },
+        ]}
+      >
         <ThemeProvider value={darkTheme ? DARK_THEME : LIGHT_THEME}>
           <StatusBar style={darkTheme ? 'light' : 'dark'} />
           <Stack>

@@ -4,7 +4,7 @@
 itch.io serves HTML5 uploads from a CDN path assigned per-upload (e.g.
 /html/123456/), never from a known/fixed prefix, and never from origin
 root either. Two independent things break on that setup and this script
-fixes both:
+fixes both, plus one more fix unrelated to the CDN-path problem:
 
 1. Asset references baked into the export as absolute paths ("/assets/...",
    "/favicon.ico", "/_expo/...") resolve against the CDN's *origin*, not
@@ -20,6 +20,12 @@ fixes both:
    from window.location), then normalizes the visible path to "/" for the
    router. Order matters -- the <base> must land before the parser reaches
    any relative-src element, hence: first thing injected into <head>.
+
+3. Expo's default web template has no `viewport-fit=cover`, so the CSS
+   `env(safe-area-inset-*)` values react-native-safe-area-context reads on
+   web always resolve to 0 -- the app never pads for a notch/status bar
+   even when itch's mobile embed renders it full-screen behind one. Fixed
+   by adding `viewport-fit=cover` to the viewport meta tag.
 
 Once booted, all further navigation (e.g. Settings) is client-side
 (pushState) and never re-hits the CDN, so this only has to run once, here,
@@ -65,10 +71,11 @@ def main():
         html = f.read()
     html = html.replace('href="/favicon.ico"', 'href="favicon.ico"')
     html = html.replace('src="/_expo/', 'src="_expo/')
+    html = html.replace('shrink-to-fit=no"', 'shrink-to-fit=no, viewport-fit=cover"')
     html = html.replace("<head>", "<head>\n" + BOOT_SCRIPT, 1)
     with open(index_path, "w") as f:
         f.write(html)
-    print(f"index.html: injected boot script, relativized favicon/entry refs")
+    print(f"index.html: injected boot script, relativized favicon/entry refs, added viewport-fit=cover")
 
     bundle_paths = glob.glob(os.path.join(dist_dir, "_expo/static/js/web/entry-*.js"))
     if not bundle_paths:
