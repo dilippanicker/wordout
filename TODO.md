@@ -15,6 +15,11 @@
 - ✅ **Play Store closed testing upload** — v1.6.0 (versionCode 34) uploaded, superseding v1.5.8 (was 4 versions behind). See CLAUDE.md's Play Store section.
 - ✅ **First itch.io devlog published** — launch announcement ("Wordout a wordle like game is live: Android and web app"), covers both the web embed and Android APK, tagged android/casual/daily/free/mobile/open source/word game/wordle. Includes a 4-image gallery (feature graphic, settings, win celebration, 4-out multi-board). A cropped 16:9 landing-page hero screenshot was also prepared (`store-assets/itchio/devlog-launch-hero-16x9.png`) but the published post used a different image set — kept in the repo for future reuse.
 
+## 🔴 NEW — Follow-up from Session 28
+
+- [ ] **No real-device verification of any session-28 change** — itch.io scroll/frame/notch fixes, the fullscreen-icon-overlap fix, and daily auto-advance were all verified via web/browser automation or by inspecting built artifacts, never on an actual phone. The notch fix (`viewport-fit=cover`) is the least confidently verified of the three — best-effort throughout, worth checking first.
+- [ ] **Play Store production access still unresolved** — rejected 2026-07-20, support ticket pending. Independent of the v1.6.0 upload; see Session 24 items below and CLAUDE.md's Play Store section.
+
 ## ✅ Session 26 — Completed 2026-07-22 (v1.5.10 + v1.5.11: board ✗ indicator + status bar icon fixes) [BACKFILLED]
 
 - ✅ **N-out board indicator shows ✗ for unsolved boards on game over** — reported as enhancement. Fixed: `BoardIndicator.tsx` now displays red ✗ for unsolved boards when game ends in loss (matching green ✓ for solved boards). Committed `861fc5a` (v1.5.10, versionCode 32).
