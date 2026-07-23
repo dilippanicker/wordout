@@ -2,6 +2,10 @@
 
 All notable changes to Wordout are documented here.
 
+## [1.6.1] — 2026-07-23
+### Fixed
+- Tablets and foldables where Android 16 ignores the app's portrait lock now render the game as a centered phone-sized card on a dark backdrop, instead of stretching the board and keyboard across the whole landscape screen. Phones are unaffected.
+
 ## [1.6.0] — 2026-07-23
 ### Changed
 - Daily mode now advances Easy → Hard → Extreme automatically after each win — no more tapping the header emoji or a "Play Now" button to start the next difficulty.

@@ -2,7 +2,7 @@
   "expo": {
     "name": "Wordout",
     "slug": "wordout",
-    "version": "1.6.0",
+    "version": "1.6.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "wordout",
@@ -12,7 +12,7 @@
     },
     "android": {
       "package": "com.dilippanicker.wordout",
-      "versionCode": 34,
+      "versionCode": 35,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFF8EE"
