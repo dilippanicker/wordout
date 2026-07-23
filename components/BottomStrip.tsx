@@ -1,10 +1,14 @@
-import { ReactNode } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { ReactNode, useEffect, useState } from 'react';
+import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Difficulty } from '@/store/settingsStore';
 
 const GREEN = '#5BA75A';
 const GREY = '#888780';
+
+// True when running inside an iframe on web (e.g. itch.io's embed), which overlays its own
+// fullscreen-toggle button in the bottom-right corner, on top of our stats icon.
+const isIframeEmbedded = Platform.OS === 'web' && typeof window !== 'undefined' && window.self !== window.top;
 
 interface GameStats {
   played: number;
@@ -45,6 +49,19 @@ export function BottomStrip({
 }: Props) {
   const { bottom: bottomInset } = useSafeAreaInsets();
   const isGameOver = gameStatus === 'won' || gameStatus === 'lost';
+
+  // Only reserve clearance while embedded AND not fullscreen — itch's iframe has
+  // allowfullscreen, so its fullscreen state cascades into our own document.fullscreenElement
+  // when the user clicks itch's button. Once fullscreen, that overlay button relocates/hides,
+  // so the reservation is no longer needed.
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  useEffect(() => {
+    if (!isIframeEmbedded) return;
+    const onChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onChange);
+    return () => document.removeEventListener('fullscreenchange', onChange);
+  }, []);
+  const needsIframeInset = isIframeEmbedded && !isFullscreen;
 
   const statsIcon = (
     <Pressable onPress={onOpenStats} hitSlop={10} style={styles.statsBtn}>
@@ -115,7 +132,7 @@ export function BottomStrip({
   }
 
   return (
-    <View style={[styles.strip, { backgroundColor, borderTopColor: borderColor, paddingBottom: bottomInset }]}>
+    <View style={[styles.strip, { backgroundColor, borderTopColor: borderColor, paddingBottom: bottomInset }, needsIframeInset && styles.stripIframeInset]}>
       {content}
     </View>
   );
@@ -129,6 +146,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 0,
     justifyContent: 'center',
+  },
+  // Clears itch.io's overlaid fullscreen-toggle button in the bottom-right corner (see isIframeEmbedded).
+  stripIframeInset: {
+    paddingRight: 44,
   },
   row: {
     flexDirection: 'row',
