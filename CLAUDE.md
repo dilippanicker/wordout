@@ -93,6 +93,8 @@ Three independent daily games run each day — Easy, Hard, Extreme — each with
 
 **Day boundary is UTC everywhere, not local calendar day** — `getTodayString()`/`getYesterdayString()` (`dailyStore.ts`) and the countdown (`msUntilMidnight()`, `app/(tabs)/index.tsx`) all key off UTC date components, matching `getDailyAnswers()`'s UTC-midnight derivation. See REGRESSION_TRAPS.md for the local-timezone bug this fixed. Regression test: `__tests__/store-invariants.test.ts` "day boundary is UTC, not local" (`TZ=Asia/Kolkata`).
 
+**Day-roll refresh has three independent triggers, all funneled through one helper** — `refreshDailyDay()` (`app/(tabs)/index.tsx`) calls `checkAndReset()` then, only if `activeWordleMode === 'daily'`, `startOrResumeDailyGame(activeDailyDifficulty)`. `checkAndReset()` alone leaves the active difficulty `'available'` with no answer set — unplayable until something starts it. Called from: the 1s countdown interval (catches a day roll while the app stays foregrounded), `useFocusEffect` (catches in-app navigation focus), and an `AppState` `'change'` listener (catches OS-level background→foreground resume, which `useFocusEffect` does NOT fire for — confirmed live, this was the source of a reported bug where a backgrounded app kept showing yesterday's completed boards until a full reload). Any future resume/focus path must call `refreshDailyDay()`, never `checkAndReset()` directly, or it reintroduces the same gap. Regression test: `__tests__/store-invariants.test.ts` "checkAndReset alone leaves the active difficulty unplayable".
+
 **Accessible-list gate** — build reachable difficulty list before each cycle step:
 1. Easy — always included
 2. Hard — included if Easy is `'completed'` OR Hard is already `'playing'`/`'completed'`

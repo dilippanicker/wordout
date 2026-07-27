@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, Pressable, TouchableOpacity, ScrollView, StyleSheet, ColorValue, useWindowDimensions, Platform } from 'react-native';
+import { AppState, View, Text, Pressable, TouchableOpacity, ScrollView, StyleSheet, ColorValue, useWindowDimensions, Platform } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
@@ -23,6 +23,7 @@ import { useGameStore, GuessResult, LetterResult } from '@/store/gameStore';
 import { useQuordleStore, QuordleGuess } from '@/store/quordleStore';
 import { useSettingsStore, boardCountName, BOARD_COUNTS, BoardCount, maxGuessesForDifficulty, Difficulty } from '@/store/settingsStore';
 import { useDailyStore, getDailyIndex } from '@/store/dailyStore';
+import { DIFFICULTY_CYCLE, accessibleDailyDifficulties, stepDailyDifficulty } from '@/utils/dailyDifficultyCycle';
 import { useStatsStore, emptyBoardStats } from '@/store/statsStore';
 import { isGameInProgress, confirmAbandon } from '@/utils/abandon';
 import { TileStatus } from '@/components/Tile';
@@ -30,6 +31,19 @@ import { WEB_CARD_MAX_WIDTH, WEB_CARD_MAX_HEIGHT, shouldLetterbox } from '@/cons
 
 const noFocus = { tabIndex: -1, onMouseDown: (e: any) => e.preventDefault() };
 const END_GAME_DISMISS_MS = 5000;
+const DAILY_SWIPE_THRESHOLD_PX = 50;
+
+// Rolls daily games over to a new day (no-op if already done today) and, if daily
+// mode is active, resumes/starts the active difficulty's game with the new answer.
+// Called from the countdown tick, screen focus, and OS foreground resume — none of
+// which are guaranteed to fire together, so each must independently catch a day roll.
+function refreshDailyDay() {
+  useDailyStore.getState().checkAndReset();
+  const { activeWordleMode, activeDailyDifficulty } = useDailyStore.getState();
+  if (activeWordleMode === 'daily') {
+    useDailyStore.getState().startOrResumeDailyGame(activeDailyDifficulty);
+  }
+}
 
 // ── Key status helpers ──────────────────────────────────────────────────────
 
@@ -290,10 +304,22 @@ export default function WordleScreen() {
   const [peekDiffEmoji, setPeekDiffEmoji] = useState<string | null>(null);
   const peekAnimStyle = useAnimatedStyle(() => ({ transform: [{ scale: peekScale.value }] }));
   const scrollRef = useRef<ScrollView>(null);
-  // Countdown updates every second
+  // Countdown updates every second; also catches a day roll while the app stays foregrounded
   useEffect(() => {
-    const id = setInterval(() => setCountdown(msToHMS(msUntilMidnight())), 1000);
+    const id = setInterval(() => {
+      setCountdown(msToHMS(msUntilMidnight()));
+      refreshDailyDay();
+    }, 1000);
     return () => clearInterval(id);
+  }, []);
+
+  // Catches a day roll that happened while the app was backgrounded — useFocusEffect
+  // only fires on in-app navigation focus, never on OS-level foreground resume.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') refreshDailyDay();
+    });
+    return () => sub.remove();
   }, []);
 
   // Startup: reset for new day, then funnel to the next unplayed daily difficulty
@@ -325,7 +351,7 @@ export default function WordleScreen() {
 
   // Check for new day whenever screen gains focus
   useFocusEffect(useCallback(() => {
-    dailyStore.checkAndReset();
+    refreshDailyDay();
   }, []));
 
   // Start/resume daily whenever mode switches to daily or active difficulty changes
@@ -396,32 +422,44 @@ export default function WordleScreen() {
     cycleTo(BOARD_COUNTS[(idx + 1) % BOARD_COUNTS.length]);
   }
 
-  function handleDifficultyToggle() {
-    if (isDaily) {
-      const { games, activeDailyDifficulty: currDiff } = useDailyStore.getState();
-      // Build accessible list: include a difficulty if it's played (playing/completed)
-      // OR if the previous difficulty was won — that unlocks the next slot.
-      const accessible: Difficulty[] = [];
-      let prevWon = true; // Easy is always the starting point
-      for (const d of DIFFICULTY_CYCLE) {
-        if (games[d].status === 'playing' || games[d].status === 'completed' || prevWon) {
-          accessible.push(d);
-        } else {
-          break;
-        }
-        prevWon = games[d].status === 'completed' && games[d].solved;
-      }
-      // Single-entry dead end: only one difficulty accessible and it was lost
-      if (accessible.length === 1 && games[accessible[0]].status === 'completed' && !games[accessible[0]].solved) {
-        const msg = accessible[0] === 'easy'
+  // Steps the active daily difficulty within the accessible list. direction=1 (next)
+  // is used by the header emoji tap; swiping the board also uses direction=-1 (prev).
+  function cycleDailyDifficulty(direction: 1 | -1) {
+    const { games, activeDailyDifficulty: currDiff } = useDailyStore.getState();
+    const nextDiff = stepDailyDifficulty(games, currDiff, direction);
+    if (nextDiff === null) {
+      // Single-entry dead end: only one difficulty accessible and it was lost.
+      // Only a forward step is "blocked" here — backward into a one-entry list is just a no-op.
+      if (direction === 1) {
+        const only = accessibleDailyDifficulties(games)[0];
+        const msg = only === 'easy'
           ? `Easy ${DIFFICULTY_EMOJI.easy} lost, can't play Hard ${DIFFICULTY_EMOJI.hard}`
           : `Hard ${DIFFICULTY_EMOJI.hard} lost, can't play Extreme ${DIFFICULTY_EMOJI.extreme}`;
         showSystemToast(msg);
-        return;
       }
-      const currIdx = accessible.indexOf(currDiff);
-      const nextDiff = accessible[(currIdx + 1) % accessible.length];
-      useDailyStore.getState().setActiveDailyDifficulty(nextDiff);
+      return;
+    }
+    useDailyStore.getState().setActiveDailyDifficulty(nextDiff);
+  }
+
+  // Swipe left/right on a finished daily board cycles the active difficulty.
+  const dailySwipeStartX = useRef<number | null>(null);
+  function handleDailyBoardTouchStart(e: any) {
+    dailySwipeStartX.current = e.nativeEvent.touches?.[0]?.pageX ?? null;
+  }
+  function handleDailyBoardTouchEnd(e: any) {
+    const startX = dailySwipeStartX.current;
+    dailySwipeStartX.current = null;
+    const endX = e.nativeEvent.changedTouches?.[0]?.pageX;
+    if (startX == null || endX == null) return;
+    const dx = endX - startX;
+    if (Math.abs(dx) < DAILY_SWIPE_THRESHOLD_PX) return;
+    cycleDailyDifficulty(dx < 0 ? 1 : -1);
+  }
+
+  function handleDifficultyToggle() {
+    if (isDaily) {
+      cycleDailyDifficulty(1);
       return;
     }
 
@@ -976,7 +1014,13 @@ export default function WordleScreen() {
         </Pressable>
       </View>
 
-      <View style={styles.boardArea} onLayout={e => setWordleAreaH(e.nativeEvent.layout.height)}>
+      <View
+        style={styles.boardArea}
+        onLayout={e => setWordleAreaH(e.nativeEvent.layout.height)}
+        {...(isDaily && activeGameStatus !== 'playing'
+          ? { onTouchStart: handleDailyBoardTouchStart, onTouchEnd: handleDailyBoardTouchEnd }
+          : {})}
+      >
         <GameBoard
           key={isDaily ? `daily-${activeDailyDiff}` : 'practice'}
           guesses={guesses}
@@ -1063,7 +1107,6 @@ interface HeaderProps {
   diffPeekEmoji?: string | null;
 }
 
-const DIFFICULTY_CYCLE: import('@/store/settingsStore').Difficulty[] = ['easy', 'hard', 'extreme'];
 const DIFFICULTY_EMOJI: Record<string, string> = { easy: '🐣', hard: '💪', extreme: '💀' };
 
 function renderHeader({

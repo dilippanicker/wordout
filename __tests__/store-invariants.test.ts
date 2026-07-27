@@ -388,6 +388,36 @@ describe('dailyStore checkAndReset', () => {
       process.env.TZ = originalTZ;
     }
   });
+
+  test('checkAndReset alone leaves the active difficulty unplayable — callers must also call startOrResumeDailyGame', () => {
+    // Regression guard for the "app backgrounded across midnight" bug: index.tsx's
+    // useFocusEffect used to call only checkAndReset(), which resets games to
+    // 'available' with no answer set. Nothing then started the new day's game
+    // until a full app reload re-ran the mount funnel. Any resume/focus path must
+    // follow checkAndReset() with startOrResumeDailyGame(activeDailyDifficulty).
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-07-06T09:00:00'));
+    useDailyStore.setState({
+      lastPlayedDate: '2026-07-05',
+      dailyAnswers: { easy: 'CIGAR', hard: 'REBUT', extreme: 'SISSY' },
+      activeDailyDifficulty: 'easy',
+      activeWordleMode: 'daily',
+      games: {
+        easy: { ...emptyDailyGameState(), status: 'playing', currentGuess: 'CRA' },
+        hard: emptyDailyGameState(),
+        extreme: emptyDailyGameState(),
+      },
+    });
+
+    useDailyStore.getState().checkAndReset();
+    expect(useDailyStore.getState().games.easy.status).toBe('available');
+    expect(useDailyStore.getState().dailyAnswers.easy).toBe('');
+
+    useDailyStore.getState().startOrResumeDailyGame(useDailyStore.getState().activeDailyDifficulty);
+    const s = useDailyStore.getState();
+    expect(s.games.easy.status).toBe('playing');
+    expect(s.dailyAnswers.easy).not.toBe('');
+  });
 });
 
 // ── Daily guess limit — must match maxGuessesForDifficulty(d, 1) ─────────────
