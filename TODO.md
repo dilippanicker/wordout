@@ -1,6 +1,6 @@
 # Wordout — Master TODO
-**Updated: 2026-07-23 (session 28)**
-**Current version: v1.6.0 (versionCode 34)**
+**Updated: 2026-07-23 (session 29)**
+**Current version: v1.6.1 (versionCode 35)**
 
 ---
 
@@ -14,6 +14,16 @@
 - ✅ **Stale local release-artifact gotcha found + fixed** — after triggering `build-apk.yml` manually (the `/release` skill itself can't be invoked directly), `releases/wordout-latest.aab` was never refreshed via `gh release download`. A Play Console upload attempt got rejected for a duplicate versionCode — the local file was still byte-for-byte the old v1.5.11 (versionCode 33) build. Fixed by downloading the real v1.6.0 assets from the GitHub release tag; saved as an auto-memory (`wordout-release-artifact-refresh`) so this doesn't get rediscovered next session.
 - ✅ **Play Store closed testing upload** — v1.6.0 (versionCode 34) uploaded, superseding v1.5.8 (was 4 versions behind). See CLAUDE.md's Play Store section.
 - ✅ **First itch.io devlog published** — launch announcement ("Wordout a wordle like game is live: Android and web app"), covers both the web embed and Android APK, tagged android/casual/daily/free/mobile/open source/word game/wordle. Includes a 4-image gallery (feature graphic, settings, win celebration, 4-out multi-board). A cropped 16:9 landing-page hero screenshot was also prepared (`store-assets/itchio/devlog-launch-hero-16x9.png`) but the published post used a different image set — kept in the repo for future reuse.
+
+## ✅ Session 29 — Completed 2026-07-23 (native large-screen letterbox fix, v1.6.1 release) [BACKFILLED]
+
+- ✅ **Native large-screen letterbox fix** — Android 16+ (targetSdk 36) ignores the app's portrait-lock manifest setting on devices with ≥600dp smallest dimension (tablets, foldable inner screens), allowing the board/keyboard to stretch across landscape. Root cause identified and fixed: created `shouldLetterbox(w, h)` in `constants/layout.ts` as the single source of truth — returns `true` on web (always) and on native when smallest dimension ≥600dp. Both `app/_layout.tsx` (card styling/dark-backdrop container) and `app/(tabs)/index.tsx` (screenW/screenH clamps) now call this function instead of duplicating logic locally (previously risked desync). Phones (<600dp) remain full-bleed, provably unaffected. Regression tests added: `__tests__/layout.test.ts` (4 tests: web always true, phones never, tablets/foldables always, sw600dp boundary+orientation-independence) — all 4/4 passing.
+- ✅ **v1.6.1 (versionCode 35) built and released** — patch bump (bugfix only). GitHub Actions run 30013833326 completed successfully (~52 min); `v1.6.1` GitHub Release published with both `wordout.apk` (98193721 bytes) and `wordout.aab` (69452219 bytes). Local `releases/wordout-latest.{apk,aab}` already match those exact byte sizes — refreshed, avoiding a repeat of the session-28 stale-artifact gotcha.
+
+## 🔴 NEW — Follow-up from Session 29
+
+- [ ] **Play Store closed testing upload** — upload v1.6.1 AAB to closed testing, superseding v1.6.0 (versionCode 34). Use `releases/wordout-latest.aab` (already refreshed from GitHub release).
+- [ ] **No real-device verification of the native letterbox fix** — added `shouldLetterbox()` gate and regression tests, but never tested on an actual tablet or foldable device in landscape orientation. Worth a real device glance on a tablet to verify the board/keyboard render centered in a phone-card frame with dark-backdrop margins (not stretched edge-to-edge).
 
 ## 🔴 NEW — Follow-up from Session 28
 
