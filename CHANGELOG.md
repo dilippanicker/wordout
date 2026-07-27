@@ -2,6 +2,12 @@
 
 All notable changes to Wordout are documented here.
 
+## [1.7.0] — 2026-07-27
+### Added
+- On a finished daily board, swipe left/right to cycle between Easy, Hard, and Extreme.
+### Fixed
+- Daily games now refresh to the new day as soon as the app is reopened, even if it was left running in the background overnight. Previously only a full app restart picked up the new day's words — reopening a backgrounded app kept showing yesterday's completed boards and the countdown until you force-closed and relaunched.
+
 ## [1.6.1] — 2026-07-23
 ### Fixed
 - Tablets and foldables where Android 16 ignores the app's portrait lock now render the game as a centered phone-sized card on a dark backdrop, instead of stretching the board and keyboard across the whole landscape screen. Phones are unaffected.
