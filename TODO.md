@@ -30,9 +30,10 @@
 
 ## 🔴 NEW — Follow-up from Session 30
 
-- [ ] **Delete stale `wordout-latest.apk` from itch.io** — via Edit Game → Download page (manual user task; I have no dashboard access). Removes the duplicate from the public Download section.
-- [ ] **Real-device verification of the new swipe gesture** — user's device test confirms app health + daily-refresh fix, but didn't explicitly exercise the NEW swipe-to-cycle gesture on real Android device (web-verified during development). Scope: finish a daily board (win/lose), test left swipe (advance to next difficulty), right swipe (backward with wraparound), verify swipe handlers are INACTIVE during active game (no accidental navigation).
-- [ ] **README.md word-list count update** — stale since earlier sessions. Says "~1,500 answer words"/"~9,000 valid guess words" and "over 4 years of daily play" vs. actual CLAUDE.md figures (2,315/2,314 answers, 10,484/8,554 guesses for US/UK; 2026 project). Pre-existing, low priority but good to fix before next public release.
+- ✅ **Delete stale `wordout-latest.apk` from itch.io** — via Edit Game → Download page (manual user task; I have no dashboard access). Removes the duplicate from the public Download section. Completed manually 2026-07-30.
+- ✅ **Real-device verification of the new swipe gesture** — user's device test confirms app health + daily-refresh fix, but didn't explicitly exercise the NEW swipe-to-cycle gesture on real Android device (web-verified during development). Scope: finish a daily board (win/lose), test left swipe (advance to next difficulty), right swipe (backward with wraparound), verify swipe handlers are INACTIVE during active game (no accidental navigation). User confirmed works correctly on device 2026-07-30.
+- ✅ **README.md word-list count update** — stale since earlier sessions. Was "~1,500 answer words"/"~9,000 valid guess words" and "over 4 years of daily play". Updated to 2,315 US / 2,314 UK answers and 10,484 US / 8,554 UK guesses; changed "over 4 years" to "over 6 years of daily play" 2026-07-30.
+- [ ] **Submit to Amazon Appstore** — assets prepared in `store-assets/amazon/` (icon-512.png, icon-114.png, 7 letterboxed 1080x1920 screenshots) as of 2026-07-30, but the actual developer console listing/upload has not been started.
 - [ ] **Play Store production-access rejection still unresolved** — rejected 2026-07-20, support ticket pending (see `wordout-playstore-production-access` auto-memory and CLAUDE.md Play Store section). Independent ongoing track; no action needed this session.
 
 ## 🔴 NEW — Follow-up from Session 29
