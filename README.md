@@ -53,8 +53,8 @@ Unlike most Wordle clones, the word list is carefully curated:
 - No plurals
 - No 3rd-person verb forms (walks, takes)
 - Separate American and British English variants
-- ~1,500 answer words — over 4 years of daily play
-- ~9,000 valid guess words
+- 2,315 US / 2,314 UK answer words — over 6 years of daily play
+- 10,484 US / 8,554 UK valid guess words
 
 The word list pipeline is open source in `wordlist/`.
 
