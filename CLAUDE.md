@@ -223,7 +223,7 @@ Before every build, follow exactly:
 - Never update `app.json` before user confirms
 - Never trigger build without confirmed version bump
 
-**Current version:** `1.7.0` (versionCode 36)
+**Current version:** `1.7.1` (versionCode 37)
 
 ## Play Store
 - Publisher: Onglipo, package: `com.dilippanicker.wordout`. v1.7.0 (versionCode 36) uploaded to closed testing 2026-07-27 and device-tested (all good) — supersedes v1.6.0 (versionCode 34, uploaded 2026-07-23); v1.6.1 (versionCode 35, tablet letterbox fix) was never uploaded on its own, skipped straight to v1.7.0. Tester counts as of the v1.5.8 upload: 19 invited / ~12 opted in / 8 downloaded — not re-checked since.

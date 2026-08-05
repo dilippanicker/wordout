@@ -2,6 +2,10 @@
 
 All notable changes to Wordout are documented here.
 
+## [1.7.1] — 2026-08-05
+### Fixed
+- In multi-board (n-out) practice mode, tapping the difficulty toggle on a finished board no longer shows a "start a new game" toast. It now advances straight to the next difficulty with a fresh board, matching how single-board practice already switches difficulty.
+
 ## [1.7.0] — 2026-07-27
 ### Added
 - On a finished daily board, swipe left/right to cycle between Easy, Hard, and Extreme.
