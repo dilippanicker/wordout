@@ -1,8 +1,14 @@
 # Wordout — Master TODO
-**Updated: 2026-07-27 (session 30)**
-**Current version: v1.7.0 (versionCode 36)**
+**Updated: 2026-08-05 (session 32)**
+**Current version: v1.7.1 (versionCode 37)**
 
 ---
+
+## ✅ Session 32 — Completed 2026-08-05 (n-out difficulty-toggle fix, v1.7.1 release) [BACKFILLED]
+
+- ✅ **N-out difficulty toggle on completed board now free-switches** — practice single-board already allowed free difficulty switching; the n-out (quordle) "game complete" case was the only path that forced New Game via a lock toast. Collapsed it into the same free-switch branch used for fresh boards — a completed board has no in-progress guesses to lose, so it starts a new game at the next difficulty. Touched `app/(tabs)/index.tsx` (commit `8397810`) and updated CLAUDE.md's "Difficulty rules" bullet to describe the new behavior.
+- ✅ **v1.7.1 (versionCode 37) released** — patch bump for the n-out free-switch fix. Two commits: `8397810` (code fix) + `a9c8791` (version bump: app.json, CHANGELOG.md, CLAUDE.md current-version line). GitHub Actions run `30978613517` completed successfully (41m25s); GitHub Release `v1.7.1` published with both `wordout.apk` (94MB) and `wordout.aab` (67MB). Local `releases/wordout-latest.{apk,aab}` already match those exact sizes — refreshed 2026-08-05 11:48 UTC+5:30.
+- ⚠️ **No device regression test of the n-out difficulty-toggle fix** — verification was code-review/logic-only. Fix is small (branch collapse) but worth a real-device check if time allows: switch between boards mid-game, tap a completed board, toggle difficulty and verify new game starts without a lock toast.
 
 ## ✅ Session 28 — Completed 2026-07-23 (itch.io fixes + daily auto-advance + v1.6.0 release + Play Store upload + first devlog)
 
