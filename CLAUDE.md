@@ -170,7 +170,7 @@ Header difficulty emoji taps through this list only. NO gate toasts, NO "Win X f
 ### Difficulty rules
 - Daily: header emoji cycles through accessible difficulties (accessible-list approach, no toasts). Settings difficulty panel applies to practice only when in daily mode.
 - Practice single-board: snapshot-based switch via `gameStore.switchDifficulty(d)`. No lock, no confirm dialog.
-- Quordle: lock if game complete (toast); confirmAbandon if in-progress; resets board on change. Both the confirmAbandon path and the fresh-board (no guesses yet) path in `handleDifficultyToggle()` must call `useQuordleStore.getState().newGame()` after `setDifficulty()` — `quordleStore.maxGuesses` (and thus rendered row count) is only recomputed inside `newGame()`, not derived live like single-board's. See REGRESSION_TRAPS.md (v1.5.9).
+- Quordle: confirmAbandon if in-progress; free switch otherwise (fresh board or completed game) — a completed board advances straight to the next difficulty with a new game, no lock/toast. Both the confirmAbandon path and the free-switch path in `handleDifficultyToggle()` must call `useQuordleStore.getState().newGame()` after `setDifficulty()` — `quordleStore.maxGuesses` (and thus rendered row count) is only recomputed inside `newGame()`, not derived live like single-board's. See REGRESSION_TRAPS.md (v1.5.9).
 
 ### Abandon guard — `utils/abandon.ts`
 `isGameInProgress()` reads stores imperatively. Checks guesses submitted, not just game state existence. `confirmAbandon(onConfirm)` — `Alert.alert` on Android/iOS, `window.confirm` on web.

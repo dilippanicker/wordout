@@ -467,11 +467,7 @@ export default function WordleScreen() {
     const next = DIFFICULTY_CYCLE[(idx + 1) % DIFFICULTY_CYCLE.length];
 
     if (isQuordle) {
-      // Quordle: lock if complete, confirmAbandon if in-progress
-      if (activeGameStatus !== 'playing') {
-        showSystemToast('Game complete — start a new game to change difficulty');
-        return;
-      }
+      // Quordle: confirmAbandon if in-progress; free switch otherwise (also covers a completed game — advances to the next difficulty)
       if (isGameInProgress()) {
         confirmAbandon(() => { setDifficulty(next); useQuordleStore.getState().newGame(); });
       } else {
