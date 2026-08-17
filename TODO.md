@@ -8,7 +8,7 @@
 
 - ✅ **N-out difficulty toggle on completed board now free-switches** — practice single-board already allowed free difficulty switching; the n-out (quordle) "game complete" case was the only path that forced New Game via a lock toast. Collapsed it into the same free-switch branch used for fresh boards — a completed board has no in-progress guesses to lose, so it starts a new game at the next difficulty. Touched `app/(tabs)/index.tsx` (commit `8397810`) and updated CLAUDE.md's "Difficulty rules" bullet to describe the new behavior.
 - ✅ **v1.7.1 (versionCode 37) released** — patch bump for the n-out free-switch fix. Two commits: `8397810` (code fix) + `a9c8791` (version bump: app.json, CHANGELOG.md, CLAUDE.md current-version line). GitHub Actions run `30978613517` completed successfully (41m25s); GitHub Release `v1.7.1` published with both `wordout.apk` (94MB) and `wordout.aab` (67MB). Local `releases/wordout-latest.{apk,aab}` already match those exact sizes — refreshed 2026-08-05 11:48 UTC+5:30.
-- ⚠️ **No device regression test of the n-out difficulty-toggle fix** — verification was code-review/logic-only. Fix is small (branch collapse) but worth a real-device check if time allows: switch between boards mid-game, tap a completed board, toggle difficulty and verify new game starts without a lock toast.
+- ✅ **Device regression test of the n-out difficulty-toggle fix** — confirmed working on real device 2026-08-17: switching to a completed board and toggling difficulty free-switches to a new game at the next difficulty, no lock toast.
 
 ## ✅ Session 28 — Completed 2026-07-23 (itch.io fixes + daily auto-advance + v1.6.0 release + Play Store upload + first devlog)
 
@@ -39,7 +39,7 @@
 - ✅ **Delete stale `wordout-latest.apk` from itch.io** — via Edit Game → Download page (manual user task; I have no dashboard access). Removes the duplicate from the public Download section. Completed manually 2026-07-30.
 - ✅ **Real-device verification of the new swipe gesture** — user's device test confirms app health + daily-refresh fix, but didn't explicitly exercise the NEW swipe-to-cycle gesture on real Android device (web-verified during development). Scope: finish a daily board (win/lose), test left swipe (advance to next difficulty), right swipe (backward with wraparound), verify swipe handlers are INACTIVE during active game (no accidental navigation). User confirmed works correctly on device 2026-07-30.
 - ✅ **README.md word-list count update** — stale since earlier sessions. Was "~1,500 answer words"/"~9,000 valid guess words" and "over 4 years of daily play". Updated to 2,315 US / 2,314 UK answers and 10,484 US / 8,554 UK guesses; changed "over 4 years" to "over 6 years of daily play" 2026-07-30.
-- [ ] **Submit to Amazon Appstore** — assets prepared in `store-assets/amazon/` (icon-512.png, icon-114.png, 7 letterboxed 1080x1920 screenshots) as of 2026-07-30, but the actual developer console listing/upload has not been started.
+- ✅ **Submit to Amazon Appstore** — assets prepared in `store-assets/amazon/` (icon-512.png, icon-114.png, 7 letterboxed 1080x1920 screenshots) as of 2026-07-30; submitted and confirmed approved and live as of 2026-08-17.
 - [ ] **Play Store production-access rejection still unresolved** — rejected 2026-07-20, support ticket pending (see `wordout-playstore-production-access` auto-memory and CLAUDE.md Play Store section). Independent ongoing track; no action needed this session.
 
 ## 🔴 NEW — Follow-up from Session 29
@@ -117,7 +117,7 @@
 ## 🔴 NEW — Follow-up from Session 23
 
 - [ ] **Play Store: upload v1.5.8** to closed testing (v1.5.6/vc28 currently live; v1.5.7 was never uploaded, v1.5.8 supersedes both) — AAB at `releases/wordout-latest.aab`, release notes drafted in session-handoff.md
-- [ ] **Prune two stale TODO nice-to-have entries** (flagged session 23, not yet cleaned up): "Haptic feedback on correct/wrong guess" under Future — already shipped session 8; "Animate board indicator state transitions" — contradicts the locked "deliberately static" CLAUDE.md decision
+- ✅ **Prune two stale TODO nice-to-have entries** (flagged session 23) — removed 2026-08-17: "Haptic feedback on correct/wrong guess" (already shipped session 8); "Animate board indicator state transitions" (contradicts the locked "deliberately static" CLAUDE.md decision)
 - [ ] (Future, paused mid-search) **Web games portfolio domain naming** — if resumed, do NOT re-litigate Wordout-stays-ad-free (see CLAUDE.md Monetization decision + `wordout-ads-scope-decision.md` memory). Ruled out: `gullygames.org` (trademark/brand collision with an existing India real-money gaming platform), `desiboard.games` (collision with existing DesiBoardGames tabletop company). Live candidates when paused: `onglipo.games`/`onglipo.fun`, and pan-Indian (not Hindi-belt-slang) options still needed for South Indian resonance.
 
 ## ✅ Session 22 — Completed 2026-07-06 (v1.5.7 shipped through the new pipeline)
@@ -490,8 +490,6 @@
 ## 🟢 Future — Nice to Have
 
 - [ ] **Deploy Wordout as a web app** — `npx expo export --platform web` generates static dist/ folder, deploy to onglipo.in/wordout or wordout.onglipo.in. Consider adding PWA manifest so users can install from browser. Haptics and AsyncStorage already work on web.
-- [ ] Haptic feedback on correct/wrong guess
-- [ ] Animate board indicator state transitions
 - [ ] Sequential ✓ flash across boards before end-game overlay (multi-board all-won)
 - [ ] GitHub Actions → Play Store auto-publish pipeline
 - [ ] End-game overlay delay dynamic based on guess count (currently fixed — feels long on 1-guess wins)
