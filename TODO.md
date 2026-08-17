@@ -1,8 +1,16 @@
 # Wordout — Master TODO
-**Updated: 2026-08-05 (session 32)**
+**Updated: 2026-08-17 (session 33)**
 **Current version: v1.7.1 (versionCode 37)**
 
 ---
+
+## ✅ Session 33 — Completed 2026-08-17 (Amazon Appstore live, n-out fix device-verified, Play Store tester-recruitment note)
+
+- ✅ **Amazon Appstore submission confirmed approved and live** — TODO.md item updated (previously "assets prepared, upload not started" as of 2026-07-30)
+- ✅ **v1.7.1 n-out difficulty-toggle fix device-verified** — confirmed working on a real device, closing the last open item from session 32
+- ✅ **Pruned two stale TODO nice-to-have entries** flagged since session 23: haptic feedback (already shipped session 8), board-indicator animation (contradicts the locked "deliberately static" CLAUDE.md decision)
+- ✅ **CLAUDE.md Play Store section updated** — documented the ongoing tester-recruitment blocker for Google Play production-access reapplication (Google wants more device testing; recruiting additional testers beyond the existing pool has stalled)
+- Two commits pushed: `c20fe3a` (TODO.md), `67cb2d3` (CLAUDE.md)
 
 ## ✅ Session 32 — Completed 2026-08-05 (n-out difficulty-toggle fix, v1.7.1 release) [BACKFILLED]
 
