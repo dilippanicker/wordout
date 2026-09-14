@@ -2,6 +2,10 @@
 
 All notable changes to Wordout are documented here.
 
+## [1.7.2] — 2026-09-14
+### Fixed
+- In multi-board (n-out) practice mode, switching difficulty on a finished board no longer wipes it. A finished board is now preserved when you cycle away and back to its difficulty, matching how single-board practice already behaves — only an explicit New Game clears it.
+
 ## [1.7.1] — 2026-08-05
 ### Fixed
 - In multi-board (n-out) practice mode, tapping the difficulty toggle on a finished board no longer shows a "start a new game" toast. It now advances straight to the next difficulty with a fresh board, matching how single-board practice already switches difficulty.
