@@ -467,12 +467,13 @@ export default function WordleScreen() {
     const next = DIFFICULTY_CYCLE[(idx + 1) % DIFFICULTY_CYCLE.length];
 
     if (isQuordle) {
-      // Quordle: confirmAbandon if in-progress; free switch otherwise (also covers a completed game — advances to the next difficulty)
+      // Quordle: confirmAbandon if in-progress; free switch otherwise — snapshot-aware,
+      // same as single-board practice (a finished board is preserved, not wiped).
       if (isGameInProgress()) {
-        confirmAbandon(() => { setDifficulty(next); useQuordleStore.getState().newGame(); });
+        confirmAbandon(() => { useQuordleStore.getState().switchDifficulty(next); setDifficulty(next); });
       } else {
+        useQuordleStore.getState().switchDifficulty(next);
         setDifficulty(next);
-        useQuordleStore.getState().newGame();
       }
       return;
     }

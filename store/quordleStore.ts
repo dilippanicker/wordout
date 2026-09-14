@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { useSettingsStore, Language, maxGuessesForDifficulty } from './settingsStore';
+import { useSettingsStore, Language, Difficulty, maxGuessesForDifficulty } from './settingsStore';
 import { useStatsStore } from './statsStore';
 import answerListEnUs from '../assets/wordlists/answers_en_us.json';
 import answerListEnGb from '../assets/wordlists/answers_en_gb.json';
@@ -48,8 +48,8 @@ interface QuordleState {
   toast: string | null;
   waveDoneBoards: boolean[];
   celebrationShown: boolean;
-  // Saved states per board count — allows restoring a game when cycling back to a previous bc.
-  snapshots: Record<number, QuordleSnapshot>;
+  // Saved states per difficulty+board-count combo — allows restoring a game when cycling back to a previous one.
+  snapshots: Record<string, QuordleSnapshot>;
   addLetter: (letter: string) => void;
   removeLetter: () => void;
   submitGuess: () => void;
@@ -60,6 +60,11 @@ interface QuordleState {
   setCelebrationShown: (v: boolean) => void;
   newGame: () => void;
   switchBoardCount: (n: number) => void;
+  switchDifficulty: (difficulty: Difficulty) => void;
+}
+
+function snapshotKey(difficulty: Difficulty, boardCount: number): string {
+  return `${difficulty}-${boardCount}`;
 }
 
 function pickAnswers(n: number, language: Language): string[] {
@@ -134,7 +139,7 @@ export const useQuordleStore = create<QuordleState>((set, get) => {
   const settings = useSettingsStore.getState();
   return {
     ...initialState(settings.language, settings.boardCount),
-    snapshots: {} as Record<number, QuordleSnapshot>,
+    snapshots: {} as Record<string, QuordleSnapshot>,
 
     addLetter: (letter) => {
       const { currentGuess, gameStatus } = get();
@@ -204,18 +209,18 @@ export const useQuordleStore = create<QuordleState>((set, get) => {
     setCelebrationShown: (v) => set({ celebrationShown: v }),
 
     newGame: () => {
-      const { language, boardCount } = useSettingsStore.getState();
-      // Clear any saved snapshot for this board count (explicit new game).
+      const { language, boardCount, difficulty } = useSettingsStore.getState();
+      // Clear any saved snapshot for this difficulty+board-count (explicit new game).
       const { snapshots } = get();
       const newSnapshots = { ...snapshots };
-      delete newSnapshots[boardCount];
+      delete newSnapshots[snapshotKey(difficulty, boardCount)];
       set({ ...initialState(language, boardCount), snapshots: newSnapshots });
     },
 
     switchBoardCount: (n) => {
       const current = get();
-      const { language } = useSettingsStore.getState();
-      // Save the current game state under its board count.
+      const { language, difficulty } = useSettingsStore.getState();
+      // Save the current game state under its difficulty+board-count.
       const currentSnapshot: QuordleSnapshot = {
         answers: current.answers,
         boardCount: current.boardCount,
@@ -227,12 +232,52 @@ export const useQuordleStore = create<QuordleState>((set, get) => {
         waveDoneBoards: current.waveDoneBoards,
         celebrationShown: current.celebrationShown,
       };
-      const newSnapshots = { ...current.snapshots, [current.boardCount]: currentSnapshot };
-      const saved = newSnapshots[n];
+      const newSnapshots = { ...current.snapshots, [snapshotKey(difficulty, current.boardCount)]: currentSnapshot };
+      const saved = newSnapshots[snapshotKey(difficulty, n)];
       if (saved) {
         set({ ...saved, snapshots: newSnapshots, toast: null });
       } else {
         set({ ...initialState(language, n), snapshots: newSnapshots });
+      }
+    },
+
+    switchDifficulty: (newDifficulty) => {
+      const current = get();
+      const { language, difficulty: currDifficulty, boardCount } = useSettingsStore.getState();
+      // Save the current game state under its difficulty+board-count.
+      const currentSnapshot: QuordleSnapshot = {
+        answers: current.answers,
+        boardCount: current.boardCount,
+        maxGuesses: current.maxGuesses,
+        guesses: current.guesses,
+        currentGuess: current.currentGuess,
+        solvedBoards: current.solvedBoards,
+        gameStatus: current.gameStatus,
+        waveDoneBoards: current.waveDoneBoards,
+        celebrationShown: current.celebrationShown,
+      };
+      const newSnapshots = { ...current.snapshots, [snapshotKey(currDifficulty, boardCount)]: currentSnapshot };
+      const saved = newSnapshots[snapshotKey(newDifficulty, boardCount)];
+      if (saved) {
+        set({ ...saved, snapshots: newSnapshots, toast: null });
+      } else {
+        // Build fresh state for newDifficulty explicitly — initialState() reads
+        // difficulty from settingsStore, which may still be the OLD difficulty
+        // at this point (this must run before setDifficulty() updates it, to
+        // save the current board under its correct difficulty key above).
+        set({
+          answers: pickAnswers(boardCount, language),
+          boardCount,
+          maxGuesses: maxGuessesForDifficulty(newDifficulty, boardCount),
+          guesses: [],
+          currentGuess: '',
+          solvedBoards: Array(boardCount).fill(false),
+          gameStatus: 'playing',
+          toast: null,
+          waveDoneBoards: Array(boardCount).fill(false),
+          celebrationShown: false,
+          snapshots: newSnapshots,
+        });
       }
     },
   };

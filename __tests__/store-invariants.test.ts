@@ -180,7 +180,7 @@ describe('quordle switchBoardCount snapshots', () => {
     expect(s.guesses).toHaveLength(0);
     expect(s.currentGuess).toBe('');
     expect(s.celebrationShown).toBe(false);
-    expect(s.snapshots[4]).toBeDefined();
+    expect(s.snapshots['easy-4']).toBeDefined();
 
     useQuordleStore.getState().switchBoardCount(4);
     s = useQuordleStore.getState();
@@ -196,16 +196,54 @@ describe('quordle switchBoardCount snapshots', () => {
     useQuordleStore.setState({
       boardCount: 4,
       snapshots: {
-        2: { answers: ['CIGAR', 'REBUT'], boardCount: 2, maxGuesses: 7, guesses: [], currentGuess: '', solvedBoards: [false, false], gameStatus: 'playing', waveDoneBoards: [false, false], celebrationShown: false },
-        4: { answers: ['CIGAR', 'REBUT', 'SISSY', 'HUMPH'], boardCount: 4, maxGuesses: 9, guesses: [], currentGuess: '', solvedBoards: [false, false, false, false], gameStatus: 'playing', waveDoneBoards: [false, false, false, false], celebrationShown: false },
+        'easy-2': { answers: ['CIGAR', 'REBUT'], boardCount: 2, maxGuesses: 7, guesses: [], currentGuess: '', solvedBoards: [false, false], gameStatus: 'playing', waveDoneBoards: [false, false], celebrationShown: false },
+        'easy-4': { answers: ['CIGAR', 'REBUT', 'SISSY', 'HUMPH'], boardCount: 4, maxGuesses: 9, guesses: [], currentGuess: '', solvedBoards: [false, false, false, false], gameStatus: 'playing', waveDoneBoards: [false, false, false, false], celebrationShown: false },
       },
     });
     useQuordleStore.getState().newGame();
     const s = useQuordleStore.getState();
-    expect(s.snapshots[4]).toBeUndefined();
-    expect(s.snapshots[2]).toBeDefined();
+    expect(s.snapshots['easy-4']).toBeUndefined();
+    expect(s.snapshots['easy-2']).toBeDefined();
     expect(s.gameStatus).toBe('playing');
     expect(s.guesses).toHaveLength(0);
+  });
+});
+
+// ── Quordle snapshots — difficulty switch round-trip (finished-board preservation) ──
+
+describe('quordle switchDifficulty snapshots', () => {
+  test('a finished board survives a round-trip through another difficulty', () => {
+    useSettingsStore.setState({ difficulty: 'easy', gameMode: 'quordle', boardCount: 2 });
+    const finished = {
+      boardCount: 2,
+      maxGuesses: 7,
+      answers: ['CIGAR', 'REBUT'],
+      guesses: [{ word: 'CIGAR', boardResults: [['correct', 'correct', 'correct', 'correct', 'correct'], ['absent', 'absent', 'absent', 'absent', 'absent']] }] as QuordleGuess[],
+      currentGuess: '',
+      solvedBoards: [true, false],
+      gameStatus: 'lost' as const,
+      toast: null,
+      waveDoneBoards: [true, false],
+      celebrationShown: true,
+      snapshots: {},
+    };
+    useQuordleStore.setState(finished);
+
+    useQuordleStore.getState().switchDifficulty('hard');
+    useSettingsStore.setState({ difficulty: 'hard' });
+    let s = useQuordleStore.getState();
+    expect(s.gameStatus).toBe('playing');
+    expect(s.guesses).toHaveLength(0);
+    expect(s.snapshots['easy-2']).toBeDefined();
+
+    useQuordleStore.getState().switchDifficulty('easy');
+    useSettingsStore.setState({ difficulty: 'easy' });
+    s = useQuordleStore.getState();
+    expect(s.answers).toEqual(finished.answers);
+    expect(s.guesses).toEqual(finished.guesses);
+    expect(s.solvedBoards).toEqual(finished.solvedBoards);
+    expect(s.gameStatus).toBe('lost');
+    expect(s.celebrationShown).toBe(true);
   });
 });
 
