@@ -407,7 +407,8 @@ export default function WordleScreen() {
         setGameMode('wordle');
       } else {
         setGameMode('quordle');
-        useQuordleStore.getState().switchBoardCount(n);
+        const nextDifficulty = useQuordleStore.getState().switchBoardCount(n);
+        setDifficulty(nextDifficulty);
       }
     };
     if (isGameInProgress()) confirmAbandon(doIt);

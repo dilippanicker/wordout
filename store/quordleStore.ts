@@ -50,6 +50,9 @@ interface QuordleState {
   celebrationShown: boolean;
   // Saved states per difficulty+board-count combo — allows restoring a game when cycling back to a previous one.
   snapshots: Record<string, QuordleSnapshot>;
+  // Last difficulty played at each board count — lets switchBoardCount land on it instead
+  // of whatever difficulty happened to be active on the board count you're leaving.
+  lastDifficultyByBoardCount: Record<number, Difficulty>;
   addLetter: (letter: string) => void;
   removeLetter: () => void;
   submitGuess: () => void;
@@ -59,7 +62,9 @@ interface QuordleState {
   setWaveDone: (boardIndex: number) => void;
   setCelebrationShown: (v: boolean) => void;
   newGame: () => void;
-  switchBoardCount: (n: number) => void;
+  // Returns the difficulty now active for board count n (its last-played difficulty,
+  // or 'easy' if n has never been visited) — callers must pass this to setDifficulty().
+  switchBoardCount: (n: number) => Difficulty;
   switchDifficulty: (difficulty: Difficulty) => void;
 }
 
@@ -118,9 +123,9 @@ function checkHardModeConstraints(
   return null;
 }
 
-function initialState(language: Language, boardCount: number) {
-  const { difficulty } = useSettingsStore.getState();
-  const maxGuesses = maxGuessesForDifficulty(difficulty, boardCount);
+function initialState(language: Language, boardCount: number, difficulty?: Difficulty) {
+  const diff = difficulty ?? useSettingsStore.getState().difficulty;
+  const maxGuesses = maxGuessesForDifficulty(diff, boardCount);
   return {
     answers: pickAnswers(boardCount, language),
     boardCount,
@@ -140,6 +145,7 @@ export const useQuordleStore = create<QuordleState>((set, get) => {
   return {
     ...initialState(settings.language, settings.boardCount),
     snapshots: {} as Record<string, QuordleSnapshot>,
+    lastDifficultyByBoardCount: {} as Record<number, Difficulty>,
 
     addLetter: (letter) => {
       const { currentGuess, gameStatus } = get();
@@ -233,12 +239,16 @@ export const useQuordleStore = create<QuordleState>((set, get) => {
         celebrationShown: current.celebrationShown,
       };
       const newSnapshots = { ...current.snapshots, [snapshotKey(difficulty, current.boardCount)]: currentSnapshot };
-      const saved = newSnapshots[snapshotKey(difficulty, n)];
+      const newLastDifficulty = { ...current.lastDifficultyByBoardCount, [current.boardCount]: difficulty };
+      // Land on n's own last-played difficulty, not whatever was active on the board we're leaving.
+      const targetDifficulty = newLastDifficulty[n] ?? 'easy';
+      const saved = newSnapshots[snapshotKey(targetDifficulty, n)];
       if (saved) {
-        set({ ...saved, snapshots: newSnapshots, toast: null });
+        set({ ...saved, snapshots: newSnapshots, lastDifficultyByBoardCount: newLastDifficulty, toast: null });
       } else {
-        set({ ...initialState(language, n), snapshots: newSnapshots });
+        set({ ...initialState(language, n, targetDifficulty), snapshots: newSnapshots, lastDifficultyByBoardCount: newLastDifficulty });
       }
+      return targetDifficulty;
     },
 
     switchDifficulty: (newDifficulty) => {
@@ -257,9 +267,10 @@ export const useQuordleStore = create<QuordleState>((set, get) => {
         celebrationShown: current.celebrationShown,
       };
       const newSnapshots = { ...current.snapshots, [snapshotKey(currDifficulty, boardCount)]: currentSnapshot };
+      const newLastDifficulty = { ...current.lastDifficultyByBoardCount, [boardCount]: newDifficulty };
       const saved = newSnapshots[snapshotKey(newDifficulty, boardCount)];
       if (saved) {
-        set({ ...saved, snapshots: newSnapshots, toast: null });
+        set({ ...saved, snapshots: newSnapshots, lastDifficultyByBoardCount: newLastDifficulty, toast: null });
       } else {
         // Build fresh state for newDifficulty explicitly — initialState() reads
         // difficulty from settingsStore, which may still be the OLD difficulty
@@ -277,6 +288,7 @@ export const useQuordleStore = create<QuordleState>((set, get) => {
           waveDoneBoards: Array(boardCount).fill(false),
           celebrationShown: false,
           snapshots: newSnapshots,
+          lastDifficultyByBoardCount: newLastDifficulty,
         });
       }
     },

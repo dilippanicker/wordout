@@ -54,7 +54,8 @@ export default function SettingsScreen() {
     } else {
       setBoardCount(n);
       setGameMode('quordle');
-      useQuordleStore.getState().switchBoardCount(n);
+      const nextDifficulty = useQuordleStore.getState().switchBoardCount(n);
+      setDifficulty(nextDifficulty);
     }
   }
 
