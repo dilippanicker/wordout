@@ -1,8 +1,15 @@
 # Wordout — Master TODO
-**Updated: 2026-08-17 (session 33)**
-**Current version: v1.7.1 (versionCode 37)**
+**Updated: 2026-09-15 (session 34)**
+**Current version: v1.7.2 (versionCode 38)**
 
 ---
+
+## ✅ Session 34 — Completed 2026-09-15 (n-out difficulty-switch snapshot fix, v1.7.2 release, Play Store upload)
+
+- ✅ **Fixed n-out (quordle) practice-mode difficulty-switch board-wipe bug** — finishing a board on one difficulty, switching to another, and switching back was showing a fresh board instead of the finished one. Root cause: `quordleStore` snapshots were keyed only by board count, not difficulty. Added `quordleStore.switchDifficulty()` mirroring `gameStore.switchDifficulty`'s save-then-restore-or-fresh pattern; snapshots now keyed by `` `${difficulty}-${boardCount}` `` via new `snapshotKey()` helper. Updated 2 existing tests + added 1 new regression test. Verified via Expo web dev server + browser automation — finished a 2-out Easy board, switched to Hard, switched back to Easy, confirmed finished board was preserved exactly (not yet device-verified).
+- ✅ **v1.7.2 (versionCode 38) released** — patch bump. GitHub Actions run `34834647439` succeeded; GitHub Release `v1.7.2` published with `wordout.apk` (98,195,045 bytes) / `wordout.aab` (69,448,321 bytes); local `releases/wordout-latest.{apk,aab}` refreshed to match.
+- ✅ **User uploaded v1.7.2 to Play Store closed testing** — superseding v1.7.0 (versionCode 36). v1.7.1 was never uploaded to Play Store on its own.
+- Three commits: `6944024` (fix), `29e2e13` (version bump), `43eadbe` (CLAUDE.md Play Store status update)
 
 ## ✅ Session 33 — Completed 2026-08-17 (Amazon Appstore live, n-out fix device-verified, Play Store tester-recruitment note)
 
@@ -48,11 +55,11 @@
 - ✅ **Real-device verification of the new swipe gesture** — user's device test confirms app health + daily-refresh fix, but didn't explicitly exercise the NEW swipe-to-cycle gesture on real Android device (web-verified during development). Scope: finish a daily board (win/lose), test left swipe (advance to next difficulty), right swipe (backward with wraparound), verify swipe handlers are INACTIVE during active game (no accidental navigation). User confirmed works correctly on device 2026-07-30.
 - ✅ **README.md word-list count update** — stale since earlier sessions. Was "~1,500 answer words"/"~9,000 valid guess words" and "over 4 years of daily play". Updated to 2,315 US / 2,314 UK answers and 10,484 US / 8,554 UK guesses; changed "over 4 years" to "over 6 years of daily play" 2026-07-30.
 - ✅ **Submit to Amazon Appstore** — assets prepared in `store-assets/amazon/` (icon-512.png, icon-114.png, 7 letterboxed 1080x1920 screenshots) as of 2026-07-30; submitted and confirmed approved and live as of 2026-08-17.
+- [ ] **No real-device verification of the v1.7.2 n-out difficulty-switch fix** — finished a board in n-out practice mode, switched difficulty and back, only verified via Expo web dev server + browser automation this session. Worth a real-device glance to confirm the finished board is preserved.
 - [ ] **Play Store production-access rejection still unresolved** — rejected 2026-07-20, support ticket pending (see `wordout-playstore-production-access` auto-memory and CLAUDE.md Play Store section). Independent ongoing track; no action needed this session.
 
 ## 🔴 NEW — Follow-up from Session 29
 
-- [ ] **Play Store closed testing upload** — upload v1.6.1 AAB to closed testing, superseding v1.6.0 (versionCode 34). Use `releases/wordout-latest.aab` (already refreshed from GitHub release).
 - [ ] **No real-device verification of the native letterbox fix** — added `shouldLetterbox()` gate and regression tests, but never tested on an actual tablet or foldable device in landscape orientation. Worth a real device glance on a tablet to verify the board/keyboard render centered in a phone-card frame with dark-backdrop margins (not stretched edge-to-edge).
 
 ## 🔴 NEW — Follow-up from Session 28
