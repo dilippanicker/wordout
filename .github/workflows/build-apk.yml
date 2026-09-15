@@ -66,6 +66,11 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          # Action's default packages list is "tools platform-tools" — Google discontinued the
+          # legacy "tools" package, so requesting it now fails the whole step. Gradle resolves
+          # platforms/build-tools itself during the build; platform-tools is all we need here.
+          packages: platform-tools
 
       - name: Increase JVM Metaspace for Gradle
         run: mkdir -p ~/.gradle && echo "org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=2g -XX:+HeapDumpOnOutOfMemoryError" >> ~/.gradle/gradle.properties
