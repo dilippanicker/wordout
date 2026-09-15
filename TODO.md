@@ -1,8 +1,13 @@
 # Wordout — Master TODO
-**Updated: 2026-09-15 (session 34)**
+**Updated: 2026-09-15 (session 35)**
 **Current version: v1.7.2 (versionCode 38)**
 
 ---
+
+## ✅ Session 35 — Completed 2026-09-15 (n-out difficulty-memory-on-board-switch fix)
+
+- ✅ **Fixed n-out board-count switch carrying over the wrong difficulty** — user noticed switching between n-out board counts (e.g. 2-out → 3-out) landed on whichever difficulty was active on the board you left, silently orphaning that board's own last-played difficulty snapshot. Discussed three options with the user (always Easy, last-played-per-board-count, carry-over); chose last-played-per-board-count, defaulting to Easy for a never-visited count. Added `quordleStore.lastDifficultyByBoardCount`, updated in both `switchBoardCount()` and `switchDifficulty()`; `switchBoardCount()` now returns the target difficulty so callers (`app/(tabs)/index.tsx`'s header mode arrows, `app/(tabs)/settings.tsx`'s board-mode picker) sync `setDifficulty()` to it. Verified via Expo web dev server + browser automation: set 2-out to Hard, confirmed 3-out defaulted to Easy (never visited), set 3-out to Extreme, then cycled 2-out↔3-out↔4-out via both the header arrows and the Settings picker — each board count correctly restored its own last-played difficulty every time.
+- Commit `5f93b03` (fix), pushed to origin/main. No version bump yet — not yet in a release.
 
 ## ✅ Session 34 — Completed 2026-09-15 (n-out difficulty-switch snapshot fix, v1.7.2 release, Play Store upload)
 
@@ -57,6 +62,11 @@
 - ✅ **Submit to Amazon Appstore** — assets prepared in `store-assets/amazon/` (icon-512.png, icon-114.png, 7 letterboxed 1080x1920 screenshots) as of 2026-07-30; submitted and confirmed approved and live as of 2026-08-17.
 - [ ] **No real-device verification of the v1.7.2 n-out difficulty-switch fix** — finished a board in n-out practice mode, switched difficulty and back, only verified via Expo web dev server + browser automation this session. Worth a real-device glance to confirm the finished board is preserved.
 - [ ] **Play Store production-access rejection still unresolved** — rejected 2026-07-20, support ticket pending (see `wordout-playstore-production-access` auto-memory and CLAUDE.md Play Store section). Independent ongoing track; no action needed this session.
+
+## 🔴 NEW — Follow-up from Session 35
+
+- [ ] **Session 35's n-out difficulty-memory fix needs a version bump + release** — committed and pushed (`5f93b03`) but not yet released to any channel.
+- [ ] **No real-device verification of the n-out difficulty-memory fix** — only verified via Expo web dev server + browser automation this session.
 
 ## 🔴 NEW — Follow-up from Session 29
 

@@ -2,6 +2,10 @@
 
 All notable changes to Wordout are documented here.
 
+## [Unreleased]
+### Fixed
+- Switching n-out board count now lands on that board's own last-played difficulty (defaulting to Easy for a board you've never visited), instead of carrying over whichever difficulty was active on the board you left.
+
 ## [1.7.2] — 2026-09-14
 ### Fixed
 - In multi-board (n-out) practice mode, switching difficulty on a finished board no longer wipes it. A finished board is now preserved when you cycle away and back to its difficulty, matching how single-board practice already behaves — only an explicit New Game clears it.
