@@ -2,7 +2,7 @@
 
 All notable changes to Wordout are documented here.
 
-## [Unreleased]
+## [1.7.3] — 2026-09-15
 ### Fixed
 - Switching n-out board count now lands on that board's own last-played difficulty (defaulting to Easy for a board you've never visited), instead of carrying over whichever difficulty was active on the board you left.
 
