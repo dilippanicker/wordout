@@ -5,7 +5,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSettingsStore, Language, BOARD_COUNTS, BoardCount, Difficulty, maxGuessesForDifficulty } from '@/store/settingsStore';
-import { useDailyStore } from '@/store/dailyStore';
 import { useQuordleStore } from '@/store/quordleStore';
 import { useGameStore } from '@/store/gameStore';
 import { isGameInProgress, confirmAbandon } from '@/utils/abandon';
@@ -51,6 +50,7 @@ export default function SettingsScreen() {
     if (n === 1) {
       setBoardCount(n);
       setGameMode('wordle');
+      setDifficulty(useGameStore.getState().lastDifficulty);
     } else {
       setBoardCount(n);
       setGameMode('quordle');
@@ -61,13 +61,9 @@ export default function SettingsScreen() {
 
   function handleDifficultyChange(d: Difficulty) {
     if (gameMode === 'wordle') {
-      const { activeWordleMode } = useDailyStore.getState();
-      if (activeWordleMode === 'daily') {
-        // Settings difficulty only affects practice mode — apply silently, no board reset needed
-        setDifficulty(d);
-        return;
-      }
-      // Practice mode: snapshot-aware switch, no lock, no confirm
+      // Applies to practice only (daily uses its own accessible-list gate) — snapshot-aware
+      // switch, no lock, no confirm. Always routed through switchDifficulty, even while
+      // browsing daily, so gameStore.lastDifficulty stays correct for when practice is next opened.
       useGameStore.getState().switchDifficulty(d);
       setDifficulty(d);
       return;

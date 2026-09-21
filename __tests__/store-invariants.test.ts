@@ -280,6 +280,18 @@ describe('gameStore switchDifficulty snapshots', () => {
     expect(s.waveShown).toBe(true);
     expect(s.celebrationShown).toBe(true);
   });
+
+  test('lastDifficulty tracks every switch, so callers entering practice from elsewhere (quordle, daily) can restore it', () => {
+    useSettingsStore.setState({ difficulty: 'easy' });
+    useGameStore.setState({ lastDifficulty: 'easy', snapshots: {} });
+
+    useGameStore.getState().switchDifficulty('extreme');
+    expect(useGameStore.getState().lastDifficulty).toBe('extreme');
+
+    // Round-trip through a snapshot-restore branch also updates it.
+    useGameStore.getState().switchDifficulty('easy');
+    expect(useGameStore.getState().lastDifficulty).toBe('easy');
+  });
 });
 
 // ── Daily answers — deterministic UTC-midnight derivation ────────────────────

@@ -405,6 +405,7 @@ export default function WordleScreen() {
       setBoardCount(n);
       if (n === 1) {
         setGameMode('wordle');
+        setDifficulty(useGameStore.getState().lastDifficulty);
       } else {
         setGameMode('quordle');
         const nextDifficulty = useQuordleStore.getState().switchBoardCount(n);
@@ -993,6 +994,7 @@ export default function WordleScreen() {
           onPress={() => {
             if (!isDaily) return;
             dailyStore.setActiveWordleMode('practice');
+            setDifficulty(useGameStore.getState().lastDifficulty);
           }}
           accessibilityLabel="Practice mode"
         >

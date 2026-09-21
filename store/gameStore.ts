@@ -54,6 +54,10 @@ interface GameState {
   waveShown: boolean;
   celebrationShown: boolean;
   snapshots: Record<string, PracticeSnapshot>;
+  // Last difficulty played in single-board practice — lets callers entering practice from
+  // elsewhere (quordle, daily) restore it, instead of leaving whatever difficulty was last
+  // active there. Mirrors quordleStore's lastDifficultyByBoardCount.
+  lastDifficulty: Difficulty;
   addLetter: (letter: string) => void;
   removeLetter: () => void;
   submitGuess: () => void;
@@ -130,6 +134,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   waveShown: false,
   celebrationShown: false,
   snapshots: {},
+  lastDifficulty: useSettingsStore.getState().difficulty,
 
   addLetter: (letter) => {
     const { currentGuess, gameStatus } = get();
@@ -219,7 +224,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     };
     const snap = snapshots[newDiff];
     if (snap) {
-      set({ ...snap, snapshots: newSnapshots, toast: null });
+      set({ ...snap, snapshots: newSnapshots, lastDifficulty: newDiff, toast: null });
     } else {
       set({
         answer: pickAnswer(useSettingsStore.getState().language),
@@ -230,6 +235,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         waveShown: false,
         celebrationShown: false,
         snapshots: newSnapshots,
+        lastDifficulty: newDiff,
       });
     }
   },
