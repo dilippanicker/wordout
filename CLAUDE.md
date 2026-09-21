@@ -138,9 +138,10 @@ Header difficulty emoji taps through this list only. NO gate toasts, NO "Win X f
 - Rendering is deliberately static (no scale-pop or color-transition animation) — imperceptible at 24×24px; don't re-add
 
 **Footer layout:**
-- Playing: `[⏳ N tries left · ? for help] [📊]`
-- Game over (practice): `[? for help] [↺ New Game (green)] [📊]`
-- Game over (daily): `[? for help] [📊]` — next difficulty (if any) auto-starts, no button needed; countdown shows in Ribbon once all three are done
+- Playing: `[⏳ N tries left · ? for help] [🔥/⚡ N] [📊]`
+- Game over (practice): `[? for help] [↺ New Game (green)] [🔥/⚡ N] [📊]`
+- Game over (daily): `[? for help] [🔥/⚡ N] [📊]` — next difficulty (if any) auto-starts, no button needed; countdown shows in Ribbon once all three are done
+- `[🔥/⚡ N]` — streak badge (`BottomStrip.tsx`'s `rightCluster`), always immediately left of `[📊]` in every footer state, hidden entirely when the current streak is 0 (a fresh or lapsed streak isn't worth permanent clutter, unlike Stats' labeled "Streak" cell where 0 is informative in a table). Sourced from the same `gameStats.streak`/`streakEmoji` already used elsewhere — daily shows the difficulty emoji + 🔥 (e.g. `🐣🔥 3`), practice shows ⚡. Tapping it opens Stats, same as `[📊]`.
 
 **Emoji convention (strict):** 🐣 easy, 💪 hard, 💀 extreme · 🔥 daily streak, ⚡ practice streak, 🏆 personal best · 📅 daily mode, 🎮 practice mode
 

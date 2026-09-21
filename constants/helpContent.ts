@@ -52,8 +52,8 @@ export const RIBBON_ICON_TEXTS = [
 
 export const FOOTER_ICON_TEXTS = [
   'Statistics — view scores and guess distribution',
-  'Daily streak — consecutive days solving the daily word',
-  'Practice streak — consecutive practice wins, resets on loss',
+  'Daily streak — consecutive days solving the daily word. Shown next to Stats once you have one; hidden at zero',
+  'Practice streak — consecutive practice wins, resets on loss. Shown next to Stats once you have one; hidden at zero',
 ];
 
 export const FEEDBACK_PROMPT = 'Missing or wrong word?';
