@@ -66,10 +66,27 @@ interface QuordleState {
   // or 'easy' if n has never been visited) — callers must pass this to setDifficulty().
   switchBoardCount: (n: number) => Difficulty;
   switchDifficulty: (difficulty: Difficulty) => void;
+  // Snapshot-aware language switch, mirroring switchDifficulty — called from the
+  // settingsStore subscribe below, which has both the old and new language in hand.
+  switchLanguage: (oldLanguage: Language, newLanguage: Language) => void;
 }
 
-function snapshotKey(difficulty: Difficulty, boardCount: number): string {
-  return `${difficulty}-${boardCount}`;
+function snapshotKey(language: Language, difficulty: Difficulty, boardCount: number): string {
+  return `${language}-${difficulty}-${boardCount}`;
+}
+
+function captureSnapshot(s: QuordleState): QuordleSnapshot {
+  return {
+    answers: s.answers,
+    boardCount: s.boardCount,
+    maxGuesses: s.maxGuesses,
+    guesses: s.guesses,
+    currentGuess: s.currentGuess,
+    solvedBoards: s.solvedBoards,
+    gameStatus: s.gameStatus,
+    waveDoneBoards: s.waveDoneBoards,
+    celebrationShown: s.celebrationShown,
+  };
 }
 
 function pickAnswers(n: number, language: Language): string[] {
@@ -216,33 +233,22 @@ export const useQuordleStore = create<QuordleState>((set, get) => {
 
     newGame: () => {
       const { language, boardCount, difficulty } = useSettingsStore.getState();
-      // Clear any saved snapshot for this difficulty+board-count (explicit new game).
+      // Clear any saved snapshot for this language+difficulty+board-count (explicit new game).
       const { snapshots } = get();
       const newSnapshots = { ...snapshots };
-      delete newSnapshots[snapshotKey(difficulty, boardCount)];
+      delete newSnapshots[snapshotKey(language, difficulty, boardCount)];
       set({ ...initialState(language, boardCount), snapshots: newSnapshots });
     },
 
     switchBoardCount: (n) => {
       const current = get();
       const { language, difficulty } = useSettingsStore.getState();
-      // Save the current game state under its difficulty+board-count.
-      const currentSnapshot: QuordleSnapshot = {
-        answers: current.answers,
-        boardCount: current.boardCount,
-        maxGuesses: current.maxGuesses,
-        guesses: current.guesses,
-        currentGuess: current.currentGuess,
-        solvedBoards: current.solvedBoards,
-        gameStatus: current.gameStatus,
-        waveDoneBoards: current.waveDoneBoards,
-        celebrationShown: current.celebrationShown,
-      };
-      const newSnapshots = { ...current.snapshots, [snapshotKey(difficulty, current.boardCount)]: currentSnapshot };
+      // Save the current game state under its language+difficulty+board-count.
+      const newSnapshots = { ...current.snapshots, [snapshotKey(language, difficulty, current.boardCount)]: captureSnapshot(current) };
       const newLastDifficulty = { ...current.lastDifficultyByBoardCount, [current.boardCount]: difficulty };
       // Land on n's own last-played difficulty, not whatever was active on the board we're leaving.
       const targetDifficulty = newLastDifficulty[n] ?? 'easy';
-      const saved = newSnapshots[snapshotKey(targetDifficulty, n)];
+      const saved = newSnapshots[snapshotKey(language, targetDifficulty, n)];
       if (saved) {
         set({ ...saved, snapshots: newSnapshots, lastDifficultyByBoardCount: newLastDifficulty, toast: null });
       } else {
@@ -254,21 +260,10 @@ export const useQuordleStore = create<QuordleState>((set, get) => {
     switchDifficulty: (newDifficulty) => {
       const current = get();
       const { language, difficulty: currDifficulty, boardCount } = useSettingsStore.getState();
-      // Save the current game state under its difficulty+board-count.
-      const currentSnapshot: QuordleSnapshot = {
-        answers: current.answers,
-        boardCount: current.boardCount,
-        maxGuesses: current.maxGuesses,
-        guesses: current.guesses,
-        currentGuess: current.currentGuess,
-        solvedBoards: current.solvedBoards,
-        gameStatus: current.gameStatus,
-        waveDoneBoards: current.waveDoneBoards,
-        celebrationShown: current.celebrationShown,
-      };
-      const newSnapshots = { ...current.snapshots, [snapshotKey(currDifficulty, boardCount)]: currentSnapshot };
+      // Save the current game state under its language+difficulty+board-count.
+      const newSnapshots = { ...current.snapshots, [snapshotKey(language, currDifficulty, boardCount)]: captureSnapshot(current) };
       const newLastDifficulty = { ...current.lastDifficultyByBoardCount, [boardCount]: newDifficulty };
-      const saved = newSnapshots[snapshotKey(newDifficulty, boardCount)];
+      const saved = newSnapshots[snapshotKey(language, newDifficulty, boardCount)];
       if (saved) {
         set({ ...saved, snapshots: newSnapshots, lastDifficultyByBoardCount: newLastDifficulty, toast: null });
       } else {
@@ -292,12 +287,27 @@ export const useQuordleStore = create<QuordleState>((set, get) => {
         });
       }
     },
+
+    switchLanguage: (oldLanguage, newLanguage) => {
+      const current = get();
+      const { difficulty, boardCount } = useSettingsStore.getState();
+      // Save the current game state under its old-language+difficulty+board-count.
+      const newSnapshots = { ...current.snapshots, [snapshotKey(oldLanguage, difficulty, boardCount)]: captureSnapshot(current) };
+      const saved = newSnapshots[snapshotKey(newLanguage, difficulty, boardCount)];
+      if (saved) {
+        set({ ...saved, snapshots: newSnapshots, toast: null });
+      } else {
+        set({ ...initialState(newLanguage, boardCount, difficulty), snapshots: newSnapshots });
+      }
+    },
   };
 });
 
-// Reset on language change — also clears all saved snapshots (they're for the old language).
+// Language switches are snapshot-aware, same as difficulty/board-count — see switchLanguage.
+// The subscribe callback fires after settingsStore has already committed the new language,
+// so prev/curr here are the only place both the old and new language are available together.
 useSettingsStore.subscribe((curr, prev) => {
   if (curr.language !== prev.language) {
-    useQuordleStore.setState({ ...initialState(curr.language, curr.boardCount), snapshots: {} });
+    useQuordleStore.getState().switchLanguage(prev.language, curr.language);
   }
 });

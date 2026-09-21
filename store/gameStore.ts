@@ -68,6 +68,13 @@ interface GameState {
   setCelebrationShown: (v: boolean) => void;
   newGame: () => void;
   switchDifficulty: (difficulty: Difficulty) => void;
+  // Snapshot-aware language switch, mirroring switchDifficulty — called from the
+  // settingsStore subscribe below, which has both the old and new language in hand.
+  switchLanguage: (oldLanguage: Language, newLanguage: Language) => void;
+}
+
+function snapshotKey(language: Language, difficulty: Difficulty): string {
+  return `${language}-${difficulty}`;
 }
 
 function pickAnswer(language: Language): string {
@@ -215,19 +222,19 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   switchDifficulty: (newDiff) => {
-    const { difficulty: currDiff } = useSettingsStore.getState();
+    const { language, difficulty: currDiff } = useSettingsStore.getState();
     const { answer, guesses, currentGuess, gameStatus, waveShown, celebrationShown, snapshots } = get();
     // Snapshot current difficulty state before switching
     const newSnapshots = {
       ...snapshots,
-      [currDiff]: { answer, guesses, currentGuess, gameStatus, waveShown, celebrationShown },
+      [snapshotKey(language, currDiff)]: { answer, guesses, currentGuess, gameStatus, waveShown, celebrationShown },
     };
-    const snap = snapshots[newDiff];
+    const snap = snapshots[snapshotKey(language, newDiff)];
     if (snap) {
       set({ ...snap, snapshots: newSnapshots, lastDifficulty: newDiff, toast: null });
     } else {
       set({
-        answer: pickAnswer(useSettingsStore.getState().language),
+        answer: pickAnswer(language),
         guesses: [],
         currentGuess: '',
         gameStatus: 'playing',
@@ -239,11 +246,37 @@ export const useGameStore = create<GameState>((set, get) => ({
       });
     }
   },
+
+  switchLanguage: (oldLanguage, newLanguage) => {
+    const { difficulty } = useSettingsStore.getState();
+    const { answer, guesses, currentGuess, gameStatus, waveShown, celebrationShown, snapshots } = get();
+    const newSnapshots = {
+      ...snapshots,
+      [snapshotKey(oldLanguage, difficulty)]: { answer, guesses, currentGuess, gameStatus, waveShown, celebrationShown },
+    };
+    const snap = snapshots[snapshotKey(newLanguage, difficulty)];
+    if (snap) {
+      set({ ...snap, snapshots: newSnapshots, toast: null });
+    } else {
+      set({
+        answer: pickAnswer(newLanguage),
+        guesses: [],
+        currentGuess: '',
+        gameStatus: 'playing',
+        toast: null,
+        waveShown: false,
+        celebrationShown: false,
+        snapshots: newSnapshots,
+      });
+    }
+  },
 }));
 
-// Only reset on language change — mode switching preserves game state.
+// Language switches are snapshot-aware, same as difficulty — see switchLanguage.
+// The subscribe callback fires after settingsStore has already committed the new language,
+// so prev/curr here are the only place both the old and new language are available together.
 useSettingsStore.subscribe((curr, prev) => {
   if (curr.language !== prev.language) {
-    useGameStore.getState().newGame();
+    useGameStore.getState().switchLanguage(prev.language, curr.language);
   }
 });

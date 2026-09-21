@@ -180,7 +180,7 @@ describe('quordle switchBoardCount snapshots', () => {
     expect(s.guesses).toHaveLength(0);
     expect(s.currentGuess).toBe('');
     expect(s.celebrationShown).toBe(false);
-    expect(s.snapshots['easy-4']).toBeDefined();
+    expect(s.snapshots['en_us-easy-4']).toBeDefined();
 
     useQuordleStore.getState().switchBoardCount(4);
     s = useQuordleStore.getState();
@@ -196,14 +196,14 @@ describe('quordle switchBoardCount snapshots', () => {
     useQuordleStore.setState({
       boardCount: 4,
       snapshots: {
-        'easy-2': { answers: ['CIGAR', 'REBUT'], boardCount: 2, maxGuesses: 7, guesses: [], currentGuess: '', solvedBoards: [false, false], gameStatus: 'playing', waveDoneBoards: [false, false], celebrationShown: false },
-        'easy-4': { answers: ['CIGAR', 'REBUT', 'SISSY', 'HUMPH'], boardCount: 4, maxGuesses: 9, guesses: [], currentGuess: '', solvedBoards: [false, false, false, false], gameStatus: 'playing', waveDoneBoards: [false, false, false, false], celebrationShown: false },
+        'en_us-easy-2': { answers: ['CIGAR', 'REBUT'], boardCount: 2, maxGuesses: 7, guesses: [], currentGuess: '', solvedBoards: [false, false], gameStatus: 'playing', waveDoneBoards: [false, false], celebrationShown: false },
+        'en_us-easy-4': { answers: ['CIGAR', 'REBUT', 'SISSY', 'HUMPH'], boardCount: 4, maxGuesses: 9, guesses: [], currentGuess: '', solvedBoards: [false, false, false, false], gameStatus: 'playing', waveDoneBoards: [false, false, false, false], celebrationShown: false },
       },
     });
     useQuordleStore.getState().newGame();
     const s = useQuordleStore.getState();
-    expect(s.snapshots['easy-4']).toBeUndefined();
-    expect(s.snapshots['easy-2']).toBeDefined();
+    expect(s.snapshots['en_us-easy-4']).toBeUndefined();
+    expect(s.snapshots['en_us-easy-2']).toBeDefined();
     expect(s.gameStatus).toBe('playing');
     expect(s.guesses).toHaveLength(0);
   });
@@ -234,10 +234,49 @@ describe('quordle switchDifficulty snapshots', () => {
     let s = useQuordleStore.getState();
     expect(s.gameStatus).toBe('playing');
     expect(s.guesses).toHaveLength(0);
-    expect(s.snapshots['easy-2']).toBeDefined();
+    expect(s.snapshots['en_us-easy-2']).toBeDefined();
 
     useQuordleStore.getState().switchDifficulty('easy');
     useSettingsStore.setState({ difficulty: 'easy' });
+    s = useQuordleStore.getState();
+    expect(s.answers).toEqual(finished.answers);
+    expect(s.guesses).toEqual(finished.guesses);
+    expect(s.solvedBoards).toEqual(finished.solvedBoards);
+    expect(s.gameStatus).toBe('lost');
+    expect(s.celebrationShown).toBe(true);
+  });
+});
+
+// ── Quordle snapshots — language switch round-trip (both languages' boards survive) ──
+
+describe('quordle switchLanguage snapshots', () => {
+  test('a finished board survives a round-trip through another language', () => {
+    useSettingsStore.setState({ language: 'en_us', difficulty: 'easy', gameMode: 'quordle', boardCount: 2 });
+    const finished = {
+      boardCount: 2,
+      maxGuesses: 7,
+      answers: ['CIGAR', 'REBUT'],
+      guesses: [{ word: 'CIGAR', boardResults: [['correct', 'correct', 'correct', 'correct', 'correct'], ['absent', 'absent', 'absent', 'absent', 'absent']] }] as QuordleGuess[],
+      currentGuess: '',
+      solvedBoards: [true, false],
+      gameStatus: 'lost' as const,
+      toast: null,
+      waveDoneBoards: [true, false],
+      celebrationShown: true,
+      snapshots: {},
+    };
+    useQuordleStore.setState(finished);
+
+    // App flow: only setLanguage() is called directly (header flag tap / Settings picker);
+    // the settingsStore subscribe reacts to it and calls switchLanguage itself — unlike
+    // difficulty/boardCount, nothing calls switchLanguage directly.
+    useSettingsStore.setState({ language: 'en_gb' });
+    let s = useQuordleStore.getState();
+    expect(s.gameStatus).toBe('playing');
+    expect(s.guesses).toHaveLength(0);
+    expect(s.snapshots['en_us-easy-2']).toBeDefined();
+
+    useSettingsStore.setState({ language: 'en_us' });
     s = useQuordleStore.getState();
     expect(s.answers).toEqual(finished.answers);
     expect(s.guesses).toEqual(finished.guesses);
@@ -270,7 +309,7 @@ describe('gameStore switchDifficulty snapshots', () => {
     let s = useGameStore.getState();
     expect(s.guesses).toHaveLength(0);
     expect(s.currentGuess).toBe('');
-    expect(s.snapshots['easy']).toBeDefined();
+    expect(s.snapshots['en_us-easy']).toBeDefined();
 
     useGameStore.getState().switchDifficulty('easy');
     useSettingsStore.setState({ difficulty: 'easy' });
@@ -291,6 +330,36 @@ describe('gameStore switchDifficulty snapshots', () => {
     // Round-trip through a snapshot-restore branch also updates it.
     useGameStore.getState().switchDifficulty('easy');
     expect(useGameStore.getState().lastDifficulty).toBe('easy');
+  });
+
+  test('switchLanguage preserves both languages\' boards across a round-trip', () => {
+    useSettingsStore.setState({ language: 'en_us', difficulty: 'easy' });
+    const seeded = {
+      answer: 'CIGAR',
+      guesses: [{ word: 'ABACK', results: ['absent', 'absent', 'present', 'present', 'absent'] as any }],
+      currentGuess: 'RE',
+      gameStatus: 'playing' as const,
+      toast: null,
+      waveShown: true,
+      celebrationShown: true,
+      snapshots: {},
+    };
+    useGameStore.setState(seeded);
+
+    // App flow: only setLanguage() is called directly; the settingsStore subscribe
+    // reacts to it and calls switchLanguage itself.
+    useSettingsStore.setState({ language: 'en_gb' });
+    let s = useGameStore.getState();
+    expect(s.guesses).toHaveLength(0);
+    expect(s.currentGuess).toBe('');
+    expect(s.snapshots['en_us-easy']).toBeDefined();
+
+    useSettingsStore.setState({ language: 'en_us' });
+    s = useGameStore.getState();
+    expect(s.answer).toBe('CIGAR');
+    expect(s.currentGuess).toBe('RE');
+    expect(s.waveShown).toBe(true);
+    expect(s.celebrationShown).toBe(true);
   });
 });
 
