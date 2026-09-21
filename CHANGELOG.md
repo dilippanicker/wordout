@@ -2,6 +2,14 @@
 
 All notable changes to Wordout are documented here.
 
+## [1.8.0] — 2026-09-21
+### Added
+- A streak badge now shows in the footer next to the stats icon once you have a winning streak going — 🔥 for daily, ⚡ for practice.
+### Fixed
+- Single-board practice now remembers its own last-played difficulty, instead of picking up whatever difficulty was last active in Daily or multi-board mode.
+- Switching language (American ↔ British English) and back no longer clears your current board — each language's progress is preserved independently.
+- Moved the New Game button away from the difficulty toggle in the header, so tapping to change difficulty no longer risks accidentally triggering New Game's confirmation prompt.
+
 ## [1.7.3] — 2026-09-15
 ### Fixed
 - Switching n-out board count now lands on that board's own last-played difficulty (defaulting to Easy for a board you've never visited), instead of carrying over whichever difficulty was active on the board you left.
