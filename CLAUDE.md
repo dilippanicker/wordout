@@ -26,7 +26,7 @@ Historical bug write-ups and resolved-incident detail referenced below live in [
 - Bundled JSON, not fetched at runtime
 
 ## Screen Zone Naming Convention
-- **Header** — top bar: 🇬🇧 🐣 ↺ | ◄ Wordout ► | ☽ ⚙ ?
+- **Header** — top bar: 🇬🇧 🐣 ☽ | ◄ Wordout ► | ↺ ⚙ ? — ↺ New Game deliberately sits away from the difficulty toggle, swapped with ☽ dark/light mode after adjacency caused accidental taps that triggered the abandon-confirm dialog
 - **Ribbon** — 📅 🎮 icons + board indicators + contextual status (next word countdown etc)
 - **Board** — tile grid
 - **Keyboard** — on-screen keyboard

@@ -1117,7 +1117,8 @@ function renderHeader({
   return (
     <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
 
-      {/* Left cluster: 🇬🇧/🇺🇸  💎/🐣  ↺ */}
+      {/* Left cluster: 🇬🇧/🇺🇸  💎/🐣  🌙 — new game moved out to the right cluster so it's not
+          adjacent to the difficulty toggle, which was causing accidental taps that wiped the board. */}
       <View style={styles.iconGroupLeft}>
         <Pressable
           {...(noFocus as any)}
@@ -1144,10 +1145,10 @@ function renderHeader({
         <Pressable
           {...(noFocus as any)}
           hitSlop={12}
-          accessibilityLabel="New game"
-          onPress={onNewGame}
+          accessibilityLabel={darkTheme ? 'Switch to light mode' : 'Switch to dark mode'}
+          onPress={() => setDarkTheme(!darkTheme)}
         >
-          <Ionicons name="refresh-outline" size={21} color="#878a8c" />
+          <Ionicons name={darkTheme ? 'sunny-outline' : 'moon-outline'} size={21} color="#878a8c" />
         </Pressable>
       </View>
 
@@ -1162,15 +1163,15 @@ function renderHeader({
         </Pressable>
       </View>
 
-      {/* Right cluster: 🌙  ⚙  ? */}
+      {/* Right cluster: ↺  ⚙  ? */}
       <View style={styles.iconGroupRight}>
         <Pressable
           {...(noFocus as any)}
           hitSlop={12}
-          accessibilityLabel={darkTheme ? 'Switch to light mode' : 'Switch to dark mode'}
-          onPress={() => setDarkTheme(!darkTheme)}
+          accessibilityLabel="New game"
+          onPress={onNewGame}
         >
-          <Ionicons name={darkTheme ? 'sunny-outline' : 'moon-outline'} size={21} color="#878a8c" />
+          <Ionicons name="refresh-outline" size={21} color="#878a8c" />
         </Pressable>
         <Pressable
           {...(noFocus as any)}
