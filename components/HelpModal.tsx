@@ -94,15 +94,15 @@ const TOP_ICON_RENDER_FNS: Array<() => React.ReactNode> = [
   () => <Text style={styles.flagPair}>🐣</Text>,
   () => <Text style={styles.flagPair}>💪</Text>,
   () => <Text style={styles.flagPair}>💀</Text>,
-  () => <Ionicons name="refresh-outline" size={18} color="#878a8c" />,
+  () => <Ionicons name="moon-outline" size={18} color="#878a8c" />,
+  () => <Ionicons name="sunny-outline" size={18} color="#878a8c" />,
   () => (
     <View style={styles.trianglePair}>
       <View style={styles.triangleLeft} />
       <View style={styles.triangleRight} />
     </View>
   ),
-  () => <Ionicons name="moon-outline" size={18} color="#878a8c" />,
-  () => <Ionicons name="sunny-outline" size={18} color="#878a8c" />,
+  () => <Ionicons name="refresh-outline" size={18} color="#878a8c" />,
   () => <Ionicons name="settings-outline" size={18} color="#878a8c" />,
   () => <Ionicons name="help-circle-outline" size={18} color="#878a8c" />,
 ];

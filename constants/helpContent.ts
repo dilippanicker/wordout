@@ -34,10 +34,10 @@ export const TOP_ICON_TEXTS = [
   'Easy mode — no constraints on future guesses',
   'Hard mode — revealed hints must be used in all future guesses',
   'Extreme mode — limited guesses, count depends on board count',
-  'New game — abandon the current game and start fresh',
-  'Cycle through board counts (Wordout, 2-out, 3-out, 4-out, 6-out, 8-out)',
   'Dark theme',
   'Light theme',
+  'Cycle through board counts (Wordout, 2-out, 3-out, 4-out, 6-out, 8-out)',
+  'New game — abandon the current game and start fresh',
   'Settings',
   'This help screen',
 ];

@@ -39,7 +39,7 @@ Also on [itch.io](https://onglipo.itch.io/wordout) — play in browser or downlo
 
 ## Screen Layout
 
-- **Header** — language flag, difficulty, new game, board count arrows, theme, settings, help
+- **Header** — language flag, difficulty, theme, board count arrows, new game, settings, help
 - **Ribbon** — daily/practice mode icons, board indicators, contextual status
 - **Board** — tile grid
 - **Keyboard** — on-screen keyboard

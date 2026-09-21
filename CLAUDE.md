@@ -57,13 +57,17 @@ Historical bug write-ups and resolved-incident detail referenced below live in [
 - `waveShown: boolean` — wave-shown flag; reset in `newGame()`
 - `celebrationShown: boolean` — celebration popup shown flag; reset in `newGame()`
 - `clearCurrentGuess()` — not auto-called; user backspaces manually after shake
+- `lastDifficulty: Difficulty` — last difficulty played in single-board practice; restored by callers entering practice from elsewhere (quordle board-count cycling, Daily→Practice tab) instead of leaving whatever difficulty was last active there
+- `switchLanguage(oldLanguage, newLanguage)` — same save-then-restore-or-fresh pattern as `switchDifficulty`, called from the module-level `settingsStore.subscribe` (not from UI code directly — `setLanguage()` is called directly by the header flag / Settings picker, and the subscribe reacts to it)
+- Snapshots keyed by `` `${language}-${difficulty}` `` — a language switch is snapshot-aware exactly like a difficulty switch, not a reset
 
 **`quordleStore.ts`** — multi-board logic:
 - `waveDoneBoards: boolean[]` — per-board wave flags
 - `celebrationShown: boolean` — end-game popup shown flag; saved/restored in snapshots
-- `snapshots: Record<number, QuordleSnapshot>` — in-memory per-board-count state (NOT persisted)
+- `snapshots: Record<string, QuordleSnapshot>` — in-memory per-`` `${language}-${difficulty}-${boardCount}` `` state (NOT persisted)
 - `switchBoardCount(n)` — saves current state to snapshot (incl. celebrationShown), restores n if previously visited
-- `newGame()` — clears snapshot for current bc, starts fresh
+- `switchLanguage(oldLanguage, newLanguage)` — same pattern, called from the module-level `settingsStore.subscribe`, which is the only place both the old and new language are available together (the subscribe fires after settingsStore has already committed the new value)
+- `newGame()` — clears snapshot for current language+difficulty+bc, starts fresh
 
 **`dailyStore.ts`** — persisted (`wordout-daily`, version 2):
 - `DAILY_EPOCH = new Date('2026-01-01').getTime()`
@@ -111,11 +115,13 @@ Header difficulty emoji taps through this list only. NO gate toasts, NO "Win X f
 - Unlimited games, freely change difficulty — snapshot-based (no lock, no confirm dialog)
 - `gameStore.switchDifficulty(d)` saves current state under current difficulty key, restores snapshot for new difficulty or starts fresh — mirrors quordleStore.switchBoardCount
 - Board state persists on mode switch — only ↺ New Game clears (also clears snapshots)
+- Entering single-board practice from elsewhere (quordle board-count cycling, Daily→Practice tab) restores `gameStore.lastDifficulty` — its own last-played difficulty — instead of leaving whatever difficulty happened to be active in the mode you're leaving. All three entry points (`index.tsx`'s `cycleTo`, `settings.tsx`'s `handleBoardCountSelect`, the Daily→Practice tab press) must sync `setDifficulty(useGameStore.getState().lastDifficulty)` — a new entry point that skips this reintroduces the bug.
 
 **Never clear rule:**
 - Games never auto-cleared without explicit user action (↺ New Game)
 - Abandon guard on: New Game, mode arrows (◄►), language change
 - Difficulty change in practice: no confirm, snapshot-based (no data lost)
+- Language change: snapshot-based in both `gameStore` and `quordleStore` (`switchLanguage`, mirroring `switchDifficulty`) — switching `en_us`↔`en_gb` and back restores each language's board exactly as left, it does not reset. The abandon-guard confirm on language change (see below) is a UX choice, not a data-loss prevention — no data is actually lost either way. See REGRESSION_TRAPS.md for why this must stay reactive (subscribe-driven), not a direct call.
 
 **Ribbon label layout:**
 - Daily active: `[📅 Today's · Easy 🐣 ····· 🎮]` — includes difficulty emoji
@@ -170,7 +176,7 @@ Header difficulty emoji taps through this list only. NO gate toasts, NO "Win X f
 ### Difficulty rules
 - Daily: header emoji cycles through accessible difficulties (accessible-list approach, no toasts). Settings difficulty panel applies to practice only when in daily mode.
 - Practice single-board: snapshot-based switch via `gameStore.switchDifficulty(d)`. No lock, no confirm dialog.
-- Quordle: confirmAbandon if in-progress; free switch otherwise — snapshot-based via `quordleStore.switchDifficulty(d)` (v1.7.2+), mirroring single-board's `gameStore.switchDifficulty`. A finished board is preserved, not wiped, when cycling difficulty and back — only explicit New Game clears it. Snapshots are keyed by `` `${difficulty}-${boardCount}` `` (`quordleStore.ts`'s `snapshotKey()`). `handleDifficultyToggle()` must call `switchDifficulty(next)` **before** `setDifficulty(next)` on both the confirmAbandon and free-switch paths — see REGRESSION_TRAPS.md for why.
+- Quordle: confirmAbandon if in-progress; free switch otherwise — snapshot-based via `quordleStore.switchDifficulty(d)` (v1.7.2+), mirroring single-board's `gameStore.switchDifficulty`. A finished board is preserved, not wiped, when cycling difficulty and back — only explicit New Game clears it. Snapshots are keyed by `` `${language}-${difficulty}-${boardCount}` `` (`quordleStore.ts`'s `snapshotKey()`). `handleDifficultyToggle()` must call `switchDifficulty(next)` **before** `setDifficulty(next)` on both the confirmAbandon and free-switch paths — see REGRESSION_TRAPS.md for why.
 
 ### Abandon guard — `utils/abandon.ts`
 `isGameInProgress()` reads stores imperatively. Checks guesses submitted, not just game state existence. `confirmAbandon(onConfirm)` — `Alert.alert` on Android/iOS, `window.confirm` on web.
