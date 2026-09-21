@@ -69,6 +69,19 @@ export function BottomStrip({
     </Pressable>
   );
 
+  // Streak badge — hidden at 0 (a fresh or lapsed streak isn't worth a permanent footer badge,
+  // unlike Stats' labeled "Streak" cell where 0 is informative in a table).
+  const rightCluster = (
+    <View style={styles.rightCluster}>
+      {gameStats.streak > 0 && (
+        <Pressable onPress={onOpenStats} hitSlop={10}>
+          <Text style={styles.streakBadge}>{gameStats.streakEmoji} {gameStats.streak}</Text>
+        </Pressable>
+      )}
+      {statsIcon}
+    </View>
+  );
+
   let content: ReactNode;
 
   if (gameStatus === 'playing' && currentGuessNum === 0) {
@@ -78,7 +91,7 @@ export function BottomStrip({
         <Pressable style={styles.tipContent} onPress={onOpenHelp} hitSlop={6}>
           <Text style={[styles.helpLink]}>? for help</Text>
         </Pressable>
-        {statsIcon}
+        {rightCluster}
       </View>
     );
   } else if (isGameOver) {
@@ -94,7 +107,7 @@ export function BottomStrip({
             <Text style={styles.newGameBtnText}>↺ New Game</Text>
           </Pressable>
         )}
-        {statsIcon}
+        {rightCluster}
       </View>
     );
   } else if (isQuordle && activeBoardSolved) {
@@ -108,7 +121,7 @@ export function BottomStrip({
             Board {boardNum} solved in {guessCount} ✓
           </Text>
         </View>
-        {statsIcon}
+        {rightCluster}
       </View>
     );
   } else {
@@ -126,7 +139,7 @@ export function BottomStrip({
           </Text>
           {diffEmoji ? <Text style={styles.diffBadge}>{diffEmoji}</Text> : null}
         </View>
-        {statsIcon}
+        {rightCluster}
       </View>
     );
   }
@@ -188,6 +201,16 @@ const styles = StyleSheet.create({
   },
   statsEmoji: {
     fontSize: 20,
+  },
+  rightCluster: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  streakBadge: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: GREY,
   },
   // Game-over action items
   newGameBtn: {
