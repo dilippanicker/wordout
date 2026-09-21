@@ -1,13 +1,16 @@
 # Wordout — Master TODO
 **Updated: 2026-09-15 (session 35)**
-**Current version: v1.7.2 (versionCode 38)**
+**Current version: v1.7.3 (versionCode 39)**
 
 ---
 
 ## ✅ Session 35 — Completed 2026-09-15 (n-out difficulty-memory-on-board-switch fix)
 
 - ✅ **Fixed n-out board-count switch carrying over the wrong difficulty** — user noticed switching between n-out board counts (e.g. 2-out → 3-out) landed on whichever difficulty was active on the board you left, silently orphaning that board's own last-played difficulty snapshot. Discussed three options with the user (always Easy, last-played-per-board-count, carry-over); chose last-played-per-board-count, defaulting to Easy for a never-visited count. Added `quordleStore.lastDifficultyByBoardCount`, updated in both `switchBoardCount()` and `switchDifficulty()`; `switchBoardCount()` now returns the target difficulty so callers (`app/(tabs)/index.tsx`'s header mode arrows, `app/(tabs)/settings.tsx`'s board-mode picker) sync `setDifficulty()` to it. Verified via Expo web dev server + browser automation: set 2-out to Hard, confirmed 3-out defaulted to Easy (never visited), set 3-out to Extreme, then cycled 2-out↔3-out↔4-out via both the header arrows and the Settings picker — each board count correctly restored its own last-played difficulty every time.
-- Commit `5f93b03` (fix), pushed to origin/main. No version bump yet — not yet in a release.
+- Commit `5f93b03` (fix), `9f633d7` (docs).
+- ✅ **v1.7.3 (versionCode 39) bumped and released** (`f3dd190`) — patch bump for the fix above. First build trigger (run `34934626748`) failed after 1m44s: `android-actions/setup-android@v3` defaults to requesting the SDK's legacy `tools` package, which Google has discontinued, so `sdkmanager` exited 1 before Gradle even started. Fixed in `c802b97` by pinning the step to `packages: platform-tools` (Gradle resolves platforms/build-tools itself). Re-triggered — run `34935716197` succeeded (32m3s). GitHub Release `v1.7.3` published with `wordout.apk`/`wordout.aab`; local `releases/wordout-latest.{apk,aab}` refreshed to match.
+- ⚠️ **Not yet confirmed uploaded to Play Store closed testing** — no record of this in commits or docs; check with user next session.
+- **[BACKFILLED 2026-09-21]** — this session-35 detail (version bump, CI fix, release) was reconstructed from git log + GitHub Actions history at the start of the next session, since the prior session ended without running `/close` (session-handoff.md was still frozen at session 34/v1.7.2).
 
 ## ✅ Session 34 — Completed 2026-09-15 (n-out difficulty-switch snapshot fix, v1.7.2 release, Play Store upload)
 
