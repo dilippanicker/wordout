@@ -2,7 +2,9 @@
  * Regression tests for utils/dailyDifficultyCycle.ts — shared by the header emoji
  * tap (forward only) and the finished-board swipe gesture (both directions) in
  * app/(tabs)/index.tsx. Pins down the accessible-list gate and the directional
- * wrap, including the single-entry dead end that must stay silent going backward.
+ * wrap, including the forward dead end (checked by list position, not list length —
+ * must fire whether the loss is Easy with nothing else touched yet, or Hard after
+ * Easy was already won) and that backward is never blocked by it.
  */
 import { describe, test, expect } from '@jest/globals';
 import { accessibleDailyDifficulties, stepDailyDifficulty } from '../utils/dailyDifficultyCycle';
@@ -55,15 +57,29 @@ describe('stepDailyDifficulty', () => {
     expect(stepDailyDifficulty(g, 'extreme', -1)).toBe('hard');
   });
 
-  test('single-entry dead end (Easy lost) returns null in both directions', () => {
+  test('single-entry dead end (Easy lost): forward is blocked, backward is a same-difficulty no-op', () => {
     const g = games({ easy: { status: 'completed', solved: false } });
     expect(stepDailyDifficulty(g, 'easy', 1)).toBeNull();
-    expect(stepDailyDifficulty(g, 'easy', -1)).toBeNull();
+    expect(stepDailyDifficulty(g, 'easy', -1)).toBe('easy');
   });
 
   test('mid-game (not yet finished) is a same-difficulty no-op in the single-entry list', () => {
     const g = games({ easy: { status: 'playing' } });
     expect(stepDailyDifficulty(g, 'easy', 1)).toBe('easy');
     expect(stepDailyDifficulty(g, 'easy', -1)).toBe('easy');
+  });
+
+  test('dead end generalizes past the first difficulty: Hard lost after Easy won', () => {
+    const g = games({
+      easy: { status: 'completed', solved: true },
+      hard: { status: 'completed', solved: false },
+    });
+    // Forward from Hard (the last accessible entry, lost): blocked, same as losing Easy alone.
+    expect(stepDailyDifficulty(g, 'hard', 1)).toBeNull();
+    // Backward from Hard: always a normal move, never blocked.
+    expect(stepDailyDifficulty(g, 'hard', -1)).toBe('easy');
+    // Forward from Easy to the already-touched (lost) Hard: a normal move, not blocked —
+    // you can still revisit a lost board, only advancing *past* it is disallowed.
+    expect(stepDailyDifficulty(g, 'easy', 1)).toBe('hard');
   });
 });

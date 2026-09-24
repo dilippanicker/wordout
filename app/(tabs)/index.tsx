@@ -430,11 +430,12 @@ export default function WordleScreen() {
     const { games, activeDailyDifficulty: currDiff } = useDailyStore.getState();
     const nextDiff = stepDailyDifficulty(games, currDiff, direction);
     if (nextDiff === null) {
-      // Single-entry dead end: only one difficulty accessible and it was lost.
-      // Only a forward step is "blocked" here — backward into a one-entry list is just a no-op.
+      // Forward dead end: the last accessible difficulty was lost, nothing further to unlock.
+      // Only a forward step is "blocked" here — backward is always just a normal move.
       if (direction === 1) {
-        const only = accessibleDailyDifficulties(games)[0];
-        const msg = only === 'easy'
+        const accessible = accessibleDailyDifficulties(games);
+        const lost = accessible[accessible.length - 1];
+        const msg = lost === 'easy'
           ? `Easy ${DIFFICULTY_EMOJI.easy} lost, can't play Hard ${DIFFICULTY_EMOJI.hard}`
           : `Hard ${DIFFICULTY_EMOJI.hard} lost, can't play Extreme ${DIFFICULTY_EMOJI.extreme}`;
         showSystemToast(msg);
