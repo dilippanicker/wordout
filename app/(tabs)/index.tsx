@@ -23,7 +23,7 @@ import { useGameStore, GuessResult, LetterResult } from '@/store/gameStore';
 import { useQuordleStore, QuordleGuess } from '@/store/quordleStore';
 import { useSettingsStore, boardCountName, BOARD_COUNTS, BoardCount, maxGuessesForDifficulty, Difficulty } from '@/store/settingsStore';
 import { useDailyStore, getDailyIndex } from '@/store/dailyStore';
-import { DIFFICULTY_CYCLE, accessibleDailyDifficulties, stepDailyDifficulty } from '@/utils/dailyDifficultyCycle';
+import { DIFFICULTY_CYCLE, accessibleDailyDifficulties, stepDailyDifficulty, isDailyDeadEndStep } from '@/utils/dailyDifficultyCycle';
 import { useStatsStore, emptyBoardStats } from '@/store/statsStore';
 import { isGameInProgress, confirmAbandon } from '@/utils/abandon';
 import { TileStatus } from '@/components/Tile';
@@ -385,13 +385,13 @@ export default function WordleScreen() {
   const activeBoardSolved = isQuordle ? (quordleStore.solvedBoards[activeBoard] ?? false) : false;
   const activeBoardSolvedGuess = isQuordle ? boardSolvedAtRow(quordleStore.guesses, activeBoard) + 1 : 0;
 
-  function showSystemToast(msg: string) {
+  function showSystemToast(msg: string, duration = 2900) {
     setSystemToast(msg);
     systemToastOpacity.value = withSequence(
       withTiming(1, { duration: 100 }),
-      withDelay(2400, withTiming(0, { duration: 300 })),
+      withDelay(duration - 500, withTiming(0, { duration: 300 })),
     );
-    setTimeout(() => setSystemToast(null), 2900);
+    setTimeout(() => setSystemToast(null), duration);
   }
 
   function scrollTo(index: number) {
@@ -424,24 +424,44 @@ export default function WordleScreen() {
     cycleTo(BOARD_COUNTS[(idx + 1) % BOARD_COUNTS.length]);
   }
 
+  // Pending move after a dead-end toast (see cycleDailyDifficulty) — lets a second tap
+  // during the wait skip straight to the destination instead of doing nothing or restarting.
+  const dailyDeadEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (dailyDeadEndTimerRef.current) clearTimeout(dailyDeadEndTimerRef.current);
+  }, []);
+
   // Steps the active daily difficulty within the accessible list. direction=1 (next)
   // is used by the header emoji tap; swiping the board also uses direction=-1 (prev).
   function cycleDailyDifficulty(direction: 1 | -1) {
     const { games, activeDailyDifficulty: currDiff } = useDailyStore.getState();
     const nextDiff = stepDailyDifficulty(games, currDiff, direction);
-    if (nextDiff === null) {
-      // Forward dead end: the last accessible difficulty was lost, nothing further to unlock.
-      // Only a forward step is "blocked" here — backward is always just a normal move.
-      if (direction === 1) {
-        const accessible = accessibleDailyDifficulties(games);
-        const lost = accessible[accessible.length - 1];
-        const msg = lost === 'easy'
-          ? `Easy ${DIFFICULTY_EMOJI.easy} lost, can't play Hard ${DIFFICULTY_EMOJI.hard}`
-          : `Hard ${DIFFICULTY_EMOJI.hard} lost, can't play Extreme ${DIFFICULTY_EMOJI.extreme}`;
-        showSystemToast(msg);
-      }
+
+    if (dailyDeadEndTimerRef.current) {
+      // Already mid-wait from a previous tap — a second tap means "I get it, move me now."
+      clearTimeout(dailyDeadEndTimerRef.current);
+      dailyDeadEndTimerRef.current = null;
+      useDailyStore.getState().setActiveDailyDifficulty(nextDiff);
       return;
     }
+
+    if (isDailyDeadEndStep(games, currDiff, direction)) {
+      // Forward dead end: the last accessible difficulty was lost, nothing further to unlock.
+      // Show why, give it 5s to actually be read, then land on the wrap-around destination —
+      // don't move immediately, or the toast and the view change compete for attention at once.
+      const accessible = accessibleDailyDifficulties(games);
+      const lost = accessible[accessible.length - 1];
+      const msg = lost === 'easy'
+        ? `Easy ${DIFFICULTY_EMOJI.easy} lost, can't play Hard ${DIFFICULTY_EMOJI.hard}`
+        : `Hard ${DIFFICULTY_EMOJI.hard} lost, can't play Extreme ${DIFFICULTY_EMOJI.extreme}`;
+      showSystemToast(msg, 5000);
+      dailyDeadEndTimerRef.current = setTimeout(() => {
+        dailyDeadEndTimerRef.current = null;
+        useDailyStore.getState().setActiveDailyDifficulty(nextDiff);
+      }, 5000);
+      return;
+    }
+
     useDailyStore.getState().setActiveDailyDifficulty(nextDiff);
   }
 
