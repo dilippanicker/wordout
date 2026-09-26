@@ -1,8 +1,21 @@
 # Wordout — Master TODO
-**Updated: 2026-09-21 (session 36)**
-**Current version: v1.7.3 (versionCode 39)**
+**Updated: 2026-09-26 (session 38)**
+**Current version: v1.8.0 (versionCode 40)**
 
 ---
+
+## ✅ Session 38 — Completed 2026-09-24–2026-09-25 (daily difficulty dead-end fixes) [BACKFILLED]
+
+- ✅ **Fixed daily difficulty dead-end silently wrapping past a loss** — losing Hard after winning Easy silently cycled back to Easy on the next forward tap/swipe instead of showing a "can't advance" message. Root cause: the dead-end check in `stepDailyDifficulty()` only fired when the accessible list had exactly one entry (true only if Easy itself was lost before Hard was ever touched) — once Easy is won it stays permanently accessible, so losing Hard grows the list to 2 and the check never ran. Fixed by checking position in the list (last accessible entry, stepping forward, that entry was lost) instead of list length, generalizing to any point in the Easy→Hard→Extreme chain. Also fixed the toast's difficulty picker in `index.tsx`, which read the first accessible entry (always "easy") instead of the last one. Verified live: won Easy, lost Hard, tapped forward — now shows "Hard 💪 lost, can't play Extreme 💀" and stays on Hard. Commit `6db53d3`.
+- ✅ **Fixed the dead-end toast blocking forward navigation forever** — the previous fix traded one bug for another: once dead-ended, there was no forward-tap path back to Easy, only the undiscoverable swipe gesture. Split `stepDailyDifficulty` (now an unconditional wraparound, never blocks) from a new `isDailyDeadEndStep` pure check. The caller shows the toast for 5s, then auto-completes the wraparound to Easy; a second tap during the wait skips straight to the destination. Verified with in-page JS timing (screenshot timing was inconclusive due to tool round-trip latency): toast visible ~1.1s–5.1s after the tap, then moved to Easy; a second tap at 1.5s jumped to Easy within another second. Commit `d1ee3c0`.
+- **[BACKFILLED 2026-09-26]** — reconstructed from `git log` at the start of this session; the session(s) that did this work ended without running `/close` (`session-handoff.md` and `TODO.md` were still frozen at session 36/v1.7.3). Not yet reflected in CHANGELOG.md — no version bump has happened since v1.8.0, so these two fixes are unreleased pending the next bump.
+
+## ✅ Session 37 — Completed 2026-09-21 (streak badge feature, v1.8.0 release) [BACKFILLED]
+
+- ✅ **Added streak badge to the footer** — `BottomStrip` already received `gameStats.streak`/`streakEmoji` as props but never rendered them; the in-app help text described a 🔥/⚡ streak badge that didn't actually exist in the UI (only StatsModal showed the number, without an emoji, in its labeled "Streak" cell). Added a badge next to the 📊 stats icon, hidden at streak=0. Tapping it opens Stats, same as the icon next to it. Verified live: winning Daily Easy showed "🐣🔥 1"; a fresh, never-won Hard board correctly showed no badge. Commit `77c985c`.
+- ✅ **Documented the footer streak badge** — added it to all three footer states in CLAUDE.md plus its hide-at-zero behavior; clarified `FOOTER_ICON_TEXTS` in-app help text. Commit `dfabd01`.
+- ✅ **v1.8.0 (versionCode 40) bumped** — minor bump (new feature: streak badge) bundled with the three session-36 fixes (1-out difficulty memory, language-switch board-wipe, header icon reorder) into the same CHANGELOG entry. Commit `391005a`.
+- **[BACKFILLED 2026-09-26]** — reconstructed from `git log`; this session ended without running `/close`.
 
 ## ✅ Session 36 — Completed 2026-09-21 (1-out difficulty memory, language-switch board-wipe fix, header icon reorder)
 

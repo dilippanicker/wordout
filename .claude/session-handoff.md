@@ -1,26 +1,27 @@
-# Session Handoff — 2026-09-15 (Session 35: n-out board-count difficulty-memory fix, CI Android SDK fix, v1.7.3 released) [BACKFILLED]
+# Session Handoff — 2026-09-25 (Sessions 36–38: difficulty-memory/language fixes, header icon swap, streak badge, v1.8.0 released, daily dead-end fixes) [BACKFILLED]
 
 ## What this session did
 
-**Note:** this session ended without running `/close`, so this handoff was reconstructed from `git log` and GitHub Actions history at the start of the next session (2026-09-21), rather than written live. See TODO.md's session 35 entry for the fuller narrative — this is the condensed version of the same facts.
+**Note:** none of sessions 36, 37, or 38 ran `/close` — this handoff was reconstructed from `git log` and CHANGELOG.md at the start of the next session (2026-09-26). See TODO.md's session 36/37/38 entries for the fuller narrative; this is the condensed version of the same facts.
 
-- Fixed a follow-on bug from session 34's difficulty-switch work: switching n-out **board count** (e.g. 2-out → 3-out) was carrying over whichever difficulty was active on the board just left, instead of restoring that board count's own last-played difficulty. Added `quordleStore.lastDifficultyByBoardCount`; `switchBoardCount()` now returns the target difficulty so both call sites (header mode arrows, Settings board-mode picker) sync `setDifficulty()` to it. Verified via Expo web dev server + browser automation. Commits `5f93b03` (fix), `9f633d7` (TODO/CHANGELOG).
-- Bumped to v1.7.3 (versionCode 39), commit `f3dd190`.
-- Triggered `build-apk.yml` — first run (`34934626748`) failed in 1m44s: `android-actions/setup-android@v3`'s default package list includes the now-discontinued `tools` SDK package, so `sdkmanager` exited 1 before Gradle started. Fixed in `c802b97` by overriding to `packages: platform-tools`. Re-triggered — run `34935716197` succeeded (32m3s). GitHub Release `v1.7.3` published with `wordout.apk`/`wordout.aab`.
-- Local `releases/wordout-latest.{apk,aab}` were refreshed (timestamps confirm this happened, avoiding the known stale-artifact gotcha).
+- **Session 36 (2026-09-21):** fixed single-board (1-out) practice not remembering its own last-played difficulty (`3d670a3`); fixed language switch (`en_gb`↔`en_us`) wiping the current board, by making both `gameStore` and `quordleStore` snapshot-aware of language (`4d86452`); swapped the header's New Game and Dark/Light Mode icons so the difficulty toggle's neighbor is no longer a destructive action (`b283770`). Also backfilled session 35's missing handoff at the start of this session (`155b344`).
+- **Session 37 (2026-09-21, same day):** added the footer streak badge (`77c985c`) — `BottomStrip` already received the props but never rendered them; documented it in CLAUDE.md and in-app help (`dfabd01`); bumped to **v1.8.0 (versionCode 40)** bundling the streak badge with all three session-36 fixes into one CHANGELOG entry (`391005a`).
+- **Session 38 (2026-09-24–2026-09-25):** fixed the daily difficulty dead-end silently wrapping past a loss instead of blocking with a message (`6db53d3`); then fixed that same fix over-correcting into blocking forward navigation forever — split into an unconditional wraparound plus a separate dead-end check, toast shows 5s then auto-completes the move (`d1ee3c0`). Neither commit bumped the version.
 
 ## Current state
 
-- Working tree clean as of 2026-09-21 session start. All of `app.json`, `CHANGELOG.md`, and `CLAUDE.md` agree on v1.7.3 (versionCode 39). This handoff and TODO.md have now been backfilled to match.
-- v1.7.3 is live on GitHub (source + Release with APK/AAB) and, per the standard CI pipeline, should have auto-pushed to itch.io (`:android` and `:html5` channels) — not independently re-verified this backfill.
-- **No record of v1.7.3 being uploaded to Google Play closed testing** — unlike v1.7.2, no commit or doc entry confirms this happened. Needs to be checked with the user.
+- Working tree was clean at this backfill's start; local branch was 2 commits ahead of `origin/main` (unpushed, consistent with the "commit always, push only when asked" policy).
+- `app.json`, `CHANGELOG.md`, and `CLAUDE.md`'s "Current version" line all agree on **v1.8.0 (versionCode 40)**. `TODO.md` and this handoff were stale at v1.7.3/session 36 until this backfill.
+- **The two daily dead-end fixes (`6db53d3`, `d1ee3c0`) are not yet in CHANGELOG.md** — no version bump has happened since v1.8.0. They're real, tested, committed fixes, just unreleased and undocumented in the changelog pending the next bump.
+- No new GitHub Release, build, or Play Store upload has happened since v1.8.0 (versionCode 40) — no record of a v1.8.0 build/release trigger in git or docs; needs confirming with the user.
 
 ## Exact next step / open items for next session
 
-1. **Confirm whether v1.7.3 was uploaded to Play Store closed testing** — if not, that's likely next up (it supersedes v1.7.2, versionCode 38, already there).
-2. **No real-device verification of the v1.7.3 board-count difficulty-memory fix** — only verified via Expo web dev server + browser automation.
-3. **Play Store production-access rejection still unresolved** — unchanged, ongoing. See CLAUDE.md's Play Store section and `wordout-playstore-production-access` auto-memory for full history.
+1. **Confirm whether v1.8.0 was ever built/released** (GitHub Release, itch.io channels, Play Store upload) — no commit or doc trail confirms this happened, unlike prior versions which explicitly logged it.
+2. **The two daily dead-end fixes need a version bump + CHANGELOG entry** before they can ship — propose this to the user per the Version Bumping Protocol.
+3. **No real-device verification** of the streak badge or either daily dead-end fix — all verified via Expo web dev server + browser/JS-timing automation only.
+4. **Play Store production-access rejection still unresolved** — unchanged, ongoing. See CLAUDE.md's Play Store section and `wordout-playstore-production-access` auto-memory for full history.
 
 ## Gotchas
 
-- This session is a concrete instance of why `/close` matters: without it, version bumps and CI fixes land in git with no narrative trail in the handoff, and the next session has to reconstruct intent from commit messages and Actions history alone.
+- Three sessions in a row (36, 37, 38) ended without `/close` — TODO.md and this handoff both drifted two versions behind reality. The drift-check at `/open` step 4 is what caught it; a plain `git status` alone would not have (tree was clean each time).
