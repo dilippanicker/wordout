@@ -230,7 +230,7 @@ Before every build, follow exactly:
 - Never update `app.json` before user confirms
 - Never trigger build without confirmed version bump
 
-**Current version:** `1.8.0` (versionCode 40)
+**Current version:** `1.8.1` (versionCode 41)
 
 ## Play Store
 - Publisher: Onglipo, package: `com.dilippanicker.wordout`. v1.7.2 (versionCode 38) uploaded to closed testing 2026-09-15 — supersedes v1.7.0 (versionCode 36, uploaded 2026-07-27, device-tested all good); v1.7.1 (versionCode 37, n-out difficulty-toggle free-switch fix) was never uploaded on its own, skipped straight to v1.7.2 (which reverses that same behavior — see CHANGELOG). Tester counts as of the v1.5.8 upload: 19 invited / ~12 opted in / 8 downloaded — not re-checked since.

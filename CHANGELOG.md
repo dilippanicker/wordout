@@ -2,6 +2,10 @@
 
 All notable changes to Wordout are documented here.
 
+## [1.8.1] — 2026-09-26
+### Fixed
+- Daily mode no longer silently wraps back to Easy after losing Hard or Extreme — it now shows which difficulty you lost and can't advance past, then moves you back to Easy after a few seconds so you're never stuck.
+
 ## [1.8.0] — 2026-09-21
 ### Added
 - A streak badge now shows in the footer next to the stats icon once you have a winning streak going — 🔥 for daily, ⚡ for practice.
