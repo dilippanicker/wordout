@@ -1,8 +1,14 @@
 # Wordout — Master TODO
-**Updated: 2026-09-26 (session 38)**
-**Current version: v1.8.0 (versionCode 40)**
+**Updated: 2026-11-10 (session 39)**
+**Current version: v1.8.1 (versionCode 41)**
 
 ---
+
+## ✅ Session 39 — Completed 2026-11-10 (doc drift fix, Play Console advisories)
+
+- ✅ **v1.8.1 (versionCode 41)** — bumped 2026-09-26 (`aba8055`), bundling the two session-38 daily dead-end fixes; confirmed uploaded to Play via Console notices naming release 41 (1.8.1). TODO.md and session-handoff.md brought up to date (they were stuck at v1.8.0).
+- ✅ **Play Console advisories triaged, no action** — edge-to-edge deprecated APIs (dependency code) and orientation/resizability (portrait lock kept by design). Documented in CLAUDE.md's Play Store section (`8794ada`).
+- Open: confirm v1.8.1 GitHub Release/itch.io build status; device-verify streak badge + dead-end toast.
 
 ## ✅ Session 38 — Completed 2026-09-24–2026-09-25 (daily difficulty dead-end fixes) [BACKFILLED]
 
