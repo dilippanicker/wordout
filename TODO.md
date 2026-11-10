@@ -9,7 +9,8 @@
 - ✅ **v1.8.1 (versionCode 41)** — bumped 2026-09-26 (`aba8055`), bundling the two session-38 daily dead-end fixes; confirmed uploaded to Play via Console notices naming release 41 (1.8.1). TODO.md and session-handoff.md brought up to date (they were stuck at v1.8.0).
 - ✅ **Play Console advisories triaged, no action** — edge-to-edge deprecated APIs (dependency code) and orientation/resizability (portrait lock kept by design). Documented in CLAUDE.md's Play Store section (`8794ada`).
 - ✅ **v1.8.1 release confirmed** — GitHub Release `v1.8.1` (Latest, 2026-09-26) has `wordout.apk` (98,197,377 B) / `wordout.aab` (69,454,022 B); Tests, Deploy Web, Build APK (36m5s) and Pages runs all succeeded; local `releases/wordout-latest.*` match byte-for-byte. itch.io not checked directly (pushed by the same workflow).
-- Open: device-verify streak badge + dead-end toast.
+- ✅ Session commits pushed; Tests + Deploy Web green on `d60c865`.
+- Open: device-verify streak badge + dead-end toast; delete stale `wordout-latest.apk` on itch.io; CLAUDE.md is 300 lines (budget ~200) — extract itch.io/Play Store history to REGRESSION_TRAPS.md.
 
 ## ✅ Session 38 — Completed 2026-09-24–2026-09-25 (daily difficulty dead-end fixes) [BACKFILLED]
 

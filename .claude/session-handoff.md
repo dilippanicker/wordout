@@ -11,7 +11,8 @@
 ## Current state
 
 - Version: **v1.8.1 (versionCode 41)** across app.json, CHANGELOG.md, CLAUDE.md, this file.
-- Nothing unpushed was present at session start; this session's commits (`8794ada` plus the drift-fix commit) are local, not pushed (push only on request).
+- All session commits (`8794ada`, `5fc09e2`, `d60c865`) pushed to origin/main at user's request; Tests (36s) and Deploy Web (56s) runs on `d60c865` both succeeded. Working tree clean.
+- CLAUDE.md is 300 lines (soft budget ~200). Not trimmed this session; extraction candidates for a future cleanup: the long itch.io bullets under Distribution, and the Play Store history bullets (move to REGRESSION_TRAPS.md).
 
 ## Exact next step / open items
 
@@ -23,4 +24,4 @@
 ## Gotchas
 
 - Bookkeeping drift came from the v1.8.1 bump commit not touching TODO/handoff. The `/open` drift check catches it.
-- Model check at `/open` could not confirm opusplan; `/status` is needed to verify.
+- Model check at `/open` could not confirm opusplan; `/status` was never run to verify.
