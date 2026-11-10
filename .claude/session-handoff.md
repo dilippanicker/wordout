@@ -15,7 +15,7 @@
 
 ## Exact next step / open items
 
-1. Unconfirmed in docs: whether v1.8.1 GitHub Release/itch.io builds ran (Play upload is confirmed); check `gh release list`.
+1. ~~Confirm v1.8.1 release~~ Done: GitHub Release v1.8.1 (Latest) has apk/aab, all CI runs green, local `releases/` artifacts match byte-for-byte. itch.io channels not checked directly (same workflow).
 2. No real-device verification of the streak badge or the daily dead-end toast.
 3. Stale duplicate `wordout-latest.apk` on itch.io may still need manual deletion (Edit Game page).
 4. Play Store production-access rejection unresolved (see CLAUDE.md Play Store section).
