@@ -11,7 +11,9 @@
 - ✅ **Google Play badge on README + landing page; docs/ now deployed to Pages root** (commit 03115d3). Google Play is live; CLAUDE.md + memory notes updated. Verified live (all URLs 200).
 - ✅ **v1.9.1 (versionCode 43)** — review request once per win (per-win flag, `scheduleReviewAfterWin`), `reviewLastOutcome` diagnostics + hidden Settings panel (long-press version line). tsc clean, jest 79/79, panel verified on web (simulated long-press). Commit 9c69916 + version bump.
 - ✅ **v1.9.1 built and released** — run 42979764248 green on 336e7a6; GitHub Release v1.9.1 (apk+aab); local releases/ refreshed. Release note drafted for the Play internal track.
-- Open: confirm v1.9.1 AAB uploaded to Play internal track; read the diagnostics panel on a device after 5+ wins; device-verify streak badge + dead-end toast; delete stale `wordout-latest.apk` on itch.io; CLAUDE.md still ~307 lines vs ~200 budget (needs user OK before further extraction); web version line showed v1.8.1 (stale cache?).
+- ✅ (user-reported 2026-11-11) v1.9.1 on the Play internal track and **applied for production release**; diagnostics panel opens on device by long-press and shows stats even before any win; streak badge / dead-end toast device-verify and stale itch.io `wordout-latest.apk` item reported done.
+- ✅ **Web version line v1.8.1 was a stale Metro cache** — restarted `npx expo start --web --clear`, Settings then showed v1.9.1. See REGRESSION_TRAPS.md.
+- Open: wait for the Play production-release review; read `reviewLastOutcome` on a device after 5+ real wins (confirms the Play dialog path); CLAUDE.md still ~307 lines vs ~200 budget (needs user OK before further extraction).
 
 ## ✅ Session 40 — Completed 2026-11-11 (in-app review prompt, v1.9.0)
 

@@ -49,6 +49,9 @@ A tap on the end-game overlay at ~4.68–5.0s ran `dismissEndGame` once from the
 ## Pages root is deployed from docs/ (v1.9.1 session)
 Before this, no workflow deployed `docs/` — the landing page and privacy policy on the gh-pages root were hand-seeded, so a `docs/index.html` edit never went live. `deploy-web.yml` now publishes `docs/` to the root with `keep_files: true` right after the `/play/` deploy (same job, so the two gh-pages pushes cannot race; every deploy step must keep `keep_files: true` or one will delete the other's files).
 
+## Web dev server shows a stale app version (stale Metro cache)
+On web, `Constants.expoConfig` comes from `process.env.APP_MANIFEST`, inlined by Metro at transform time (`expo-constants/build/ExponentConstants.web.js`). After bumping `app.json`, the dev server kept serving the old value (Settings showed v1.8.1 with `app.json` at 1.9.0). Restarting with `npx expo start --web --clear` fixed it (then showed v1.9.1). Not an app bug and native builds are unaffected; the exact cached file wasn't pinned down. If a web version string looks wrong, `--clear` before debugging.
+
 # Archived reference (moved from CLAUDE.md, v1.9.0 session)
 
 Full original text of CLAUDE.md's Play Store and Distribution sections, kept verbatim. CLAUDE.md holds condensed versions; consult this when you need the detail.

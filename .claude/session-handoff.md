@@ -19,10 +19,11 @@
 - Commit 9c69916 was local-only until this close; pushed with the close commit at the user's request.
 
 ## Exact next step / open items
-1. Confirm the v1.9.1 AAB is on the Play internal track (user uploads manually). Do NOT run /release again for 1.9.1.
+1. v1.9.1 is on the Play internal track and the user has **applied for production release** (reported 2026-11-11). Do NOT run /release again for 1.9.1. Watch for the Play review outcome.
 2. On a Play-installed v1.9.1: win >= 5 games, then long-press the version line in Settings to read reviewLastOutcome. `requested` with no card = Play suppressed it; `blocked:first-launch` = clock was moved before first launch; `blocked:wins` = fewer than 5 counted wins; no outcome at all = overlay never dismissed (new game / mode switch within ~11 s of the win).
-3. Still open: device-verify streak badge and dead-end toast; delete stale `wordout-latest.apk` on itch.io; CLAUDE.md still ~306 lines (candidates: long Stores/Daily Gate lines ~101/109/110, Keyboard line ~292, Key Design Decisions rationale) — needs user OK before cutting.
-4. Web dev server's Settings version line showed "v1.8.1" while app.json said 1.9.0 — likely stale Expo config cache; not investigated.
+3. User reported done: long-press diagnostics panel works on device (shows stats even before any win); streak badge + dead-end toast device-verified; stale itch.io APK entry handled.
+   Still open: CLAUDE.md ~307 lines vs ~200 budget (candidates: long Stores/Daily Gate lines ~101/109/110, Keyboard line ~292, Key Design Decisions rationale) — needs user OK before cutting.
+4. RESOLVED: web version line showing v1.8.1 was a stale Metro cache (`npx expo start --web --clear` fixed it; see REGRESSION_TRAPS.md).
 
 ## Gotchas
 - Any new win path must call `settingsStore.incrementTotalWins()`.
