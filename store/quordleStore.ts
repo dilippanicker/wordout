@@ -216,6 +216,7 @@ export const useQuordleStore = create<QuordleState>((set, get) => {
 
       if (newStatus !== 'playing') {
         useStatsStore.getState().recordResult(newStatus === 'won', newGuesses.length, String(boardCount));
+        if (newStatus === 'won') useSettingsStore.getState().incrementTotalWins();
       }
     },
 

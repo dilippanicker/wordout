@@ -30,6 +30,10 @@ interface SettingsState {
   gameMode: GameMode;
   boardCount: BoardCount;
   tutorialSeen: boolean;
+  firstLaunchDate: string;
+  totalWins: number;
+  reviewPromptCount: number;
+  lastReviewPromptDate: string;
   setLanguage: (lang: Language) => void;
   setDifficulty: (d: Difficulty) => void;
   setDarkTheme: (on: boolean) => void;
@@ -38,6 +42,9 @@ interface SettingsState {
   setGameMode: (mode: GameMode) => void;
   setBoardCount: (n: BoardCount) => void;
   setTutorialSeen: (seen: boolean) => void;
+  setFirstLaunchDate: (iso: string) => void;
+  incrementTotalWins: () => void;
+  recordReviewPrompt: (iso: string) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -51,6 +58,10 @@ export const useSettingsStore = create<SettingsState>()(
       gameMode: 'wordle',
       boardCount: 4,
       tutorialSeen: false,
+      firstLaunchDate: '',
+      totalWins: 0,
+      reviewPromptCount: 0,
+      lastReviewPromptDate: '',
       setLanguage: (language) => set({ language }),
       setDifficulty: (difficulty) => set({ difficulty }),
       setDarkTheme: (darkTheme) => set({ darkTheme }),
@@ -59,6 +70,10 @@ export const useSettingsStore = create<SettingsState>()(
       setGameMode: (gameMode) => set({ gameMode }),
       setBoardCount: (boardCount) => set({ boardCount }),
       setTutorialSeen: (tutorialSeen) => set({ tutorialSeen }),
+      setFirstLaunchDate: (firstLaunchDate) => set({ firstLaunchDate }),
+      incrementTotalWins: () => set((s) => ({ totalWins: s.totalWins + 1 })),
+      recordReviewPrompt: (iso) =>
+        set((s) => ({ reviewPromptCount: s.reviewPromptCount + 1, lastReviewPromptDate: iso })),
     }),
     {
       name: 'wordle-settings',

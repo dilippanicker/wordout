@@ -49,6 +49,7 @@ Historical bug write-ups and resolved-incident detail referenced below live in [
 - `language`, `difficulty: 'easy'|'hard'|'extreme'`, `darkTheme`, `colorBlindMode`
 - `gameMode: 'wordle'|'quordle'`, `boardCount: 1|2|3|4|6|8` — **default `boardCount` is `4`**, not `1`
 - `tutorialSeen: boolean` (default `false`) — gates the first-launch tutorial overlay; set `true` only when the user checks "Don't show again" and taps "Got it!"
+- `firstLaunchDate` (ISO, set once on first mount), `totalWins`, `reviewPromptCount`, `lastReviewPromptDate` (ISO) — in-app review gating, see Review Prompt section. Defaults `''`/0, no migration.
 - `maxGuessesForDifficulty(difficulty, boardCount)` — extreme = `max(3,(5+boardCount)−2)`, else boardCount===1 ? 6 : min(13,5+boardCount)
 - `boardCountName(n)` → `'Wordout'|'2-out'|'3-out'|'4-out'|'6-out'|'8-out'`
 - **Never use `boardCount > 1` to detect multi-board mode** — use `gameMode === 'quordle'`. `boardCount` starts at 4 so `boardCount > 1` is always true for users who never visited multi-board mode.
@@ -292,6 +293,13 @@ These must state the same version — checked by the global /open and /close ski
 - **Enter key is always `'ENTER'` internally** — `keyLabel(key)` maps it to the display glyph `'⏎'` only at render time (`Text` content), so `onKey`/`keyStatuses` lookups keyed on `'ENTER'` stay correct. Do not change the key's functional value to `'⏎'` — see REGRESSION_TRAPS.md (v1.5.5→v1.5.6).
 - **No `enterActive` prop** — the green-outline highlight on 5-letter guesses was fully reverted in v1.5.6, including the prop, both call sites, and its styles. Do not re-add it without a fresh explicit request.
 - `enterOnRight: boolean` (`settingsStore`, default `false`) — settings label "Swap ⏎ and ⌫ positions". `false` (default) renders `ROWS_ENTER_RIGHT` (⌫ left, ⏎ right — the natural position); `true` renders `ROWS_ENTER_LEFT` (⏎ left, ⌫ right, swapped). Toggle polarity was inverted until v1.5.6 — verify against this description before "fixing" it again.
+
+## Review Prompt (`utils/reviewPrompt.ts`, v1.9.0+)
+- Android-only (`expo-store-review`, native module); never on web. `isReviewEligible()` is the pure gate (tested in `__tests__/review-prompt.test.ts`): won, tutorial not showing, `totalWins >= 5`, >= 3 days since `firstLaunchDate`, `reviewPromptCount < 3`, >= 60 days since `lastReviewPromptDate`. `maybeRequestReview()` adds `StoreReview.isAvailableAsync()`, then `requestReview()`, then records count+date. try/catch, fails silently.
+- `totalWins` is incremented via `settingsStore.incrementTotalWins()` in all three stores' win paths (`gameStore`, `quordleStore` — full win only, i.e. all boards solved — and `dailyStore`, which does not use `statsStore.recordResult`). A new win path must call it too.
+- Fired from `dismissEndGame()` in `index.tsx` (button, tap and 5s auto-dismiss all route there) 1500ms after, only when `activeGameStatus === 'won'`, any mode. Tutorial gate reads `showTutorialRef` (mirror of the state) because the call is delayed — a closure over `showTutorial` would be stale.
+- No custom pre-prompt and no success message: the API never reports whether the user reviewed. Only works in Play-installed builds; sideloaded APKs (itch.io/GitHub) get `isAvailableAsync() === false` and silently skip. Play's own quota can also suppress the dialog — not verifiable without a Play-installed build.
+- Settings footer has an Android-only "Rate Wordout ↗" link to the Play listing.
 
 ## Share Behaviour (`app/(tabs)/index.tsx`, v1.5.4+)
 - **Share is daily-only** — the share button (in the shared `endGameOverlay`, used by both single-board and n-out layouts) is gated on `isDaily`, hiding it for every practice game including quordle/n-out. Rationale: share is only meaningful when everyone played the same word, which is true only for daily games. Deliberately not gated on the raw `activeWordleMode === 'daily'` flag, since that alone doesn't account for quordle (`isDaily = !isQuordle && activeWordleMode === 'daily'` already handles this correctly).

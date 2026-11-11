@@ -25,6 +25,7 @@ import { useSettingsStore, boardCountName, BOARD_COUNTS, BoardCount, maxGuessesF
 import { useDailyStore, getDailyIndex } from '@/store/dailyStore';
 import { DIFFICULTY_CYCLE, accessibleDailyDifficulties, stepDailyDifficulty, isDailyDeadEndStep } from '@/utils/dailyDifficultyCycle';
 import { useStatsStore, emptyBoardStats } from '@/store/statsStore';
+import { maybeRequestReview } from '@/utils/reviewPrompt';
 import { isGameInProgress, confirmAbandon } from '@/utils/abandon';
 import { TileStatus } from '@/components/Tile';
 import { WEB_CARD_MAX_WIDTH, WEB_CARD_MAX_HEIGHT, shouldLetterbox } from '@/constants/layout';
@@ -292,6 +293,9 @@ export default function WordleScreen() {
   const [activeBoard, setActiveBoard] = useState(0);
   const [statsModalVisible, setStatsModalVisible] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
+  // Ref mirror so delayed callbacks (review prompt) see the current value, not a stale closure
+  const showTutorialRef = useRef(false);
+  showTutorialRef.current = showTutorial;
   const [countdown, setCountdown] = useState(() => msToHMS(msUntilMidnight()));
   // Per-board overlays suppressed until end-game popup is dismissed
   const [overlayLocked, setOverlayLocked] = useState(false);
@@ -342,6 +346,9 @@ export default function WordleScreen() {
   // First-launch tutorial: fires once unless the user opted out via "Don't show again"
   useEffect(() => {
     if (!useSettingsStore.getState().tutorialSeen) setShowTutorial(true);
+    if (!useSettingsStore.getState().firstLaunchDate) {
+      useSettingsStore.getState().setFirstLaunchDate(new Date().toISOString());
+    }
   }, []);
 
   function handleWatchTutorial() {
@@ -558,6 +565,11 @@ export default function WordleScreen() {
             useDailyStore.getState().setActiveDailyDifficulty(nextDiff);
           }, 1450);
         }
+      }
+      // In-app review: any full win (all boards solved for n-out), never a loss.
+      // activeGameStatus is 'won' only when every board is solved.
+      if (activeGameStatus === 'won') {
+        setTimeout(() => { maybeRequestReview(true, () => showTutorialRef.current); }, 1500);
       }
     }, 320);
   }

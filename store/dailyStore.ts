@@ -334,6 +334,7 @@ export const useDailyStore = create<DailyState>()(
             },
             toast: null,
           });
+          if (won) useSettingsStore.getState().incrementTotalWins();
         } else {
           set({
             games: {
