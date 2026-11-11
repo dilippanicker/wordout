@@ -2,9 +2,7 @@
 
 A free, open-source word puzzle game for Android. No ads, no accounts, no tracking.
 
-[![Play in browser](https://img.shields.io/badge/Play-in%20browser-5BA75A?style=for-the-badge)](https://dilippanicker.github.io/wordout/play/)
-
-<!-- TODO: add a "Get on Google Play" badge once the Play Store listing is public -->
+[<img src="https://raw.githubusercontent.com/dilippanicker/wordout/main/docs/img/google-play-badge.png" alt="Get it on Google Play" height="56">](https://play.google.com/store/apps/details?id=com.dilippanicker.wordout) [![Play in browser](https://img.shields.io/badge/Play-in%20browser-5BA75A?style=for-the-badge)](https://dilippanicker.github.io/wordout/play/)
 
 ## Download
 

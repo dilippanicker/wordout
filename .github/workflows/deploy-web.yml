@@ -38,6 +38,13 @@ jobs:
           destination_dir: play
           keep_files: true
 
+      - name: Deploy landing page (docs/) to GitHub Pages root
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+          keep_files: true
+
   deploy-itchio-web:
     runs-on: ubuntu-latest
     timeout-minutes: 15

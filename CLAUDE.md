@@ -235,13 +235,13 @@ Before every build, follow exactly:
 
 ## Play Store
 - Publisher: Onglipo, package: `com.dilippanicker.wordout`. Play uploads are manual and tracked by the user, not in docs; closed-testing/internal-track history lives in CHANGELOG and TODO.md.
-- **Production access blocked** — rejected 2026-07-20 (needs 12+ testers opted-in continuously 14 days; dashboard showed 1 day), reapplication still blocked as of 2026-08-17; root cause unconfirmed, support ticket pending. See auto-memory `wordout-playstore-production-access`.
+- **Production access granted — Google Play is live** (reapplication after the 2026-07-20 rejection succeeded). Listing: https://play.google.com/store/apps/details?id=com.dilippanicker.wordout. Uploads are still manual.
 - Play Services' automatic install/vitals tracking is separate from, and doesn't conflict with, the no-tracking policy (see Monetization).
 - **Console advisories deliberately not acted on** (edge-to-edge deprecated APIs = dependency code; orientation/resizability = intentional portrait lock). If Console ever names a class of ours, re-investigate. Detail: REGRESSION_TRAPS.md "Play Store (full)".
 
 ## Distribution
 
-- **Web (GitHub Pages):** automated (`deploy-web.yml`, `build-apk.yml`'s `deploy-web` job) → `gh-pages` branch under `/play/`; `keep_files: true` preserves the landing page + privacy policy at the root.
+- **Web (GitHub Pages):** automated (`deploy-web.yml`, `build-apk.yml`'s `deploy-web` job) → `gh-pages` branch under `/play/`; `keep_files: true` on every deploy step so neither the game build nor the landing page deletes the other. `deploy-web.yml` also publishes `docs/` (landing page, `privacy.html`, `img/`, feature graphic) to the branch root — edit `docs/`, push, it deploys.
 - **Card sizing / letterboxing:** web and native ≥600dp render a fixed 430×932 card (`constants/layout.ts`). `shouldLetterbox(w, h)` is the **single source of truth for both `_layout.tsx` and `index.tsx`** — never re-derive it locally. Phones <600dp are unaffected. Below the cap the card draws a 1px theme-matched border. Tests: `__tests__/layout.test.ts`. Native-tablet rendering is web-verified only.
 - **itch.io:** project `onglipo/wordout` — **account is `onglipo`, not `dilippanicker`**; butler targets are `onglipo/wordout:<channel>`. Butler installs from `broth.itch.zone` (`.ovh` is retired).
   - **Android:** `build-apk.yml` pushes `./wordout.apk` to `:android` automatically. Never manually `butler push` a differently-named local file — it creates a permanent duplicate download. Stale `wordout-latest.apk` still needs manual deletion on itch.io's Edit Game page.
@@ -250,7 +250,7 @@ Before every build, follow exactly:
   - **Fullscreen button overlaps 📊:** `BottomStrip.tsx`'s `isIframeEmbedded` reserves right-padding only while `useWindowDimensions()` is ≤ the card cap. Don't track `document.fullscreenElement` (doesn't cascade into the iframe).
   - Full detail and the failed earlier attempts: REGRESSION_TRAPS.md "Distribution (full)".
 - **Samsung Galaxy Store / Amazon Appstore:** manual upload. Amazon needs 512×512 and 114×114 icons and exact-size screenshots; `store-assets/amazon/` has them (screenshots letterboxed to 1080×1920 on `#1a1a1a`).
-- **Google Play:** manual upload — automate only after production access is granted.
+- **Google Play:** live — https://play.google.com/store/apps/details?id=com.dilippanicker.wordout. Uploads are manual; automating them (service account + upload action) is now possible but not done. The "Get it on Google Play" badge (`docs/img/google-play-badge.png`, Google's official asset — never recolor or redraw) is on the README and the landing page.
 
 ## Model Selection
 - Pattern: `opusplan` session model (Opus plans, Sonnet executes — automatic) + Opus-class advisor + Haiku-pinned Explore agent (`~/.claude/agents/Explore.md`). Set globally in `~/.claude/settings.json`; verify at session start via the `/model` and `/advisor` checkmarks. Rationale and details: `~/repos/claude-workflow/HOWTO.md` Roles section.
