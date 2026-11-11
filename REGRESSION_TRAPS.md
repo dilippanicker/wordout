@@ -43,6 +43,12 @@ First attempt at clearing the stats-icon/fullscreen-button overlap tried trackin
 ## Model Selection — advisorModel config key (unconfirmed)
 `~/.claude/settings.json` currently has `"advisorModel": "opus"` set, and `advisor()` calls in the 2026-07-08 session returned substantive, independent-seeming analysis. This note may be stale — it wasn't rigorously re-tested (didn't compare behavior with the key removed) — so treat as unconfirmed rather than fixed. The only *known*-correct way to enable the advisor is via the `/advisor` command picker in the session.
 
+## Review request double-fire on tap near the 5s auto-dismiss (fixed v1.9.1)
+A tap on the end-game overlay at ~4.68–5.0s ran `dismissEndGame` once from the tap, then again from the still-live 5s auto-dismiss timer (the timer is only cleared when the 320ms fade finishes hiding the overlay). Both scheduled a review request; `recordReviewPrompt` only runs after `requestReview` resolves, so both could pass the eligibility check. Fixed with a per-win `{current:boolean}` flag passed into `scheduleReviewAfterWin` (held as `reviewScheduledRef` in the component, reset on `'playing'`). The flag is a parameter, not hidden inside the component, so the double-dismiss case is unit-testable without rendering `index.tsx`. The 1500ms and 320ms timers themselves are deliberately uncancellable (starting a new game right after a tap still lets the request fire).
+
+## Pages root is deployed from docs/ (v1.9.1 session)
+Before this, no workflow deployed `docs/` — the landing page and privacy policy on the gh-pages root were hand-seeded, so a `docs/index.html` edit never went live. `deploy-web.yml` now publishes `docs/` to the root with `keep_files: true` right after the `/play/` deploy (same job, so the two gh-pages pushes cannot race; every deploy step must keep `keep_files: true` or one will delete the other's files).
+
 # Archived reference (moved from CLAUDE.md, v1.9.0 session)
 
 Full original text of CLAUDE.md's Play Store and Distribution sections, kept verbatim. CLAUDE.md holds condensed versions; consult this when you need the detail.

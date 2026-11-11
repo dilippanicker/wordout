@@ -2,6 +2,12 @@
 
 All notable changes to Wordout are documented here.
 
+## [1.9.1] — 2026-11-11
+### Fixed
+- The Play Store review request can no longer be sent twice for a single win (it could happen if you closed the "Solved!" popup just before it closed itself).
+### Added
+- Long-press the version line at the bottom of Settings to see why a review prompt did or didn't appear (win count, first-launch date, last outcome). It stays on your device; nothing is sent anywhere.
+
 ## [1.9.0] — 2026-11-11
 ### Added
 - Wordout may now ask for a Play Store review after you win a game, once you've won at least five games and been playing for a few days. It asks at most three times, at least 60 days apart, and never after a loss.

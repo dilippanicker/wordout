@@ -49,7 +49,7 @@ Historical bug write-ups and resolved-incident detail referenced below live in [
 - `language`, `difficulty: 'easy'|'hard'|'extreme'`, `darkTheme`, `colorBlindMode`
 - `gameMode: 'wordle'|'quordle'`, `boardCount: 1|2|3|4|6|8` — **default `boardCount` is `4`**, not `1`
 - `tutorialSeen: boolean` (default `false`) — gates the first-launch tutorial overlay; set `true` only when the user checks "Don't show again" and taps "Got it!"
-- `firstLaunchDate` (ISO, set once on first mount), `totalWins`, `reviewPromptCount`, `lastReviewPromptDate` (ISO) — in-app review gating, see Review Prompt section. Defaults `''`/0, no migration.
+- `firstLaunchDate` (ISO, set once on first mount), `totalWins`, `reviewPromptCount`, `lastReviewPromptDate` (ISO), `reviewLastOutcome`/`reviewLastOutcomeDate` — in-app review gating + diagnostics, see Review Prompt section. Defaults `''`/0, no migration.
 - `maxGuessesForDifficulty(difficulty, boardCount)` — extreme = `max(3,(5+boardCount)−2)`, else boardCount===1 ? 6 : min(13,5+boardCount)
 - `boardCountName(n)` → `'Wordout'|'2-out'|'3-out'|'4-out'|'6-out'|'8-out'`
 - **Never use `boardCount > 1` to detect multi-board mode** — use `gameMode === 'quordle'`. `boardCount` starts at 4 so `boardCount > 1` is always true for users who never visited multi-board mode.
@@ -231,7 +231,7 @@ Before every build, follow exactly:
 - Never update `app.json` before user confirms
 - Never trigger build without confirmed version bump
 
-**Current version:** `1.9.0` (versionCode 42)
+**Current version:** `1.9.1` (versionCode 43)
 
 ## Play Store
 - Publisher: Onglipo, package: `com.dilippanicker.wordout`. Play uploads are manual and tracked by the user, not in docs; closed-testing/internal-track history lives in CHANGELOG and TODO.md.
@@ -295,7 +295,8 @@ These must state the same version — checked by the global /open and /close ski
 ## Review Prompt (`utils/reviewPrompt.ts`, v1.9.0+)
 - Android-only (`expo-store-review`, native module); never on web. `isReviewEligible()` is the pure gate (tested in `__tests__/review-prompt.test.ts`): won, tutorial not showing, `totalWins >= 5`, >= 3 days since `firstLaunchDate`, `reviewPromptCount < 3`, >= 60 days since `lastReviewPromptDate`. `maybeRequestReview()` adds `StoreReview.isAvailableAsync()`, then `requestReview()`, then records count+date. try/catch, fails silently.
 - `totalWins` is incremented via `settingsStore.incrementTotalWins()` in all three stores' win paths (`gameStore`, `quordleStore` — full win only, i.e. all boards solved — and `dailyStore`, which does not use `statsStore.recordResult`). A new win path must call it too.
-- Fired from `dismissEndGame()` in `index.tsx` (button, tap and 5s auto-dismiss all route there) 1500ms after, only when `activeGameStatus === 'won'`, any mode. Tutorial gate reads `showTutorialRef` (mirror of the state) because the call is delayed — a closure over `showTutorial` would be stale.
+- Fired from `dismissEndGame()` in `index.tsx` (tap and 5s auto-dismiss both route there) via `scheduleReviewAfterWin(status, tutorialGetter, reviewScheduledRef)` (`utils/reviewPrompt.ts`, `REVIEW_DELAY_MS` 1500), only when `activeGameStatus === 'won'`, any mode. **Once per win:** `reviewScheduledRef` is set on the first call and reset when `activeGameStatus` returns to `'playing'` — a tap landing just before the 5s auto-dismiss (~4.7–5.0s) used to run `dismissEndGame` twice and send two requests. The request only happens if the end-game overlay appears (4.2s after a win) and is dismissed; a new game or mode switch first skips it. Tutorial gate reads `showTutorialRef` (mirror of the state) because the call is delayed — a closure over `showTutorial` would be stale.
+- **Diagnostics:** `maybeRequestReview` stores `reviewLastOutcome` (`blocked:<gate>` from `reviewBlockedBy()` | `unavailable` | `error:<msg>` | `requested`) + `reviewLastOutcomeDate` in settingsStore. Long-press the version line in Settings (600ms) for a hidden on-device panel with those plus totalWins, firstLaunchDate, reviewPromptCount, lastReviewPromptDate, deviceNow (tap to close). Local only — never send or log it off-device (no-tracking policy).
 - No custom pre-prompt and no success message: the API never reports whether the user reviewed. Only works in Play-installed builds; sideloaded APKs (itch.io/GitHub) get `isAvailableAsync() === false` and silently skip. Play's own quota can also suppress the dialog — not verifiable without a Play-installed build.
 - Settings footer has an Android-only "Rate Wordout ↗" link to the Play listing.
 

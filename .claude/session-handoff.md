@@ -1,38 +1,31 @@
-# Session Handoff — 2026-11-11 (v1.9.0: in-app review prompt)
+# Session Handoff — 2026-11-11 (v1.9.1: review-prompt once-per-win fix + diagnostics; Google Play badge)
 
 ## What this session did
-
-- Ran `/open` (clean, v1.8.1 everywhere). Then implemented in-app review prompting, user-approved plan (any full win triggers it, not just daily):
-  - `expo-store-review` installed (`npx expo install`, ~56.0.4). **Native module → needs a fresh GitHub Actions build.**
-  - `settingsStore`: `firstLaunchDate`, `totalWins`, `reviewPromptCount`, `lastReviewPromptDate` (+ `setFirstLaunchDate`, `incrementTotalWins`, `recordReviewPrompt`). No migration.
-  - `incrementTotalWins()` called on win in `gameStore`, `quordleStore` (all boards solved only) and `dailyStore` (which doesn't use `statsStore.recordResult`).
-  - `utils/reviewPrompt.ts`: pure `isReviewEligible()` + `maybeRequestReview()` (isAvailableAsync → requestReview → record; try/catch, silent).
-  - `app/(tabs)/index.tsx`: `firstLaunchDate` set in the mount effect; `dismissEndGame()` fires `maybeRequestReview` 1500ms later when `activeGameStatus === 'won'`; tutorial gate via `showTutorialRef`.
-  - `app/(tabs)/settings.tsx`: Android-only "Rate Wordout ↗" footer link to the Play listing.
-  - `__tests__/review-prompt.test.ts` (12 tests). Commit `3a3e0aa`.
-- Bumped to **v1.9.0 (versionCode 42)** (minor: new feature + native module) in app.json, CHANGELOG.md, CLAUDE.md "Current version". CLAUDE.md gained a "Review Prompt" section and settingsStore field note.
+- **CLAUDE.md trim (partial):** Play Store + Distribution sections condensed to rules + pointers; full original text archived verbatim in REGRESSION_TRAPS.md ("Play Store (full)", "Distribution (full)"). ~40.3 KB -> ~34.5 KB but still ~306 lines (long lines), so the ~200-line budget is NOT met.
+- **v1.9.0 confirmed released:** user ran the build manually (run 42957046846 green; GitHub Release v1.9.0 has apk+aab) and uploaded the AAB to the Play internal track. Refreshed gitignored `releases/wordout-latest.apk` to v1.9.0 (byte-identical to the release asset).
+- **Google Play badge (commit 03115d3):** official English badge, unmodified from Google's badge zip, at `docs/img/google-play-badge.png`; on README (first, beside "Play in browser", raw GitHub URL) and landing page (replaced the commented-out button). **README.md changed (user-facing).** Google Play is now LIVE (production access granted); CLAUDE.md Play Store/Distribution updated with the listing URL.
+- **Deploy gap fixed:** nothing previously deployed `docs/` to the Pages root (it was hand-seeded onto gh-pages). `deploy-web.yml` now has a step publishing `docs/` to the branch root with `keep_files: true` (same job, runs after the /play/ deploy; same gh-pages-deploy concurrency group). Verified live: `/`, `/privacy.html`, `/play/`, `/img/google-play-badge.png`, `/wordout-feature-graphic.png` all 200; badge renders 202x60 beside the 186x46 "Play in browser" button (desktop width only; phone layout not checked).
+- **Review-prompt analysis (read-only):** documented the gates/early-exit paths; found a double-dismiss window (tap in ~4.68-5.0 s lets the 5 s auto-dismiss also fire dismissEndGame -> two requests).
+- **v1.9.1 (versionCode 43), commit 9c69916 + bump:** `scheduleReviewAfterWin` / `REVIEW_DELAY_MS` in `utils/reviewPrompt.ts` (takes a per-win `{current:boolean}` flag; component holds `reviewScheduledRef`, reset when status goes back to 'playing'); `reviewBlockedBy()` names the failing gate; `maybeRequestReview` records `reviewLastOutcome` (`blocked:<gate>` | `unavailable` | `error:<msg>` | `requested`) + `reviewLastOutcomeDate` in settingsStore (persisted, no migration); hidden Settings diagnostics panel (long-press version line 600 ms; tap to close) shows totalWins, firstLaunchDate, reviewPromptCount, lastReviewPromptDate, reviewLastOutcome(+Date), deviceNow. Local only, no network/logging.
+- Auto-memory: updated wordout-playstore-production-access and wordout-play-upload-automation-gated (production now live; automation gate lifted, not set up).
 
 ## Verification
-
-- `tsc --noEmit` clean; jest 71/71 pass (12 new).
-- Web dev server: loads, no console errors, `firstLaunchDate` written on mount, Settings shows GitHub link but no Rate row.
-- NOT verified: the actual Play review dialog (needs a Play-installed build; Play's quota can also suppress it). Sideloaded APKs (itch.io/GitHub) get `isAvailableAsync() === false` and silently skip. Win-triggered firing path (dismissEndGame → timer) is not exercised by any test or live run.
+- `tsc --noEmit` clean; jest 79/79 (8 new: gate names, 3 timing cases, double-dismiss, flag reset, loss, outcome strings).
+- Web dev server: Settings long-press panel opened (long-press SIMULATED with dispatched mouse events held 800 ms) and closed with a real click; review values showed defaults, as expected on web.
+- NOT verified: panel on a real device; the Play review dialog itself; component's own tap-vs-effect timer wiring (the 3 timing tests call the scheduler at different offsets, not the component).
 
 ## Current state
-
-- Version **v1.9.0 (versionCode 42)** across app.json, CHANGELOG.md, CLAUDE.md, this file.
-- Commits pushed to origin/main at user's request (see TODO session 40). **No build triggered yet** — v1.9.0 APK/AAB does not exist until `/release` / `build-apk.yml` runs.
-- CLAUDE.md is ~308 lines (soft budget ~200). Extraction candidates: itch.io bullets under Distribution, Play Store history bullets → REGRESSION_TRAPS.md. Proposed to the user at /open; not done.
+- Version 1.9.1 (versionCode 43) in app.json, CHANGELOG.md, CLAUDE.md, this file. v1.9.1 NOT built yet.
+- Commit 9c69916 was local-only until this close; pushed with the close commit at the user's request.
 
 ## Exact next step / open items
-
-1. Run `/release` to build v1.9.0 (version already bumped/confirmed — release skill should not re-bump). After build: `gh release download` to refresh `releases/wordout-latest.*`; upload AAB to Play closed testing.
-2. Device-test on a Play-installed build: after ≥5 wins and ≥3 days, a full win should show the review sheet ~1.5s after the overlay closes. Also check Rate Wordout row opens the Play listing.
-3. Still open from before: device-verify streak badge and dead-end toast; delete stale `wordout-latest.apk` on itch.io; Play production-access rejection unresolved.
-4. Optional: trim CLAUDE.md (see above).
+1. Run `/release` for v1.9.1 (version already bumped/confirmed — do not re-bump). After build: `gh release download` to refresh `releases/wordout-latest.*`; user uploads AAB to Play.
+2. On a Play-installed v1.9.1: win >= 5 games, then long-press the version line in Settings to read reviewLastOutcome. `requested` with no card = Play suppressed it; `blocked:first-launch` = clock was moved before first launch; `blocked:wins` = fewer than 5 counted wins; no outcome at all = overlay never dismissed (new game / mode switch within ~11 s of the win).
+3. Still open: device-verify streak badge and dead-end toast; delete stale `wordout-latest.apk` on itch.io; CLAUDE.md still ~306 lines (candidates: long Stores/Daily Gate lines ~101/109/110, Keyboard line ~292, Key Design Decisions rationale) — needs user OK before cutting.
+4. Web dev server's Settings version line showed "v1.8.1" while app.json said 1.9.0 — likely stale Expo config cache; not investigated.
 
 ## Gotchas
-
-- Any new win path must call `settingsStore.incrementTotalWins()` or it silently stops counting toward the review gate.
-- First-launch date for existing users is set on first launch after updating, so everyone waits 3 days.
-- Model check at `/open` could not confirm opusplan; `/status` not run.
+- Any new win path must call `settingsStore.incrementTotalWins()`.
+- Review request fires only if the end-game overlay appears (4.2 s after a win) AND is dismissed (tap or 5 s); new game / mode switch before that skips it. firstLaunchDate is set on first v1.9.x launch, so a clock moved forward BEFORE first launch defeats the 3-day gate.
+- Pages root is now deployed from `docs/` by deploy-web.yml; edit `docs/`, push, it goes live. Landing/badge assets must stay unmodified official Google files.
+- Model check at /open could not confirm opusplan; /status not run.

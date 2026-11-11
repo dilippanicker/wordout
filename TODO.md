@@ -1,8 +1,16 @@
 # Wordout — Master TODO
-**Updated: 2026-11-11 (session 40)**
-**Current version: v1.9.0 (versionCode 42)**
+**Updated: 2026-11-11 (session 41)**
+**Current version: v1.9.1 (versionCode 43)**
 
 ---
+
+## ✅ Session 41 — Completed 2026-11-11 (v1.9.1, Google Play badge, CLAUDE.md trim)
+
+- ✅ **v1.9.0 confirmed released** — build run 42957046846 green, GitHub Release v1.9.0 (apk+aab); user uploaded AAB to Play internal track; local `releases/wordout-latest.apk` refreshed (aab already current).
+- ✅ **CLAUDE.md partial trim** — Play Store/Distribution condensed, full text archived in REGRESSION_TRAPS.md (commit 6bccef9). ~14% fewer bytes but still ~306 lines.
+- ✅ **Google Play badge on README + landing page; docs/ now deployed to Pages root** (commit 03115d3). Google Play is live; CLAUDE.md + memory notes updated. Verified live (all URLs 200).
+- ✅ **v1.9.1 (versionCode 43)** — review request once per win (per-win flag, `scheduleReviewAfterWin`), `reviewLastOutcome` diagnostics + hidden Settings panel (long-press version line). tsc clean, jest 79/79, panel verified on web (simulated long-press). Commit 9c69916 + version bump.
+- Open: build v1.9.1 via `/release` and upload to Play; read the diagnostics panel on a device after 5+ wins; device-verify streak badge + dead-end toast; delete stale `wordout-latest.apk` on itch.io; CLAUDE.md still over the ~200-line budget (needs user OK before further extraction); web version line showed v1.8.1 (stale cache?).
 
 ## ✅ Session 40 — Completed 2026-11-11 (in-app review prompt, v1.9.0)
 
