@@ -1,8 +1,15 @@
 # Wordout — Master TODO
-**Updated: 2026-11-10 (session 39)**
-**Current version: v1.8.1 (versionCode 41)**
+**Updated: 2026-11-11 (session 40)**
+**Current version: v1.9.0 (versionCode 42)**
 
 ---
+
+## ✅ Session 40 — Completed 2026-11-11 (in-app review prompt, v1.9.0)
+
+- ✅ **In-app review prompt (Android)** — `expo-store-review`; fires 1.5s after the end-game overlay dismisses on any full win (all boards solved for n-out; daily, practice, any board count) when: Android, totalWins ≥ 5, ≥3 days since first launch, <3 prompts, ≥60 days since last prompt, tutorial not showing, `isAvailableAsync()` true. No pre-prompt, no success claim, fails silently. Pure gate in `utils/reviewPrompt.ts`; `totalWins` counted in gameStore/quordleStore/dailyStore. 12 new tests (71/71 pass), tsc clean, web verified. Commit `3a3e0aa`.
+- ✅ **"Rate Wordout ↗" link in Settings footer** — Android-only, opens the Play listing.
+- ✅ **v1.9.0 (versionCode 42) bumped** — minor (feature + native module). CHANGELOG, CLAUDE.md ("Review Prompt" section + version line) updated. Commits pushed at user's request.
+- Open: **build v1.9.0 via `/release`** (not yet built) and upload to Play; device-test the review sheet on a Play-installed build; device-verify streak badge + dead-end toast; delete stale `wordout-latest.apk` on itch.io; CLAUDE.md ~308 lines (budget ~200) — extract itch.io/Play Store history.
 
 ## ✅ Session 39 — Completed 2026-11-10 (doc drift fix, Play Console advisories)
 

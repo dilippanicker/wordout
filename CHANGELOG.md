@@ -2,6 +2,11 @@
 
 All notable changes to Wordout are documented here.
 
+## [1.9.0] — 2026-11-11
+### Added
+- Wordout may now ask for a Play Store review after you win a game, once you've won at least five games and been playing for a few days. It asks at most three times, at least 60 days apart, and never after a loss.
+- A "Rate Wordout" link in Settings opens the Play Store listing directly.
+
 ## [1.8.1] — 2026-09-26
 ### Fixed
 - Daily mode no longer silently wraps back to Easy after losing Hard or Extreme — it now shows which difficulty you lost and can't advance past, then moves you back to Easy after a few seconds so you're never stuck.

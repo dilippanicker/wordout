@@ -1,27 +1,38 @@
-# Session Handoff — 2026-11-10 (v1.8.1 drift fix, Play Console advisories)
+# Session Handoff — 2026-11-11 (v1.9.0: in-app review prompt)
 
 ## What this session did
 
-- Ran `/open`; found `session-handoff.md` and `TODO.md` one bump behind (still v1.8.0 / session 38) although `app.json`, `CHANGELOG.md`, and `CLAUDE.md` all said **v1.8.1 (versionCode 41)**. Fixed those two docs.
-- v1.8.1 (`aba8055`, 2026-09-26) bundles the two daily dead-end fixes from session 38 (`6db53d3`, `d1ee3c0`); CHANGELOG already covers them.
-- Play Console showed notices against release `41 (1.8.1)`, which confirms v1.8.1 was uploaded to Play. User chose to take no action on both advisories; recorded in CLAUDE.md's Play Store section (`8794ada`):
-  - Edge-to-edge deprecated APIs: from dependency code (RN core, react-native-screens), only fixable by a future SDK upgrade.
-  - Orientation/resizability: caused by `"orientation": "portrait"` in `app.json`, kept on purpose (Option A). Option B (unlock + letterbox phone landscape via `shouldLetterbox`) was declined.
+- Ran `/open` (clean, v1.8.1 everywhere). Then implemented in-app review prompting, user-approved plan (any full win triggers it, not just daily):
+  - `expo-store-review` installed (`npx expo install`, ~56.0.4). **Native module → needs a fresh GitHub Actions build.**
+  - `settingsStore`: `firstLaunchDate`, `totalWins`, `reviewPromptCount`, `lastReviewPromptDate` (+ `setFirstLaunchDate`, `incrementTotalWins`, `recordReviewPrompt`). No migration.
+  - `incrementTotalWins()` called on win in `gameStore`, `quordleStore` (all boards solved only) and `dailyStore` (which doesn't use `statsStore.recordResult`).
+  - `utils/reviewPrompt.ts`: pure `isReviewEligible()` + `maybeRequestReview()` (isAvailableAsync → requestReview → record; try/catch, silent).
+  - `app/(tabs)/index.tsx`: `firstLaunchDate` set in the mount effect; `dismissEndGame()` fires `maybeRequestReview` 1500ms later when `activeGameStatus === 'won'`; tutorial gate via `showTutorialRef`.
+  - `app/(tabs)/settings.tsx`: Android-only "Rate Wordout ↗" footer link to the Play listing.
+  - `__tests__/review-prompt.test.ts` (12 tests). Commit `3a3e0aa`.
+- Bumped to **v1.9.0 (versionCode 42)** (minor: new feature + native module) in app.json, CHANGELOG.md, CLAUDE.md "Current version". CLAUDE.md gained a "Review Prompt" section and settingsStore field note.
+
+## Verification
+
+- `tsc --noEmit` clean; jest 71/71 pass (12 new).
+- Web dev server: loads, no console errors, `firstLaunchDate` written on mount, Settings shows GitHub link but no Rate row.
+- NOT verified: the actual Play review dialog (needs a Play-installed build; Play's quota can also suppress it). Sideloaded APKs (itch.io/GitHub) get `isAvailableAsync() === false` and silently skip. Win-triggered firing path (dismissEndGame → timer) is not exercised by any test or live run.
 
 ## Current state
 
-- Version: **v1.8.1 (versionCode 41)** across app.json, CHANGELOG.md, CLAUDE.md, this file.
-- All session commits (`8794ada`, `5fc09e2`, `d60c865`) pushed to origin/main at user's request; Tests (36s) and Deploy Web (56s) runs on `d60c865` both succeeded. Working tree clean.
-- CLAUDE.md is 300 lines (soft budget ~200). Not trimmed this session; extraction candidates for a future cleanup: the long itch.io bullets under Distribution, and the Play Store history bullets (move to REGRESSION_TRAPS.md).
+- Version **v1.9.0 (versionCode 42)** across app.json, CHANGELOG.md, CLAUDE.md, this file.
+- Commits pushed to origin/main at user's request (see TODO session 40). **No build triggered yet** — v1.9.0 APK/AAB does not exist until `/release` / `build-apk.yml` runs.
+- CLAUDE.md is ~308 lines (soft budget ~200). Extraction candidates: itch.io bullets under Distribution, Play Store history bullets → REGRESSION_TRAPS.md. Proposed to the user at /open; not done.
 
 ## Exact next step / open items
 
-1. ~~Confirm v1.8.1 release~~ Done: GitHub Release v1.8.1 (Latest) has apk/aab, all CI runs green, local `releases/` artifacts match byte-for-byte. itch.io channels not checked directly (same workflow).
-2. No real-device verification of the streak badge or the daily dead-end toast.
-3. Stale duplicate `wordout-latest.apk` on itch.io may still need manual deletion (Edit Game page).
-4. Play Store production-access rejection unresolved (see CLAUDE.md Play Store section).
+1. Run `/release` to build v1.9.0 (version already bumped/confirmed — release skill should not re-bump). After build: `gh release download` to refresh `releases/wordout-latest.*`; upload AAB to Play closed testing.
+2. Device-test on a Play-installed build: after ≥5 wins and ≥3 days, a full win should show the review sheet ~1.5s after the overlay closes. Also check Rate Wordout row opens the Play listing.
+3. Still open from before: device-verify streak badge and dead-end toast; delete stale `wordout-latest.apk` on itch.io; Play production-access rejection unresolved.
+4. Optional: trim CLAUDE.md (see above).
 
 ## Gotchas
 
-- Bookkeeping drift came from the v1.8.1 bump commit not touching TODO/handoff. The `/open` drift check catches it.
-- Model check at `/open` could not confirm opusplan; `/status` was never run to verify.
+- Any new win path must call `settingsStore.incrementTotalWins()` or it silently stops counting toward the review gate.
+- First-launch date for existing users is set on first launch after updating, so everyone waits 3 days.
+- Model check at `/open` could not confirm opusplan; `/status` not run.
