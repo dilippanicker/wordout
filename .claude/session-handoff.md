@@ -15,11 +15,11 @@
 - NOT verified: panel on a real device; the Play review dialog itself; component's own tap-vs-effect timer wiring (the 3 timing tests call the scheduler at different offsets, not the component).
 
 ## Current state
-- Version 1.9.1 (versionCode 43) in app.json, CHANGELOG.md, CLAUDE.md, this file. v1.9.1 NOT built yet.
+- Version 1.9.1 (versionCode 43) in app.json, CHANGELOG.md, CLAUDE.md, this file. **v1.9.1 is BUILT and RELEASED**: user dispatched Build APK run 42979764248 (commit 336e7a6; test/build/deploy-web all green, finished 2026-11-11 ~08:06 UTC); GitHub Release v1.9.1 (Latest) has wordout.apk (98,590,824 B) + wordout.aab (69,762,443 B). Local `releases/wordout-latest.{apk,aab}` refreshed to v1.9.1 (byte-identical to the release). (`./make.sh watch` once failed with a client-side `api.github.com` timeout fetching annotations — a transient network error, not a build failure.) Play internal-track upload of the v1.9.1 AAB: user doing it manually; release note drafted (fixed double review request; new hidden diagnostics panel; ask testers to win 5+ games over a few days then report `reviewLastOutcome`).
 - Commit 9c69916 was local-only until this close; pushed with the close commit at the user's request.
 
 ## Exact next step / open items
-1. Run `/release` for v1.9.1 (version already bumped/confirmed — do not re-bump). After build: `gh release download` to refresh `releases/wordout-latest.*`; user uploads AAB to Play.
+1. Confirm the v1.9.1 AAB is on the Play internal track (user uploads manually). Do NOT run /release again for 1.9.1.
 2. On a Play-installed v1.9.1: win >= 5 games, then long-press the version line in Settings to read reviewLastOutcome. `requested` with no card = Play suppressed it; `blocked:first-launch` = clock was moved before first launch; `blocked:wins` = fewer than 5 counted wins; no outcome at all = overlay never dismissed (new game / mode switch within ~11 s of the win).
 3. Still open: device-verify streak badge and dead-end toast; delete stale `wordout-latest.apk` on itch.io; CLAUDE.md still ~306 lines (candidates: long Stores/Daily Gate lines ~101/109/110, Keyboard line ~292, Key Design Decisions rationale) — needs user OK before cutting.
 4. Web dev server's Settings version line showed "v1.8.1" while app.json said 1.9.0 — likely stale Expo config cache; not investigated.

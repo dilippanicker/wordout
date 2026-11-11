@@ -10,7 +10,8 @@
 - ✅ **CLAUDE.md partial trim** — Play Store/Distribution condensed, full text archived in REGRESSION_TRAPS.md (commit 6bccef9). ~14% fewer bytes but still ~306 lines.
 - ✅ **Google Play badge on README + landing page; docs/ now deployed to Pages root** (commit 03115d3). Google Play is live; CLAUDE.md + memory notes updated. Verified live (all URLs 200).
 - ✅ **v1.9.1 (versionCode 43)** — review request once per win (per-win flag, `scheduleReviewAfterWin`), `reviewLastOutcome` diagnostics + hidden Settings panel (long-press version line). tsc clean, jest 79/79, panel verified on web (simulated long-press). Commit 9c69916 + version bump.
-- Open: build v1.9.1 via `/release` and upload to Play; read the diagnostics panel on a device after 5+ wins; device-verify streak badge + dead-end toast; delete stale `wordout-latest.apk` on itch.io; CLAUDE.md still over the ~200-line budget (needs user OK before further extraction); web version line showed v1.8.1 (stale cache?).
+- ✅ **v1.9.1 built and released** — run 42979764248 green on 336e7a6; GitHub Release v1.9.1 (apk+aab); local releases/ refreshed. Release note drafted for the Play internal track.
+- Open: confirm v1.9.1 AAB uploaded to Play internal track; read the diagnostics panel on a device after 5+ wins; device-verify streak badge + dead-end toast; delete stale `wordout-latest.apk` on itch.io; CLAUDE.md still ~307 lines vs ~200 budget (needs user OK before further extraction); web version line showed v1.8.1 (stale cache?).
 
 ## ✅ Session 40 — Completed 2026-11-11 (in-app review prompt, v1.9.0)
 
