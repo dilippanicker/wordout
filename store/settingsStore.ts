@@ -34,6 +34,8 @@ interface SettingsState {
   totalWins: number;
   reviewPromptCount: number;
   lastReviewPromptDate: string;
+  reviewLastOutcome: string;
+  reviewLastOutcomeDate: string;
   setLanguage: (lang: Language) => void;
   setDifficulty: (d: Difficulty) => void;
   setDarkTheme: (on: boolean) => void;
@@ -45,6 +47,7 @@ interface SettingsState {
   setFirstLaunchDate: (iso: string) => void;
   incrementTotalWins: () => void;
   recordReviewPrompt: (iso: string) => void;
+  setReviewOutcome: (outcome: string, iso: string) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -62,6 +65,8 @@ export const useSettingsStore = create<SettingsState>()(
       totalWins: 0,
       reviewPromptCount: 0,
       lastReviewPromptDate: '',
+      reviewLastOutcome: '',
+      reviewLastOutcomeDate: '',
       setLanguage: (language) => set({ language }),
       setDifficulty: (difficulty) => set({ difficulty }),
       setDarkTheme: (darkTheme) => set({ darkTheme }),
@@ -74,6 +79,7 @@ export const useSettingsStore = create<SettingsState>()(
       incrementTotalWins: () => set((s) => ({ totalWins: s.totalWins + 1 })),
       recordReviewPrompt: (iso) =>
         set((s) => ({ reviewPromptCount: s.reviewPromptCount + 1, lastReviewPromptDate: iso })),
+      setReviewOutcome: (reviewLastOutcome, reviewLastOutcomeDate) => set({ reviewLastOutcome, reviewLastOutcomeDate }),
     }),
     {
       name: 'wordle-settings',

@@ -24,6 +24,22 @@ export default function SettingsScreen() {
   } = useSettingsStore();
   const [showHelp, setShowHelp] = useState(false);
   const [diffLockToast, setDiffLockToast] = useState<string | null>(null);
+  const [reviewDiag, setReviewDiag] = useState<[string, string][] | null>(null);
+
+  // Snapshot at open time (no subscription needed for a diagnostic).
+  function toggleReviewDiag() {
+    if (reviewDiag) { setReviewDiag(null); return; }
+    const r = useSettingsStore.getState();
+    setReviewDiag([
+      ['totalWins', String(r.totalWins)],
+      ['firstLaunchDate', r.firstLaunchDate || '—'],
+      ['reviewPromptCount', String(r.reviewPromptCount)],
+      ['lastReviewPromptDate', r.lastReviewPromptDate || '—'],
+      ['reviewLastOutcome', r.reviewLastOutcome || '—'],
+      ['reviewLastOutcomeDate', r.reviewLastOutcomeDate || '—'],
+      ['deviceNow', new Date().toISOString()],
+    ]);
+  }
   const diffLockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const containerBg = dark ? colors.background : '#f6f7f8';
@@ -168,12 +184,23 @@ export default function SettingsScreen() {
             </Pressable>
           )}
           <Text style={styles.credits}>© 2026 Onglipo Labs. <Text style={{ fontStyle: 'italic' }}>Ohm Shanti</Text> Ω Ω Ω · MIT License</Text>
-          <Text style={styles.versionText}>
-            {Platform.OS === 'android'
-              ? `v${Constants.expoConfig?.version ?? '—'} (build ${Constants.expoConfig?.android?.versionCode ?? '—'})`
-              : `v${Constants.expoConfig?.version ?? '—'}`
-            }
-          </Text>
+          <Pressable onLongPress={toggleReviewDiag} delayLongPress={600}>
+            <Text style={styles.versionText}>
+              {Platform.OS === 'android'
+                ? `v${Constants.expoConfig?.version ?? '—'} (build ${Constants.expoConfig?.android?.versionCode ?? '—'})`
+                : `v${Constants.expoConfig?.version ?? '—'}`
+              }
+            </Text>
+          </Pressable>
+          {reviewDiag && (
+            // Hidden diagnostics (long-press the version line). On-device only; nothing is sent or logged elsewhere.
+            <Pressable onPress={() => setReviewDiag(null)} style={styles.reviewDiag}>
+              {reviewDiag.map(([k, v]) => (
+                <Text key={k} style={styles.reviewDiagText}>{k}: {v}</Text>
+              ))}
+              <Text style={styles.reviewDiagText}>(tap to close)</Text>
+            </Pressable>
+          )}
         </View>
 
       </ScrollView>
@@ -436,6 +463,17 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#878a8c',
     textAlign: 'center',
+  },
+  reviewDiag: {
+    marginTop: 8,
+    padding: 8,
+    borderRadius: 6,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#878a8c',
+  },
+  reviewDiagText: {
+    fontSize: 11,
+    color: '#878a8c',
   },
   versionText: {
     fontSize: 11,

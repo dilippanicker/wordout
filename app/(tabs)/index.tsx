@@ -25,7 +25,7 @@ import { useSettingsStore, boardCountName, BOARD_COUNTS, BoardCount, maxGuessesF
 import { useDailyStore, getDailyIndex } from '@/store/dailyStore';
 import { DIFFICULTY_CYCLE, accessibleDailyDifficulties, stepDailyDifficulty, isDailyDeadEndStep } from '@/utils/dailyDifficultyCycle';
 import { useStatsStore, emptyBoardStats } from '@/store/statsStore';
-import { maybeRequestReview } from '@/utils/reviewPrompt';
+import { scheduleReviewAfterWin } from '@/utils/reviewPrompt';
 import { isGameInProgress, confirmAbandon } from '@/utils/abandon';
 import { TileStatus } from '@/components/Tile';
 import { WEB_CARD_MAX_WIDTH, WEB_CARD_MAX_HEIGHT, shouldLetterbox } from '@/constants/layout';
@@ -539,6 +539,7 @@ export default function WordleScreen() {
   const [endGameVisible, setEndGameVisible] = useState(false);
   const endGameOpacity = useSharedValue(0);
   const endGameTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reviewScheduledRef = useRef(false); // per-win: review already scheduled for the current win
   const prevGameStatusRef = useRef(activeGameStatus);
   const endGameAnimStyle = useAnimatedStyle(() => ({ opacity: endGameOpacity.value }));
 
@@ -567,10 +568,9 @@ export default function WordleScreen() {
         }
       }
       // In-app review: any full win (all boards solved for n-out), never a loss.
-      // activeGameStatus is 'won' only when every board is solved.
-      if (activeGameStatus === 'won') {
-        setTimeout(() => { maybeRequestReview(true, () => showTutorialRef.current); }, 1500);
-      }
+      // activeGameStatus is 'won' only when every board is solved. Once per win —
+      // reviewScheduledRef is reset when a new game starts (see the 'playing' branch below).
+      scheduleReviewAfterWin(activeGameStatus, () => showTutorialRef.current, reviewScheduledRef);
     }, 320);
   }
 
@@ -623,6 +623,7 @@ export default function WordleScreen() {
     }
 
     if (activeGameStatus === 'playing') {
+      reviewScheduledRef.current = false;
       setOverlayLocked(false);
       if (endGameTimerRef.current) { clearTimeout(endGameTimerRef.current); endGameTimerRef.current = null; }
       setEndGameVisible(false);

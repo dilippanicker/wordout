@@ -1,4 +1,4 @@
-import { describe, it, expect, jest } from '@jest/globals';
+import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 
 jest.mock('expo-store-review', () => ({
   isAvailableAsync: jest.fn(),
@@ -8,7 +8,9 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 
-import { isReviewEligible, ReviewEligibilityInput } from '../utils/reviewPrompt';
+import { Platform } from 'react-native';
+import * as StoreReview from 'expo-store-review';
+import { isReviewEligible, reviewBlockedBy, scheduleReviewAfterWin, maybeRequestReview, REVIEW_DELAY_MS, ReviewEligibilityInput } from '../utils/reviewPrompt';
 import { useSettingsStore } from '../store/settingsStore';
 import { useGameStore } from '../store/gameStore';
 import { useQuordleStore } from '../store/quordleStore';
@@ -60,6 +62,7 @@ describe('review settings defaults', () => {
   it('start empty/zero, and incrementTotalWins / recordReviewPrompt update them', () => {
     const s = useSettingsStore.getState();
     expect([s.firstLaunchDate, s.totalWins, s.reviewPromptCount, s.lastReviewPromptDate]).toEqual(['', 0, 0, '']);
+    expect([s.reviewLastOutcome, s.reviewLastOutcomeDate]).toEqual(['', '']);
     s.incrementTotalWins();
     s.recordReviewPrompt('2026-12-01T00:00:00.000Z');
     const n = useSettingsStore.getState();
@@ -121,5 +124,112 @@ describe('totalWins counts only full wins, in every mode', () => {
     useDailyStore.getState().submitGuess();
     expect(useDailyStore.getState().games.easy.solved).toBe(true);
     expect(wins()).toBe(1);
+  });
+});
+
+describe('reviewBlockedBy names the failing gate', () => {
+  it('returns null when eligible, else the first failing gate', () => {
+    expect(reviewBlockedBy(base)).toBeNull();
+    expect(reviewBlockedBy({ ...base, platform: 'web' })).toBe('platform');
+    expect(reviewBlockedBy({ ...base, won: false })).toBe('not-won');
+    expect(reviewBlockedBy({ ...base, tutorialShowing: true })).toBe('tutorial');
+    expect(reviewBlockedBy({ ...base, totalWins: 4 })).toBe('wins');
+    expect(reviewBlockedBy({ ...base, reviewPromptCount: 3 })).toBe('prompt-cap');
+    expect(reviewBlockedBy({ ...base, firstLaunchDate: iso(3 * DAY - 1) })).toBe('first-launch');
+    expect(reviewBlockedBy({ ...base, firstLaunchDate: '' })).toBe('first-launch');
+    expect(reviewBlockedBy({ ...base, lastReviewPromptDate: iso(60 * DAY - 1) })).toBe('cooldown');
+  });
+});
+
+describe('scheduleReviewAfterWin (fake timers, android)', () => {
+  const available = StoreReview.isAvailableAsync as jest.Mock<() => Promise<boolean>>;
+  const request = StoreReview.requestReview as jest.Mock<() => Promise<void>>;
+  const noTutorial = () => false;
+  let restoreOS: { restore: () => void };
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+    restoreOS = jest.replaceProperty(Platform, 'OS', 'android');
+    available.mockReset().mockResolvedValue(true);
+    request.mockReset().mockResolvedValue(undefined);
+    useSettingsStore.setState({
+      totalWins: 5,
+      firstLaunchDate: new Date(Date.now() - 10 * DAY).toISOString(),
+      reviewPromptCount: 0,
+      lastReviewPromptDate: '',
+      reviewLastOutcome: '',
+      reviewLastOutcomeDate: '',
+    });
+  });
+  afterEach(() => {
+    restoreOS.restore();
+    jest.useRealTimers();
+  });
+
+  // Overlay appears at t=0; `dismissAtMs` is when dismissEndGame would reach the schedule call
+  // (tap time, or 5000 for the auto-dismiss effect). The 320ms fade before the call is a component detail.
+  async function dismissAt(dismissAtMs: number) {
+    const ref = { current: false };
+    await jest.advanceTimersByTimeAsync(dismissAtMs);
+    scheduleReviewAfterWin('won', noTutorial, ref);
+    await jest.advanceTimersByTimeAsync(REVIEW_DELAY_MS - 1);
+    expect(request).not.toHaveBeenCalled();
+    await jest.advanceTimersByTimeAsync(1);
+    expect(request).toHaveBeenCalledTimes(1);
+    await jest.advanceTimersByTimeAsync(10_000);
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(useSettingsStore.getState().reviewLastOutcome).toBe('requested');
+  }
+
+  it('tap under 1s after the overlay appears', () => dismissAt(800));
+  it('tap at 4s', () => dismissAt(4000));
+  it('5s auto-dismiss', () => dismissAt(5000));
+
+  it('double dismiss of one win (tap at ~4.8s, then the 5s timer) requests once', async () => {
+    const ref = { current: false };
+    scheduleReviewAfterWin('won', noTutorial, ref);       // tap
+    await jest.advanceTimersByTimeAsync(200);
+    scheduleReviewAfterWin('won', noTutorial, ref);       // auto-dismiss firing before the tap's fade hid the overlay
+    await jest.advanceTimersByTimeAsync(5000);
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(useSettingsStore.getState().reviewPromptCount).toBe(1);
+  });
+
+  it('after the flag is reset for a new game, the next win can request again', async () => {
+    const ref = { current: false };
+    scheduleReviewAfterWin('won', noTutorial, ref);
+    await jest.advanceTimersByTimeAsync(REVIEW_DELAY_MS);
+    ref.current = false; // new game started
+    // The 60-day cooldown would (correctly) block a real second prompt; clear it so this test isolates the flag.
+    useSettingsStore.setState({ reviewPromptCount: 0, lastReviewPromptDate: '' });
+    scheduleReviewAfterWin('won', noTutorial, ref);
+    await jest.advanceTimersByTimeAsync(REVIEW_DELAY_MS);
+    expect(request).toHaveBeenCalledTimes(2);
+  });
+
+  it('a loss schedules nothing and does not set the flag', async () => {
+    const ref = { current: false };
+    expect(scheduleReviewAfterWin('lost', noTutorial, ref)).toBeNull();
+    expect(ref.current).toBe(false);
+    await jest.advanceTimersByTimeAsync(5000);
+    expect(request).not.toHaveBeenCalled();
+  });
+
+  it('records why nothing was requested', async () => {
+    useSettingsStore.setState({ totalWins: 2 });
+    await maybeRequestReview(true, noTutorial);
+    expect(useSettingsStore.getState().reviewLastOutcome).toBe('blocked:wins');
+
+    useSettingsStore.setState({ totalWins: 5 });
+    available.mockResolvedValue(false);
+    await maybeRequestReview(true, noTutorial);
+    expect(useSettingsStore.getState().reviewLastOutcome).toBe('unavailable');
+
+    available.mockResolvedValue(true);
+    request.mockRejectedValue(new Error('boom'));
+    await maybeRequestReview(true, noTutorial);
+    expect(useSettingsStore.getState().reviewLastOutcome).toBe('error:boom');
+    expect(useSettingsStore.getState().reviewPromptCount).toBe(0);
+    expect(useSettingsStore.getState().reviewLastOutcomeDate).not.toBe('');
   });
 });
