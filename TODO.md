@@ -12,7 +12,9 @@
 - ✅ **CLAUDE.md Distribution notes** — screenshots location, amazon/ = icons only, Amazon phone-update cutoff 2025-08-20 (commit b0473a1).
 - ✅ **CI: ubuntu-26.04 pin + Node 24 action bumps** (commit 4a33505); Tests + Deploy Web green incl. itch.io HTML5; Pages URLs 200. `android-actions/setup-android` left at v3 on purpose. actionlint clean except its ubuntu-26.04 label false positive.
 - ✅ REGRESSION_TRAPS.md: CI runner/actions, store-listing screenshot quirks, Amazon listing sections added.
-- Open: Play review outcome for the screenshots change; **Amazon decision** (draft with AAB vc 37 targeting Fire TV/Automotive exists; live is vc 36 on 12 Fire tablets — submitting the draft for screenshots would ship vc 37 too); build-apk.yml untested after the bumps — verify on next release build, consider setup-android@v4 then; v1.9.1 Play production review; `reviewLastOutcome` device check; CLAUDE.md ~308 lines vs ~200 budget (needs user OK).
+- ✅ (user-reported 2026-11-12) **v1.9.1 is live in Google Play production** — the production-review item is closed.
+- **Amazon DECIDED (not open):** leave the "Incomplete" upcoming-version draft unsubmitted. At the next Amazon update, replace AAB2 (versionCode 37) with the current build and target **Fire tablets only** (no Fire TV, no Automotive). Live is vc 36 on 12 Fire tablets. Don't submit the draft as it stands.
+- Open: Play review outcome for the screenshots change; build-apk.yml untested after the bumps — verify on next release build, consider setup-android@v4 then; `reviewLastOutcome` device check; CLAUDE.md ~308 lines vs ~200 budget (needs user OK).
 
 ## ✅ Session 41 — Completed 2026-11-11 (v1.9.1, Google Play badge, CLAUDE.md trim)
 
@@ -23,7 +25,7 @@
 - ✅ **v1.9.1 built and released** — run 42979764248 green on 336e7a6; GitHub Release v1.9.1 (apk+aab); local releases/ refreshed. Release note drafted for the Play internal track.
 - ✅ (user-reported 2026-11-11) v1.9.1 on the Play internal track and **applied for production release**; diagnostics panel opens on device by long-press and shows stats even before any win; streak badge / dead-end toast device-verify and stale itch.io `wordout-latest.apk` item reported done.
 - ✅ **Web version line v1.8.1 was a stale Metro cache** — restarted `npx expo start --web --clear`, Settings then showed v1.9.1. See REGRESSION_TRAPS.md.
-- Open: wait for the Play production-release review; read `reviewLastOutcome` on a device after 5+ real wins (confirms the Play dialog path); CLAUDE.md still ~307 lines vs ~200 budget (needs user OK before further extraction).
+- Open: ~~wait for the Play production-release review~~ (done 2026-11-12: v1.9.1 live in production); read `reviewLastOutcome` on a device after 5+ real wins (confirms the Play dialog path); CLAUDE.md still ~307 lines vs ~200 budget (needs user OK before further extraction).
 
 ## ✅ Session 40 — Completed 2026-11-11 (in-app review prompt, v1.9.0)
 

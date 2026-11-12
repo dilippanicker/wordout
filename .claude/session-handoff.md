@@ -19,9 +19,9 @@
 
 ## Exact next step / open items
 1. Watch Google Play's review of the phone-screenshots change (typically up to 7 days).
-2. **Amazon needs a decision:** an "Incomplete" upcoming-version draft exists with AAB version code 37 (Fire TV 90/100, Automotive 2/2); live is version code 36 (12 of 40 Fire tablets, 0 Fire TV). Submitting the draft to change screenshots would ALSO ship vc 37 and those targets. Do not click Next/Delete/Submit there without a deliberate decision.
+2. **Amazon is DECIDED:** leave the "Incomplete" upcoming-version draft unsubmitted (it has AAB2 version code 37 targeting Fire TV 90/100 + Automotive 2/2; live is version code 36 on 12 of 40 Fire tablets). At the next Amazon update, replace AAB2 (vc 37) with the current build and target Fire tablets only — no Fire TV, no Automotive. Don't submit the draft as it stands.
 3. Next real release (`/release`) is the first test of the CI bumps in build-apk.yml; consider setup-android@v4 only then.
-4. Still open: v1.9.1 Play production review; read `reviewLastOutcome` on a device after 5+ wins; CLAUDE.md ~308 lines vs ~200 budget (needs user OK before cutting).
+4. v1.9.1 is LIVE in Google Play production (user-reported 2026-11-12) — no review pending. Still open: read `reviewLastOutcome` on a device after 5+ wins; CLAUDE.md ~308 lines vs ~200 budget (needs user OK before cutting).
 
 ## Gotchas
 - `store-assets/raw/` is gitignored — rebuilding screenshots needs the originals locally.
