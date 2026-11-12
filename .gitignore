@@ -53,3 +53,6 @@ releases/
 
 # Claude workflow
 .claude/smoke-status.json
+
+# Raw phone screenshots (originals, not for the repo)
+store-assets/raw/

@@ -1,5 +1,30 @@
 # Wordout — Play Store Shot List
 
+## Current screenshot set (9:16, 1080×1920)
+
+Final images live in `store-assets/screenshots/` (24-bit RGB PNG, no alpha), with `contact-sheet.png` for review. They are generated from the untracked originals in `store-assets/raw/` (gitignored, never modified), all Samsung 1080×2340 frames. Each frame is cropped 100 px off the top and 135 px off the bottom (status/navigation bars), scaled to 1920 px tall, and the side margins are filled by extending each row's edge pixels, so no UI is cut.
+
+| # | Output file | What it shows | Raw file |
+|---|-------------|---------------|----------|
+| 1 | `01-daily-easy.png` | Daily Easy, mid-game | `Screenshot_20261111_213944_Wordout.jpg` |
+| 2 | `02-four-out-extreme.png` | 4-out Extreme, mid-game | `Screenshot_20261111_215451_Wordout.jpg` |
+| 3 | `03-daily-hard.png` | Daily Hard, mid-game | `Screenshot_20261111_214150_Wordout.jpg` |
+| 4 | `04-four-out-hard.png` | 4-out Hard, three boards solved | `Screenshot_20261111_215308_Wordout.jpg` |
+| 5 | `05-daily-extreme-done.png` | Daily Extreme, completed | `Screenshot_20261111_214305_Wordout.jpg` |
+| 6 | `06-four-out-dark.png` | 4-out Extreme, dark theme | `Screenshot_20261111_215515_Wordout.jpg` |
+| 7 | `07-tutorial.png` | First-launch tutorial | `Screenshot_20261111_213836_Wordout.jpg` |
+| 8 | `08-stats.png` | Stats modal, Daily tab, Extreme sub-tab | `Screenshot_20261112_063256_Wordout.jpg` |
+
+**To rebuild** (needs Pillow and numpy; `raw/` must be present locally):
+
+```
+python3 scripts/make-store-screenshots.py
+```
+
+To swap or reorder a shot, edit the `SHOTS` list at the top of `scripts/make-store-screenshots.py` and rerun. The same 1080×1920 files serve Google Play, itch.io and the Amazon Appstore.
+
+## Original shot plan (v1.2.8 — superseded by the set above)
+
 ## Specs
 - Screenshots: 1080×2400px (Pixel 7), PNG
 - Screencast: MP4, max 30 seconds, 1080×2400
