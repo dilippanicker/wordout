@@ -254,9 +254,8 @@ Before every build, follow exactly:
 - **Google Play:** live — https://play.google.com/store/apps/details?id=com.dilippanicker.wordout. Uploads are manual; automating them (service account + upload action) is now possible but not done. The "Get it on Google Play" badge (`docs/img/google-play-badge.png`, Google's official asset — never recolor or redraw) is on the README and the landing page.
 
 ## Model Selection
-- Pattern: `opusplan` session model (Opus plans, Sonnet executes — automatic) + Opus-class advisor + Haiku-pinned Explore agent (`~/.claude/agents/Explore.md`). Set globally in `~/.claude/settings.json`; verify at session start via the `/model` and `/advisor` checkmarks. Rationale and details: `~/repos/claude-workflow/HOWTO.md` Roles section.
-- `claude config set advisorModel` does NOT work — the only correct way to enable the advisor is via the `/advisor` command picker in the session. See REGRESSION_TRAPS.md for an unconfirmed note on `settings.json`'s `advisorModel` key.
-- Executor handles implementation; advisor engages automatically at key decision points (before writing, before committing to an approach, when stuck, before declaring done). Run `/compact` at 50%+ context.
+- Pattern: `opusplan` session model (Opus plans, Sonnet executes — automatic), default effort medium, + Haiku-pinned Explore agent (`~/.claude/agents/Explore.md`). Set globally in `~/.claude/settings.json`; verify at session start via the `/model` checkmark. Rationale and details: `~/repos/claude-workflow/HOWTO.md` Roles section.
+- Run `/compact` at 50%+ context.
 
 ## Session lifecycle
 
