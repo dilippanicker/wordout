@@ -1,8 +1,18 @@
 # Wordout — Master TODO
-**Updated: 2026-11-12 (session 42)**
+**Updated: 2026-11-12 (session 43)**
 **Current version: v1.9.1 (versionCode 43)**
 
 ---
+
+## ✅ Session 43 — Completed 2026-11-12 (listing copy, repo metadata, daily-word check, post drafts)
+
+- ✅ **Play listing-text review approved** (user-reported); promotion-keyword warning gone.
+- ✅ **Daily word selection re-verified** — the "Easy only 0/1024" bug was the pre-v1.5.8 code; current `dailyIndices` covers the full list. User decided to leave it; no no-repeat shuffle. Noted in REGRESSION_TRAPS.md.
+- ✅ **GitHub repo metadata** — new description, homepage `https://dilippanicker.github.io/wordout/`, topics + `puzzle`, `daily-puzzle`.
+- ✅ **itch.io description first paragraph updated** and verified on the public page.
+- ✅ **`store-assets/listing-copy.md`** created (Play + itch.io copy); REGRESSION_TRAPS.md pointer + CLAUDE.md Distribution line (commit 8efb970).
+- ✅ **Drafts (unpublished):** `~/Downloads/devto-daily-words.md`, `~/Downloads/reddit-drafts.md` (rules not checked — Reddit returned 403 on every fetch).
+- Open: read Reddit rules yourself before posting; publish/review dev.to draft; `build-apk.yml` untested after CI bumps (verify on next release, consider setup-android@v4); `reviewLastOutcome` device check; CLAUDE.md ~307 lines vs ~200 budget (needs user OK).
 
 ## ✅ Session 42 — Completed 2026-11-12 (store screenshots, CI Node 24, listing updates)
 
@@ -16,7 +26,7 @@
 - **Amazon DECIDED (not open):** leave the "Incomplete" upcoming-version draft unsubmitted. At the next Amazon update, replace AAB2 (versionCode 37) with the current build and target **Fire tablets only** (no Fire TV, no Automotive). Live is vc 36 on 12 Fire tablets. Don't submit the draft as it stands.
 - ✅ **Play screenshots change published** (user-reported 2026-11-12, Play Console "App update published"; Publishing overview "Last published on November 12, 2026").
 - ✅ **Play listing text edited and submitted for review 2026-11-12** — name `Wordout: Daily Word Game`; short description `Wordle-style daily word puzzle. Solve up to 8 words. Easy, Hard, Extreme levels.` (80/80); full description first paragraph rewritten, rest untouched. "Wordle-style" deliberately kept (user decision). Status at close: "Changes in review", quick checks running. Text recorded in REGRESSION_TRAPS.md "Play listing text (2026-11-12)" (it lives only in Play Console).
-- Open: Play review outcome for the listing-text change; build-apk.yml untested after the bumps — verify on next release build, consider setup-android@v4 then; `reviewLastOutcome` device check; CLAUDE.md ~306 lines vs ~200 budget (needs user OK).
+- Open: ~~Play review outcome for the listing-text change~~ (done 2026-11-12: listing-text review approved, promotion warning gone); build-apk.yml untested after the bumps — verify on next release build, consider setup-android@v4 then; `reviewLastOutcome` device check; CLAUDE.md ~306 lines vs ~200 budget (needs user OK).
 
 ## ✅ Session 41 — Completed 2026-11-11 (v1.9.1, Google Play badge, CLAUDE.md trim)
 
