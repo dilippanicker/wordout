@@ -1,4 +1,4 @@
-# Session Handoff — 2026-11-12 (store screenshots, CI Node 24, store listing updates; no app change, v1.9.1)
+# Session Handoff — 2026-11-12 (store screenshots, CI Node 24, store listing updates + Play listing text; no app change, v1.9.1)
 
 ## What this session did
 - **New 9:16 store screenshots (commit c13f5ad):** `scripts/make-store-screenshots.py` builds `store-assets/screenshots/` (8 PNGs, 1080x1920, 24-bit RGB, + contact-sheet.png) from the gitignored `store-assets/raw/` Samsung frames: crop 100 px top / 135 px bottom, scale to 1920 tall, extend each row's edge pixels to the canvas. A plain 1080x1920 crop was tried first and cut the header/footer — don't. Old `phone-screen-*.jpg` (21 files) deleted after confirming nothing referenced them. `store-assets/store-shot-list.md` lists the 8 shots + raw filenames + rerun command. README.md NOT changed.
@@ -6,6 +6,7 @@
 - **CI (commit 4a33505):** all `runs-on` pinned to `ubuntu-26.04` (the image the last good Build APK used); checkout@v7, setup-node@v7, cache@v6, setup-java@v6, upload-artifact@v7, peaceiris/actions-gh-pages@v4 (all node24). `android-actions/setup-android` deliberately left at v3. Also quoted `"$GITHUB_OUTPUT"` (SC2086). Details in REGRESSION_TRAPS.md "CI: runner pin and action versions".
 - **Store listings updated by browser automation:** itch.io — 8 new screenshots, old 6 deleted, saved, public order verified 01-08. Google Play — old 7 phone screenshots replaced by the 8, AI declaration "Don't label assets", saved, and **submitted for review** (Publishing overview showed "Changes in review"; quick checks were still running). Amazon — READ ONLY, nothing changed.
 - REGRESSION_TRAPS.md got three new sections: CI runner/actions, Store listing screenshots (Play/itch.io quirks), Amazon Appstore listing.
+- **Play listing text (browser automation):** name/short/full-description first paragraph changed and submitted for review ("Wordle-style" kept by user decision); exact text + notes in REGRESSION_TRAPS.md "Play listing text (2026-11-12)". README not changed.
 
 ## Verification
 - Test + Deploy Web runs on 4a33505 both green (incl. itch.io HTML5 job); jobs logged `Image: ubuntu-26.04` and started within ~20 s (label works). Pages `/`, `/privacy.html`, `/play/` (and its JS bundle) all 200.
@@ -18,7 +19,7 @@
 - Everything committed and pushed (c13f5ad, b0473a1, 4a33505); close commit is local until pushed on request.
 
 ## Exact next step / open items
-1. Watch Google Play's review of the phone-screenshots change (typically up to 7 days).
+1. Watch Google Play's review of the listing-text change (name `Wordout: Daily Word Game`, new short description, rewritten first paragraph; submitted 2026-11-12, "Changes in review"). The earlier phone-screenshots change is already PUBLISHED (user-reported). Check Publishing overview; the Console had warned the short description "may not be promoted… price or promotion keywords" (old text had "Free") — see whether it clears.
 2. **Amazon is DECIDED:** leave the "Incomplete" upcoming-version draft unsubmitted (it has AAB2 version code 37 targeting Fire TV 90/100 + Automotive 2/2; live is version code 36 on 12 of 40 Fire tablets). At the next Amazon update, replace AAB2 (vc 37) with the current build and target Fire tablets only — no Fire TV, no Automotive. Don't submit the draft as it stands.
 3. Next real release (`/release`) is the first test of the CI bumps in build-apk.yml; consider setup-android@v4 only then.
 4. v1.9.1 is LIVE in Google Play production (user-reported 2026-11-12) — no review pending. Still open: read `reviewLastOutcome` on a device after 5+ wins; CLAUDE.md ~308 lines vs ~200 budget (needs user OK before cutting).
@@ -29,3 +30,4 @@
 - Closing a Chrome tab can end the whole tab-group session; keep one tab open or recreate the group.
 - actionlint false positive on `ubuntu-26.04` — lint with `-ignore 'label "ubuntu-26.04" is unknown'`.
 - Model check at /open could not confirm opusplan; /status not run.
+- Play listing text is only in Play Console (not in the repo); REGRESSION_TRAPS.md has the current copy. The user closed the Chrome tab group at the end — nothing of ours is left open.

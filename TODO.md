@@ -14,7 +14,9 @@
 - ✅ REGRESSION_TRAPS.md: CI runner/actions, store-listing screenshot quirks, Amazon listing sections added.
 - ✅ (user-reported 2026-11-12) **v1.9.1 is live in Google Play production** — the production-review item is closed.
 - **Amazon DECIDED (not open):** leave the "Incomplete" upcoming-version draft unsubmitted. At the next Amazon update, replace AAB2 (versionCode 37) with the current build and target **Fire tablets only** (no Fire TV, no Automotive). Live is vc 36 on 12 Fire tablets. Don't submit the draft as it stands.
-- Open: Play review outcome for the screenshots change; build-apk.yml untested after the bumps — verify on next release build, consider setup-android@v4 then; `reviewLastOutcome` device check; CLAUDE.md ~308 lines vs ~200 budget (needs user OK).
+- ✅ **Play screenshots change published** (user-reported 2026-11-12, Play Console "App update published"; Publishing overview "Last published on November 12, 2026").
+- ✅ **Play listing text edited and submitted for review 2026-11-12** — name `Wordout: Daily Word Game`; short description `Wordle-style daily word puzzle. Solve up to 8 words. Easy, Hard, Extreme levels.` (80/80); full description first paragraph rewritten, rest untouched. "Wordle-style" deliberately kept (user decision). Status at close: "Changes in review", quick checks running. Text recorded in REGRESSION_TRAPS.md "Play listing text (2026-11-12)" (it lives only in Play Console).
+- Open: Play review outcome for the listing-text change; build-apk.yml untested after the bumps — verify on next release build, consider setup-android@v4 then; `reviewLastOutcome` device check; CLAUDE.md ~306 lines vs ~200 budget (needs user OK).
 
 ## ✅ Session 41 — Completed 2026-11-11 (v1.9.1, Google Play badge, CLAUDE.md trim)
 
