@@ -1,32 +1,31 @@
-# Session Handoff — 2026-11-11 (v1.9.1: review-prompt once-per-win fix + diagnostics; Google Play badge)
+# Session Handoff — 2026-11-12 (store screenshots, CI Node 24, store listing updates; no app change, v1.9.1)
 
 ## What this session did
-- **CLAUDE.md trim (partial):** Play Store + Distribution sections condensed to rules + pointers; full original text archived verbatim in REGRESSION_TRAPS.md ("Play Store (full)", "Distribution (full)"). ~40.3 KB -> ~34.5 KB but still ~306 lines (long lines), so the ~200-line budget is NOT met.
-- **v1.9.0 confirmed released:** user ran the build manually (run 42957046846 green; GitHub Release v1.9.0 has apk+aab) and uploaded the AAB to the Play internal track. Refreshed gitignored `releases/wordout-latest.apk` to v1.9.0 (byte-identical to the release asset).
-- **Google Play badge (commit 03115d3):** official English badge, unmodified from Google's badge zip, at `docs/img/google-play-badge.png`; on README (first, beside "Play in browser", raw GitHub URL) and landing page (replaced the commented-out button). **README.md changed (user-facing).** Google Play is now LIVE (production access granted); CLAUDE.md Play Store/Distribution updated with the listing URL.
-- **Deploy gap fixed:** nothing previously deployed `docs/` to the Pages root (it was hand-seeded onto gh-pages). `deploy-web.yml` now has a step publishing `docs/` to the branch root with `keep_files: true` (same job, runs after the /play/ deploy; same gh-pages-deploy concurrency group). Verified live: `/`, `/privacy.html`, `/play/`, `/img/google-play-badge.png`, `/wordout-feature-graphic.png` all 200; badge renders 202x60 beside the 186x46 "Play in browser" button (desktop width only; phone layout not checked).
-- **Review-prompt analysis (read-only):** documented the gates/early-exit paths; found a double-dismiss window (tap in ~4.68-5.0 s lets the 5 s auto-dismiss also fire dismissEndGame -> two requests).
-- **v1.9.1 (versionCode 43), commit 9c69916 + bump:** `scheduleReviewAfterWin` / `REVIEW_DELAY_MS` in `utils/reviewPrompt.ts` (takes a per-win `{current:boolean}` flag; component holds `reviewScheduledRef`, reset when status goes back to 'playing'); `reviewBlockedBy()` names the failing gate; `maybeRequestReview` records `reviewLastOutcome` (`blocked:<gate>` | `unavailable` | `error:<msg>` | `requested`) + `reviewLastOutcomeDate` in settingsStore (persisted, no migration); hidden Settings diagnostics panel (long-press version line 600 ms; tap to close) shows totalWins, firstLaunchDate, reviewPromptCount, lastReviewPromptDate, reviewLastOutcome(+Date), deviceNow. Local only, no network/logging.
-- Auto-memory: updated wordout-playstore-production-access and wordout-play-upload-automation-gated (production now live; automation gate lifted, not set up).
+- **New 9:16 store screenshots (commit c13f5ad):** `scripts/make-store-screenshots.py` builds `store-assets/screenshots/` (8 PNGs, 1080x1920, 24-bit RGB, + contact-sheet.png) from the gitignored `store-assets/raw/` Samsung frames: crop 100 px top / 135 px bottom, scale to 1920 tall, extend each row's edge pixels to the canvas. A plain 1080x1920 crop was tried first and cut the header/footer — don't. Old `phone-screen-*.jpg` (21 files) deleted after confirming nothing referenced them. `store-assets/store-shot-list.md` lists the 8 shots + raw filenames + rerun command. README.md NOT changed.
+- **Doc fix (commit b0473a1):** CLAUDE.md Distribution now describes `store-assets/screenshots/`, says `store-assets/amazon/` holds only icons, and records Amazon's end of Appstore updates for Android phones (2025-08-20).
+- **CI (commit 4a33505):** all `runs-on` pinned to `ubuntu-26.04` (the image the last good Build APK used); checkout@v7, setup-node@v7, cache@v6, setup-java@v6, upload-artifact@v7, peaceiris/actions-gh-pages@v4 (all node24). `android-actions/setup-android` deliberately left at v3. Also quoted `"$GITHUB_OUTPUT"` (SC2086). Details in REGRESSION_TRAPS.md "CI: runner pin and action versions".
+- **Store listings updated by browser automation:** itch.io — 8 new screenshots, old 6 deleted, saved, public order verified 01-08. Google Play — old 7 phone screenshots replaced by the 8, AI declaration "Don't label assets", saved, and **submitted for review** (Publishing overview showed "Changes in review"; quick checks were still running). Amazon — READ ONLY, nothing changed.
+- REGRESSION_TRAPS.md got three new sections: CI runner/actions, Store listing screenshots (Play/itch.io quirks), Amazon Appstore listing.
 
 ## Verification
-- `tsc --noEmit` clean; jest 79/79 (8 new: gate names, 3 timing cases, double-dismiss, flag reset, loss, outcome strings).
-- Web dev server: Settings long-press panel opened (long-press SIMULATED with dispatched mouse events held 800 ms) and closed with a real click; review values showed defaults, as expected on web.
-- NOT verified: panel on a real device; the Play review dialog itself; component's own tap-vs-effect timer wiring (the 3 timing tests call the scheduler at different offsets, not the component).
+- Test + Deploy Web runs on 4a33505 both green (incl. itch.io HTML5 job); jobs logged `Image: ubuntu-26.04` and started within ~20 s (label works). Pages `/`, `/privacy.html`, `/play/` (and its JS bundle) all 200.
+- actionlint (Docker) exits 0 apart from its unknown-label false positive for ubuntu-26.04.
+- Screenshot script output byte-identical to the previously reviewed files; contact sheets viewed.
+- NOT verified: `build-apk.yml` was never run after the bumps (cache@v6, setup-java@v6, upload-artifact@v7, release steps untested); whether Play's quick checks passed / Google approved; Node 20 warning for setup-android@v3 still expected.
 
 ## Current state
-- Version 1.9.1 (versionCode 43) in app.json, CHANGELOG.md, CLAUDE.md, this file. **v1.9.1 is BUILT and RELEASED**: user dispatched Build APK run 42979764248 (commit 336e7a6; test/build/deploy-web all green, finished 2026-11-11 ~08:06 UTC); GitHub Release v1.9.1 (Latest) has wordout.apk (98,590,824 B) + wordout.aab (69,762,443 B). Local `releases/wordout-latest.{apk,aab}` refreshed to v1.9.1 (byte-identical to the release). (`./make.sh watch` once failed with a client-side `api.github.com` timeout fetching annotations — a transient network error, not a build failure.) Play internal-track upload of the v1.9.1 AAB: user doing it manually; release note drafted (fixed double review request; new hidden diagnostics panel; ask testers to win 5+ games over a few days then report `reviewLastOutcome`).
-- Commit 9c69916 was local-only until this close; pushed with the close commit at the user's request.
+- Version 1.9.1 (versionCode 43) in app.json, CHANGELOG.md, CLAUDE.md, this file — no drift. No app code changed this session, so no CHANGELOG entry and no release.
+- Everything committed and pushed (c13f5ad, b0473a1, 4a33505); close commit is local until pushed on request.
 
 ## Exact next step / open items
-1. v1.9.1 is on the Play internal track and the user has **applied for production release** (reported 2026-11-11). Do NOT run /release again for 1.9.1. Watch for the Play review outcome.
-2. On a Play-installed v1.9.1: win >= 5 games, then long-press the version line in Settings to read reviewLastOutcome. `requested` with no card = Play suppressed it; `blocked:first-launch` = clock was moved before first launch; `blocked:wins` = fewer than 5 counted wins; no outcome at all = overlay never dismissed (new game / mode switch within ~11 s of the win).
-3. User reported done: long-press diagnostics panel works on device (shows stats even before any win); streak badge + dead-end toast device-verified; stale itch.io APK entry handled.
-   Still open: CLAUDE.md ~307 lines vs ~200 budget (candidates: long Stores/Daily Gate lines ~101/109/110, Keyboard line ~292, Key Design Decisions rationale) — needs user OK before cutting.
-4. RESOLVED: web version line showing v1.8.1 was a stale Metro cache (`npx expo start --web --clear` fixed it; see REGRESSION_TRAPS.md).
+1. Watch Google Play's review of the phone-screenshots change (typically up to 7 days).
+2. **Amazon needs a decision:** an "Incomplete" upcoming-version draft exists with AAB version code 37 (Fire TV 90/100, Automotive 2/2); live is version code 36 (12 of 40 Fire tablets, 0 Fire TV). Submitting the draft to change screenshots would ALSO ship vc 37 and those targets. Do not click Next/Delete/Submit there without a deliberate decision.
+3. Next real release (`/release`) is the first test of the CI bumps in build-apk.yml; consider setup-android@v4 only then.
+4. Still open: v1.9.1 Play production review; read `reviewLastOutcome` on a device after 5+ wins; CLAUDE.md ~308 lines vs ~200 budget (needs user OK before cutting).
 
 ## Gotchas
-- Any new win path must call `settingsStore.incrementTotalWins()`.
-- Review request fires only if the end-game overlay appears (4.2 s after a win) AND is dismissed (tap or 5 s); new game / mode switch before that skips it. firstLaunchDate is set on first v1.9.x launch, so a clock moved forward BEFORE first launch defeats the 3-day gate.
-- Pages root is now deployed from `docs/` by deploy-web.yml; edit `docs/`, push, it goes live. Landing/badge assets must stay unmodified official Google files.
+- `store-assets/raw/` is gitignored — rebuilding screenshots needs the originals locally.
+- Play editor holds max 8 phone screenshots: remove old before adding; multi-attach scrambles order; reorder by dragging a tile onto the one it should precede. itch.io caps at 12 screenshots.
+- Closing a Chrome tab can end the whole tab-group session; keep one tab open or recreate the group.
+- actionlint false positive on `ubuntu-26.04` — lint with `-ignore 'label "ubuntu-26.04" is unknown'`.
 - Model check at /open could not confirm opusplan; /status not run.

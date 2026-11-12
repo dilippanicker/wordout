@@ -1,8 +1,18 @@
 # Wordout — Master TODO
-**Updated: 2026-11-11 (session 41)**
+**Updated: 2026-11-12 (session 42)**
 **Current version: v1.9.1 (versionCode 43)**
 
 ---
+
+## ✅ Session 42 — Completed 2026-11-12 (store screenshots, CI Node 24, listing updates)
+
+- ✅ **9:16 store screenshots** — `scripts/make-store-screenshots.py` → `store-assets/screenshots/` (8 PNGs 1080x1920 + contact sheet) from gitignored `store-assets/raw/`; old `phone-screen-*.jpg` removed; `store-shot-list.md` updated (commit c13f5ad).
+- ✅ **itch.io listing updated** — 8 new screenshots in order, old 6 deleted, saved, public page order verified.
+- ✅ **Google Play listing updated and submitted** — phone screenshots replaced (AI declaration "Don't label assets"); change is "in review" (quick checks were running).
+- ✅ **CLAUDE.md Distribution notes** — screenshots location, amazon/ = icons only, Amazon phone-update cutoff 2025-08-20 (commit b0473a1).
+- ✅ **CI: ubuntu-26.04 pin + Node 24 action bumps** (commit 4a33505); Tests + Deploy Web green incl. itch.io HTML5; Pages URLs 200. `android-actions/setup-android` left at v3 on purpose. actionlint clean except its ubuntu-26.04 label false positive.
+- ✅ REGRESSION_TRAPS.md: CI runner/actions, store-listing screenshot quirks, Amazon listing sections added.
+- Open: Play review outcome for the screenshots change; **Amazon decision** (draft with AAB vc 37 targeting Fire TV/Automotive exists; live is vc 36 on 12 Fire tablets — submitting the draft for screenshots would ship vc 37 too); build-apk.yml untested after the bumps — verify on next release build, consider setup-android@v4 then; v1.9.1 Play production review; `reviewLastOutcome` device check; CLAUDE.md ~308 lines vs ~200 budget (needs user OK).
 
 ## ✅ Session 41 — Completed 2026-11-11 (v1.9.1, Google Play badge, CLAUDE.md trim)
 

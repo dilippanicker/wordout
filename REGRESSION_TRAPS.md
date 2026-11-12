@@ -56,6 +56,19 @@ On web, `Constants.expoConfig` comes from `process.env.APP_MANIFEST`, inlined by
 
 Full original text of CLAUDE.md's Play Store and Distribution sections, kept verbatim. CLAUDE.md holds condensed versions; consult this when you need the detail.
 
+## CI: runner pin and action versions (2026-11-12)
+- Workflows pin `runs-on: ubuntu-26.04` — the image the last good Build APK run reported (`Image: ubuntu-26.04`). actionlint's label list predates it and flags every `runs-on` as "unknown label" (false positive; lint with `-ignore 'label "ubuntu-26.04" is unknown'`). GitHub's runner-images README lists `ubuntu-26.04`. If a job ever sits queued for ~10 min, the label is the first suspect (fallback `ubuntu-24.04`).
+- Bumped checkout@v7, setup-node@v7, cache@v6, setup-java@v6, upload-artifact@v7, peaceiris/actions-gh-pages@v4 (all `node24`; gh-pages v3→v4 changes only the runtime, inputs identical). **`android-actions/setup-android` is deliberately left at v3** (Node 20): v4 changes the default cmdline-tools version and warns it may break downstream, and that step already broke once. Try v4 on a real release build, not blind. `actions/cache@v3` was already flagged by actionlint as too old to run, so build-apk.yml would likely have failed without the bump.
+- `build-apk.yml` was NOT run after the bumps (test + deploy-web were, both green). The next release build is the first real test of cache@v6 / setup-java@v6 / upload-artifact@v7.
+
+## Store listing screenshots (2026-11-12)
+- Source of truth: `scripts/make-store-screenshots.py` builds `store-assets/screenshots/` from the gitignored `store-assets/raw/` (crop 100 top / 135 bottom, scale to 1920 tall, extend each row's edge pixels to 1080×1920). Do NOT crop to 1080×1920 directly: that cuts the header and footer.
+- Play phone screenshots must be 16:9 or 9:16 (2–8 files, ≤8 MB). The editor holds max 8, so remove the old ones BEFORE adding new; a multi-file attach lands in scrambled order and the tile arrows only open details. Reorder by dragging a tile onto the one it should precede. Then Next → AI asset declaration ("Don't label assets") → Save → Publishing overview → "Submit … for review" (quick checks run first).
+- itch.io caps a project at 12 screenshots (extra uploads silently dropped); adds and deletes apply immediately, Move up/down and the order need Save; the public page's thumbnail hashes don't reveal order, but the base64 in the lightbox hrefs does.
+
+## Amazon Appstore listing (2026-11-12)
+- Amazon stopped Appstore updates for Android phones on 2025-08-20; the listing reaches Fire tablets/Fire TV only. Live version = AAB version code 36 (12 of 40 Fire tablets, 0 Fire TV, 0 Automotive). An **upcoming-version draft already exists ("Incomplete")** with a second AAB, version code 37, targeting Fire TV (90/100) and Automotive (2/2). Changing screenshots means going through that draft's "Appstore details" step and submitting the whole draft, which would ALSO ship vc 37 and the new device targets. Decide that deliberately; nothing was changed on Amazon.
+
 ## Play Store (full)
 - Publisher: Onglipo, package: `com.dilippanicker.wordout`. v1.7.2 (versionCode 38) uploaded to closed testing 2026-09-15 — supersedes v1.7.0 (versionCode 36, uploaded 2026-07-27, device-tested all good); v1.7.1 (versionCode 37, n-out difficulty-toggle free-switch fix) was never uploaded on its own, skipped straight to v1.7.2 (which reverses that same behavior — see CHANGELOG). Tester counts as of the v1.5.8 upload: 19 invited / ~12 opted in / 8 downloaded — not re-checked since.
 - **Production access application rejected 2026-07-20** — Google requires 12+ testers opted-in continuously for 14 days; dashboard showed only "1 day" of continuity despite ~12 days of believed compliance. Root cause unconfirmed (support ticket pending). See auto-memory (`wordout-playstore-production-access`) and `.claude/session-handoff.md` session 24 for full investigation notes.
