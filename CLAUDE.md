@@ -255,7 +255,6 @@ Before every build, follow exactly:
 
 ## Model Selection
 - Pattern: `opusplan` session model (Opus plans, Sonnet executes — automatic) + Opus-class advisor + Haiku-pinned Explore agent (`~/.claude/agents/Explore.md`). Set globally in `~/.claude/settings.json`; verify at session start via the `/model` and `/advisor` checkmarks. Rationale and details: `~/repos/claude-workflow/HOWTO.md` Roles section.
-- **Implementation delegation:** well-specified, low-complexity tasks (see `~/.claude/agents/haiku-implementer.md`) may be delegated to Haiku per the global CLAUDE.md "Model Delegation" section. Returned diffs get reviewed against this project's own `/review` command before being accepted.
 - `claude config set advisorModel` does NOT work — the only correct way to enable the advisor is via the `/advisor` command picker in the session. See REGRESSION_TRAPS.md for an unconfirmed note on `settings.json`'s `advisorModel` key.
 - Executor handles implementation; advisor engages automatically at key decision points (before writing, before committing to an approach, when stuck, before declaring done). Run `/compact` at 50%+ context.
 
