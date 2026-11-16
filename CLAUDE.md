@@ -233,7 +233,7 @@ Before every build, follow exactly:
 - Never update `app.json` before user confirms
 - Never trigger build without confirmed version bump
 
-**Current version:** `1.9.1` (versionCode 43)
+**Current version:** `1.9.2` (versionCode 44)
 
 ## Play Store
 - Publisher: Onglipo, package: `com.dilippanicker.wordout`. Play uploads are manual and tracked by the user, not in docs; closed-testing/internal-track history lives in CHANGELOG and TODO.md.

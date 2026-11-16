@@ -1,29 +1,24 @@
-# Session Handoff — 2026-11-12 (session 43: listing/metadata copy, daily-word check, dev.to + Reddit drafts; no app change, v1.9.1)
+# Session Handoff — 2026-11-16 (session 44: n-out wrong-row-count fix, v1.9.2 bumped, not built)
 
 ## What this session did
-- **Daily word selection re-checked, no change.** A report that Easy could only be index 0/1024 was true of the PRE-v1.5.8 code only; `dailyIndices(dayNum, n)` in `store/dailyStore.ts` already fixes it (verified by reading the code and running it: all 2,315 indices reachable over 10,000 days, three distinct words per day). User chose to LEAVE it (no no-repeat shuffle). Recorded in REGRESSION_TRAPS.md under the v1.5.8 collision section.
-- **GitHub repo metadata updated via `gh repo edit`:** new description, homepage `https://dilippanicker.github.io/wordout/`, topics added `puzzle` + `daily-puzzle` (8 topics total). Confirmed with `gh repo view`.
-- **itch.io description first paragraph replaced** (Chrome automation, saved, public page verified); Chrome tab closed.
-- **Commit 8efb970:** `store-assets/listing-copy.md` (new) holds current Play title/short/full description + itch.io description (fetched from the public pages — full Play description is the live page text, not read from Console). REGRESSION_TRAPS.md's Play copy block replaced by a pointer; CLAUDE.md Distribution has a line pointing at the file.
-- **Play listing-text review: user reported success, promotion-keyword warning gone.**
-- **Drafts written outside the repo (not posted):** `~/Downloads/devto-daily-words.md` (dev.to post "Picking daily words without a server", published: false, ~763 words) and `~/Downloads/reddit-drafts.md` (4 subreddit drafts, every one marked "rules not checked").
+- **Bug (user screenshot):** 2-out Extreme showed 7 rows (should be 5). Sequence: finished all daily boards, then pressed 2-out.
+- **Root cause:** entering 1-out/Daily calls `setDifficulty()` without touching `quordleStore`, so `settingsStore.difficulty` drifted from the idle n-out board. `switchBoardCount` keyed its snapshot by the settings value: it saved the Easy board under the Extreme key and restored it. Fix (45c3273): `quordleStore.difficulty` field (also in snapshots); `switchBoardCount`/`switchDifficulty`/`switchLanguage` key by the store's own difficulty + boardCount. Regression test in `__tests__/store-invariants.test.ts` fails on the old code.
+- **dc3ddf9:** `resyncQuordleToSettings()` rebuilds the store when settingsStore hydrates (store is built at module load, before hydration). Real gap, not the screenshot's cause.
+- **v1.9.2 (versionCode 44)** bumped in app.json, CHANGELOG, CLAUDE.md, TODO.md.
 
 ## Verification
-- Daily-word claims verified by running the real algorithm and the old code from `2491c27^`. gh output and itch.io public page checked after each change. Drift check clean: app.json, CHANGELOG, CLAUDE.md, TODO all 1.9.1 (versionCode 43).
-- NOT verified: Reddit rules (all 8 fetches returned 403 — see Gotchas); dev.to/Reddit drafts are unpublished and unreviewed by subreddits; `build-apk.yml` still untested after CI bumps.
+- Repro test written first (Extreme + 7 rows), then fix; new test fails with the old store, passes with the new. `tsc` clean, jest 82/82. NOT device-verified; no build run.
 
 ## Current state
-- Version 1.9.1 (versionCode 43) everywhere — no drift. No app code changed, no CHANGELOG entry, no release.
-- Local commits NOT pushed: 8efb970 and this close commit (2 ahead of origin plus whatever the close adds). Push only on request.
+- Version 1.9.2 (versionCode 44) everywhere. Commits local, NOT pushed. No build triggered.
 
-## Exact next step / open items
-1. Before posting any Reddit draft: read each subreddit's rules/sidebar yourself (devs-may-post, weekly/self-promo thread, flair, disclosure, karma/age) — drafts are in `~/Downloads/reddit-drafts.md`; stagger posts. Review/publish the dev.to draft yourself.
-2. Amazon is DECIDED: leave the "Incomplete" draft unsubmitted; at next Amazon update replace AAB2 (vc 37) with the current build, Fire tablets only.
-3. Next `/release` is the first test of the CI bumps in build-apk.yml; consider setup-android@v4 only then.
-4. Still open: read `reviewLastOutcome` on a device after 5+ wins; CLAUDE.md ~307 lines vs ~200 budget — needs user OK before extracting sections (candidates: Distribution itch.io/Play detail, Review Prompt, Keyboard Behaviour, Share Behaviour).
+## Exact next step
+1. On user's go-ahead: push, then `/release` (or `gh workflow run build-apk.yml`); first build since the CI Node 24 / ubuntu-26.04 bumps, so a failure may be CI, not the fix.
+2. After build: `gh release download` into `releases/` (stale copies get Play rejecting the versionCode); user uploads the AAB to Play manually.
+3. Device check: Daily (all done) -> 2-out at Extreme shows 5 rows.
+4. Still open from session 43: Reddit rules / dev.to draft, `reviewLastOutcome` device check, CLAUDE.md ~310 lines vs ~200 budget (needs user OK).
 
 ## Gotchas
-- Reddit blocks automated fetches of `old.reddit.com/r/<sub>/about(.json|/rules.json)` with 403 even with a descriptive User-Agent (www.reddit.com is blocked by WebFetch). Don't retry; rules must be pasted by the user.
-- Model check this session: user ran `/model opusplan` at /open (matches settings.json); `/status` not run.
-- Listing copy source of truth is the live listings; `store-assets/listing-copy.md` is a repo copy — update it whenever a listing changes.
-- store-assets/raw/ is gitignored; Play editor/itch.io quirks are in REGRESSION_TRAPS.md.
+- Never key quordle snapshots by `settingsStore.difficulty`; it drifts whenever 1-out/Daily is entered.
+- `submitGuess` still reads hard mode from settings difficulty (harmless while boards stay consistent).
+- Model check at /open: settings says opusplan; active model not confirmed (`/status` not run).

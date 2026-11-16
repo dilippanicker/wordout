@@ -2,6 +2,11 @@
 
 All notable changes to Wordout are documented here.
 
+## [1.9.2] — 2026-11-16
+### Fixed
+- Going back to an n-out board (2-out, 3-out, etc.) after visiting 1-out or the daily game could show the wrong number of rows for the difficulty, for example 7 rows on Extreme instead of 5. Each board now keeps its own difficulty.
+- On launch, n-out boards now match your saved board count and difficulty.
+
 ## [1.9.1] — 2026-11-11
 ### Fixed
 - The Play Store review request can no longer be sent twice for a single win (it could happen if you closed the "Solved!" popup just before it closed itself).
