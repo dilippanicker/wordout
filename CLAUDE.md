@@ -67,6 +67,7 @@ Historical bug write-ups and resolved-incident detail referenced below live in [
 - `celebrationShown: boolean` — end-game popup shown flag; saved/restored in snapshots
 - `snapshots: Record<string, QuordleSnapshot>` — in-memory per-`` `${language}-${difficulty}-${boardCount}` `` state (NOT persisted)
 - `switchBoardCount(n)` — saves current state to snapshot (incl. celebrationShown), restores n if previously visited
+- `difficulty` — the difficulty the CURRENT board was built for. All three `switch*` methods key snapshots by this and `boardCount` from the store itself, **never `settingsStore.difficulty`**: entering 1-out/Daily calls `setDifficulty()` without touching this store, so settings drift from the idle n-out board. Keying by settings saved a 2-out Easy board (7 rows) under the Extreme key and restored it as Extreme.
 - `switchLanguage(oldLanguage, newLanguage)` — same pattern, called from the module-level `settingsStore.subscribe`, which is the only place both the old and new language are available together (the subscribe fires after settingsStore has already committed the new value)
 - `newGame()` — clears snapshot for current language+difficulty+bc, starts fresh
 - `resyncQuordleToSettings()` — runs when `settingsStore` finishes hydrating (and immediately if already hydrated). The store is in-memory and built at module load, before hydration, so it can otherwise sit at the default 4 boards/Easy row count while settings say e.g. 2-out Extreme (grid draws rows from the store's `maxGuesses`, header emoji from settings). No-op when already in sync.

@@ -196,8 +196,8 @@ describe('quordle switchBoardCount snapshots', () => {
     useQuordleStore.setState({
       boardCount: 4,
       snapshots: {
-        'en_us-easy-2': { answers: ['CIGAR', 'REBUT'], boardCount: 2, maxGuesses: 7, guesses: [], currentGuess: '', solvedBoards: [false, false], gameStatus: 'playing', waveDoneBoards: [false, false], celebrationShown: false },
-        'en_us-easy-4': { answers: ['CIGAR', 'REBUT', 'SISSY', 'HUMPH'], boardCount: 4, maxGuesses: 9, guesses: [], currentGuess: '', solvedBoards: [false, false, false, false], gameStatus: 'playing', waveDoneBoards: [false, false, false, false], celebrationShown: false },
+        'en_us-easy-2': { answers: ['CIGAR', 'REBUT'], boardCount: 2, difficulty: 'easy', maxGuesses: 7, guesses: [], currentGuess: '', solvedBoards: [false, false], gameStatus: 'playing', waveDoneBoards: [false, false], celebrationShown: false },
+        'en_us-easy-4': { answers: ['CIGAR', 'REBUT', 'SISSY', 'HUMPH'], boardCount: 4, difficulty: 'easy', maxGuesses: 9, guesses: [], currentGuess: '', solvedBoards: [false, false, false, false], gameStatus: 'playing', waveDoneBoards: [false, false, false, false], celebrationShown: false },
       },
     });
     useQuordleStore.getState().newGame();
@@ -589,5 +589,24 @@ describe('quordleStore resync after settings hydration', () => {
     const before = useQuordleStore.getState().answers;
     resyncQuordleToSettings();
     expect(useQuordleStore.getState().answers).toBe(before);
+  });
+});
+
+describe('quordle snapshots are keyed by the board\'s own difficulty, not settings', () => {
+  // cycleTo()/Settings enter 1-out or Daily by calling setDifficulty() alone, so
+  // settingsStore.difficulty drifts from the difficulty of the idle n-out board.
+  test('2-out Easy -> 1-out/Daily at Extreme -> 2-out again is still Easy (7 rows), not Extreme with 7 rows', () => {
+    const S = () => useSettingsStore.getState();
+    S().setBoardCount(2); S().setGameMode('quordle');
+    S().setDifficulty(useQuordleStore.getState().switchBoardCount(2));
+    expect(useQuordleStore.getState().maxGuesses).toBe(7);
+
+    useGameStore.setState({ lastDifficulty: 'extreme' });
+    S().setBoardCount(1); S().setGameMode('wordle'); S().setDifficulty(useGameStore.getState().lastDifficulty);
+
+    S().setBoardCount(2); S().setGameMode('quordle');
+    S().setDifficulty(useQuordleStore.getState().switchBoardCount(2));
+    const q = useQuordleStore.getState();
+    expect(q.maxGuesses).toBe(maxGuessesForDifficulty(S().difficulty, 2)); // header and rows agree
   });
 });

@@ -28,6 +28,7 @@ export type GameStatus = 'playing' | 'won' | 'lost';
 interface QuordleSnapshot {
   answers: string[];
   boardCount: number;
+  difficulty: Difficulty;
   maxGuesses: number;
   guesses: QuordleGuess[];
   currentGuess: string;
@@ -40,6 +41,10 @@ interface QuordleSnapshot {
 interface QuordleState {
   answers: string[];
   boardCount: number;
+  // The difficulty the CURRENT board was built for. Snapshots must be keyed by this, never by
+  // settingsStore.difficulty — callers entering 1-out/Daily change the settings value without
+  // touching this store, so the two drift apart while the board sits idle.
+  difficulty: Difficulty;
   maxGuesses: number;
   guesses: QuordleGuess[];
   currentGuess: string;
@@ -79,6 +84,7 @@ function captureSnapshot(s: QuordleState): QuordleSnapshot {
   return {
     answers: s.answers,
     boardCount: s.boardCount,
+    difficulty: s.difficulty,
     maxGuesses: s.maxGuesses,
     guesses: s.guesses,
     currentGuess: s.currentGuess,
@@ -146,6 +152,7 @@ function initialState(language: Language, boardCount: number, difficulty?: Diffi
   return {
     answers: pickAnswers(boardCount, language),
     boardCount,
+    difficulty: diff,
     maxGuesses,
     guesses: [] as QuordleGuess[],
     currentGuess: '',
@@ -243,10 +250,10 @@ export const useQuordleStore = create<QuordleState>((set, get) => {
 
     switchBoardCount: (n) => {
       const current = get();
-      const { language, difficulty } = useSettingsStore.getState();
-      // Save the current game state under its language+difficulty+board-count.
-      const newSnapshots = { ...current.snapshots, [snapshotKey(language, difficulty, current.boardCount)]: captureSnapshot(current) };
-      const newLastDifficulty = { ...current.lastDifficultyByBoardCount, [current.boardCount]: difficulty };
+      const { language } = useSettingsStore.getState();
+      // Save the current game state under its own language+difficulty+board-count.
+      const newSnapshots = { ...current.snapshots, [snapshotKey(language, current.difficulty, current.boardCount)]: captureSnapshot(current) };
+      const newLastDifficulty = { ...current.lastDifficultyByBoardCount, [current.boardCount]: current.difficulty };
       // Land on n's own last-played difficulty, not whatever was active on the board we're leaving.
       const targetDifficulty = newLastDifficulty[n] ?? 'easy';
       const saved = newSnapshots[snapshotKey(language, targetDifficulty, n)];
@@ -260,9 +267,9 @@ export const useQuordleStore = create<QuordleState>((set, get) => {
 
     switchDifficulty: (newDifficulty) => {
       const current = get();
-      const { language, difficulty: currDifficulty, boardCount } = useSettingsStore.getState();
-      // Save the current game state under its language+difficulty+board-count.
-      const newSnapshots = { ...current.snapshots, [snapshotKey(language, currDifficulty, boardCount)]: captureSnapshot(current) };
+      const { language, boardCount } = useSettingsStore.getState();
+      // Save the current game state under its own language+difficulty+board-count.
+      const newSnapshots = { ...current.snapshots, [snapshotKey(language, current.difficulty, current.boardCount)]: captureSnapshot(current) };
       const newLastDifficulty = { ...current.lastDifficultyByBoardCount, [boardCount]: newDifficulty };
       const saved = newSnapshots[snapshotKey(language, newDifficulty, boardCount)];
       if (saved) {
@@ -275,6 +282,7 @@ export const useQuordleStore = create<QuordleState>((set, get) => {
         set({
           answers: pickAnswers(boardCount, language),
           boardCount,
+          difficulty: newDifficulty,
           maxGuesses: maxGuessesForDifficulty(newDifficulty, boardCount),
           guesses: [],
           currentGuess: '',
@@ -291,8 +299,9 @@ export const useQuordleStore = create<QuordleState>((set, get) => {
 
     switchLanguage: (oldLanguage, newLanguage) => {
       const current = get();
-      const { difficulty, boardCount } = useSettingsStore.getState();
-      // Save the current game state under its old-language+difficulty+board-count.
+      // Same board (own difficulty + board-count), other language — never the settings values,
+      // which may belong to 1-out/Daily while this store sits idle.
+      const { difficulty, boardCount } = current;
       const newSnapshots = { ...current.snapshots, [snapshotKey(oldLanguage, difficulty, boardCount)]: captureSnapshot(current) };
       const saved = newSnapshots[snapshotKey(newLanguage, difficulty, boardCount)];
       if (saved) {
