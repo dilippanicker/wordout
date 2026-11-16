@@ -69,6 +69,7 @@ Historical bug write-ups and resolved-incident detail referenced below live in [
 - `switchBoardCount(n)` — saves current state to snapshot (incl. celebrationShown), restores n if previously visited
 - `switchLanguage(oldLanguage, newLanguage)` — same pattern, called from the module-level `settingsStore.subscribe`, which is the only place both the old and new language are available together (the subscribe fires after settingsStore has already committed the new value)
 - `newGame()` — clears snapshot for current language+difficulty+bc, starts fresh
+- `resyncQuordleToSettings()` — runs when `settingsStore` finishes hydrating (and immediately if already hydrated). The store is in-memory and built at module load, before hydration, so it can otherwise sit at the default 4 boards/Easy row count while settings say e.g. 2-out Extreme (grid draws rows from the store's `maxGuesses`, header emoji from settings). No-op when already in sync.
 
 **`dailyStore.ts`** — persisted (`wordout-daily`, version 2):
 - `DAILY_EPOCH = new Date('2026-01-01').getTime()`

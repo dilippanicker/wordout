@@ -10,7 +10,7 @@ import {
   boardCountName,
   Difficulty,
 } from '../store/settingsStore';
-import { useQuordleStore, QuordleGuess } from '../store/quordleStore';
+import { useQuordleStore, QuordleGuess, resyncQuordleToSettings } from '../store/quordleStore';
 import { useGameStore } from '../store/gameStore';
 import { useDailyStore, getDailyAnswers, getDailyAnswersForDay, dailyIndices, emptyDailyGameState } from '../store/dailyStore';
 import { emptyBoardStats } from '../store/statsStore';
@@ -567,5 +567,27 @@ describe('daily guess limit', () => {
     expect(g.status).toBe('completed');
     expect(g.solved).toBe(false);
     expect(g.stats.currentStreak).toBe(0);
+  });
+});
+
+describe('quordleStore resync after settings hydration', () => {
+  test('store matches hydrated boardCount and difficulty (2-out Extreme = 5 rows, not stale 4-board/9)', () => {
+    // Store was built at module load from defaults (4 boards, easy); settings then hydrate.
+    useQuordleStore.setState({ boardCount: 4, maxGuesses: 9 });
+    useSettingsStore.setState({ gameMode: 'quordle', boardCount: 2, difficulty: 'extreme' });
+    resyncQuordleToSettings();
+    const q = useQuordleStore.getState();
+    expect(q.boardCount).toBe(2);
+    expect(q.answers).toHaveLength(2);
+    expect(q.maxGuesses).toBe(maxGuessesForDifficulty('extreme', 2));
+    expect(q.maxGuesses).toBe(5);
+  });
+
+  test('no-op when already in sync (does not wipe a game in progress)', () => {
+    useSettingsStore.setState({ gameMode: 'quordle', boardCount: 2, difficulty: 'hard' });
+    useQuordleStore.getState().newGame();
+    const before = useQuordleStore.getState().answers;
+    resyncQuordleToSettings();
+    expect(useQuordleStore.getState().answers).toBe(before);
   });
 });

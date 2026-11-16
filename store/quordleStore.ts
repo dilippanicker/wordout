@@ -312,3 +312,17 @@ useSettingsStore.subscribe((curr, prev) => {
     useQuordleStore.getState().switchLanguage(prev.language, curr.language);
   }
 });
+
+// quordleStore is in-memory and builds its state at module load, before settingsStore has
+// hydrated from AsyncStorage — so it can come up with the default board count/difficulty while
+// settings say something else (e.g. 2-out Extreme, but a 4-board 9-row store). Nothing is
+// persisted here, so at hydration there is no game to lose: rebuild from the hydrated settings.
+export function resyncQuordleToSettings(): void {
+  const { language, boardCount, difficulty } = useSettingsStore.getState();
+  const q = useQuordleStore.getState();
+  if (q.boardCount === boardCount && q.maxGuesses === maxGuessesForDifficulty(difficulty, boardCount)) return;
+  useQuordleStore.setState({ ...initialState(language, boardCount, difficulty), snapshots: {} });
+}
+
+if (useSettingsStore.persist.hasHydrated()) resyncQuordleToSettings();
+useSettingsStore.persist.onFinishHydration(resyncQuordleToSettings);
