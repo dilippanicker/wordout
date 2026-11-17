@@ -1,4 +1,4 @@
-# Session Handoff — 2026-11-16 (session 44: n-out wrong-row-count fix, v1.9.2 bumped, not built)
+# Session Handoff — 2026-11-17 (session 44: n-out wrong-row-count fix, v1.9.2 released and live on Play)
 
 ## What this session did
 - **Bug (user screenshot):** 2-out Extreme showed 7 rows (should be 5). Sequence: finished all daily boards, then pressed 2-out.
@@ -10,13 +10,12 @@
 - Repro test written first (Extreme + 7 rows), then fix; new test fails with the old store, passes with the new. `tsc` clean, jest 82/82. NOT device-verified; no build run.
 
 ## Current state
-- Version 1.9.2 (versionCode 44) everywhere. Commits local, NOT pushed. No build triggered.
+- Version 1.9.2 (versionCode 44) everywhere. Pushed (8781c0d); build run 43830386480 green (37m, CI action bumps verified); GitHub Release v1.9.2 has apk + aab; local `releases/` refreshed and byte-matching.
+- User-reported 2026-11-17: v1.9.2 submitted, approved and live on Google Play.
 
 ## Exact next step
-1. On user's go-ahead: push, then `/release` (or `gh workflow run build-apk.yml`); first build since the CI Node 24 / ubuntu-26.04 bumps, so a failure may be CI, not the fix.
-2. After build: `gh release download` into `releases/` (stale copies get Play rejecting the versionCode); user uploads the AAB to Play manually.
-3. Device check: Daily (all done) -> 2-out at Extreme shows 5 rows.
-4. Still open from session 43: Reddit rules / dev.to draft, `reviewLastOutcome` device check, CLAUDE.md ~310 lines vs ~200 budget (needs user OK).
+1. Device check: all daily done -> 2-out at Extreme shows 5 rows (not verified on a device yet).
+2. Still open from session 43: Reddit rules / dev.to draft, `reviewLastOutcome` device check, CLAUDE.md ~310 lines vs ~200 budget (needs user OK before extracting).
 
 ## Gotchas
 - Never key quordle snapshots by `settingsStore.difficulty`; it drifts whenever 1-out/Daily is entered.

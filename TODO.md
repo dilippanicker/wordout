@@ -1,15 +1,17 @@
 # Wordout — Master TODO
-**Updated: 2026-11-16 (session 44)**
+**Updated: 2026-11-17 (session 44)**
 **Current version: v1.9.2 (versionCode 44)**
 
 ---
 
-## ✅ Session 44 — 2026-11-16 (n-out wrong-row-count fix, v1.9.2 bump)
+## ✅ Session 44 — 2026-11-16 (n-out wrong-row-count fix, v1.9.2 released)
 
 - ✅ **Fixed 2-out Extreme showing 7 rows** (user screenshot). Cause: `cycleTo`/Settings enter 1-out/Daily via `setDifficulty()` alone, so `settingsStore.difficulty` drifted from the idle n-out board; `switchBoardCount` keyed its snapshot by the settings value, saved the Easy board under the Extreme key and restored it. `quordleStore` now has its own `difficulty` (also in snapshots); all three `switch*` methods key by it. Commit 45c3273, regression test in `store-invariants.test.ts` (fails on old code).
 - ✅ **Resync after hydration** — `resyncQuordleToSettings()` (commit dc3ddf9); real startup gap but not the screenshot's cause.
 - ✅ **v1.9.2 (versionCode 44) bumped** — tsc clean, jest 82/82. Not device-verified.
-- Open: push + `/release` build not yet triggered (first build since CI action bumps); after build refresh `releases/` via `gh release download`; manual Play upload; device-verify the fix (Daily → 2-out at Extreme shows 5 rows). `submitGuess` still reads hard mode from settings difficulty (harmless now). Older open items from session 43 unchanged.
+- ✅ **v1.9.2 pushed, built and released** — build run 43830386480 green (37m, test/build/deploy-web all passed, so the CI action bumps are verified); GitHub Release v1.9.2 (apk 98,591,316 B / aab 69,764,161 B); local `releases/` refreshed and matching.
+- ✅ (user-reported 2026-11-17) **v1.9.2 submitted, approved and live on Google Play.**
+- Open: device-verify the fix (all daily done → 2-out at Extreme shows 5 rows). `submitGuess` still reads hard mode from settings difficulty (harmless now). Older open items from session 43 unchanged.
 
 ## ✅ Session 43 — Completed 2026-11-12 (listing copy, repo metadata, daily-word check, post drafts)
 
