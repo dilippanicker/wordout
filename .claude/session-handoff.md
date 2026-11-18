@@ -1,4 +1,4 @@
-# Session Handoff — 2026-11-17 (session 44: n-out wrong-row-count fix, v1.9.2 released and live on Play)
+# Session Handoff — 2026-11-18 (session 44: n-out wrong-row-count fix, v1.9.2 released and live on Play)
 
 ## What this session did
 - **Bug (user screenshot):** 2-out Extreme showed 7 rows (should be 5). Sequence: finished all daily boards, then pressed 2-out.
@@ -13,9 +13,12 @@
 - Version 1.9.2 (versionCode 44) everywhere. Pushed (8781c0d); build run 43830386480 green (37m, CI action bumps verified); GitHub Release v1.9.2 has apk + aab; local `releases/` refreshed and byte-matching.
 - User-reported 2026-11-17: v1.9.2 submitted, approved and live on Google Play.
 
+- **CLAUDE.md trim (455d2bc):** 309 -> 291 lines; Keyboard/Review Prompt/Share/Tutorial/itch.io detail moved verbatim to REGRESSION_TRAPS.md, stubs keep the "don't do X" rules. Not compared line by line against the old text (spot-checked key rules present).
+- README not changed (nothing user-facing).
+
 ## Exact next step
 1. Device check: all daily done -> 2-out at Extreme shows 5 rows (not verified on a device yet).
-2. Still open from session 43: Reddit rules / dev.to draft, `reviewLastOutcome` device check, CLAUDE.md ~310 lines vs ~200 budget (needs user OK before extracting).
+2. Still open from session 43: Reddit rules / dev.to draft, `reviewLastOutcome` device check, CLAUDE.md still 291 lines vs ~200 budget; remaining candidates are active architecture (Key Design Decisions, Animation sequence, Daily Gate) — only with user OK.
 
 ## Gotchas
 - Never key quordle snapshots by `settingsStore.difficulty`; it drifts whenever 1-out/Daily is entered.

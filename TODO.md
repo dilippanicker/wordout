@@ -1,5 +1,5 @@
 # Wordout — Master TODO
-**Updated: 2026-11-17 (session 44)**
+**Updated: 2026-11-18 (session 44)**
 **Current version: v1.9.2 (versionCode 44)**
 
 ---
@@ -11,6 +11,7 @@
 - ✅ **v1.9.2 (versionCode 44) bumped** — tsc clean, jest 82/82. Not device-verified.
 - ✅ **v1.9.2 pushed, built and released** — build run 43830386480 green (37m, test/build/deploy-web all passed, so the CI action bumps are verified); GitHub Release v1.9.2 (apk 98,591,316 B / aab 69,764,161 B); local `releases/` refreshed and matching.
 - ✅ (user-reported 2026-11-17) **v1.9.2 submitted, approved and live on Google Play.**
+- ✅ **CLAUDE.md trimmed 309 → 291 lines** (commit 455d2bc) — Keyboard, Review Prompt, Share, First-launch tutorial and the itch.io Distribution bullets moved verbatim to REGRESSION_TRAPS.md "Extracted from CLAUDE.md (2026-11-17)"; stubs keep the regression-guarding rules. Still over the ~200 budget: further cuts would have to come from Key Design Decisions / Animation sequence / Daily Gate Architecture (active architecture, deliberately left).
 - Open: device-verify the fix (all daily done → 2-out at Extreme shows 5 rows). `submitGuess` still reads hard mode from settings difficulty (harmless now). Older open items from session 43 unchanged.
 
 ## ✅ Session 43 — Completed 2026-11-12 (listing copy, repo metadata, daily-word check, post drafts)
